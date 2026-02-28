@@ -13,8 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Magic Lab",
-  description: "The Magic Lab",
+  metadataBase: new URL("https://themagiclab.com"),
+  title: {
+    default: "The Magic Lab",
+    template: "%s | The Magic Lab",
+  },
+  description:
+    "The Magic Lab — exploring the intersection of technology and creativity.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "The Magic Lab",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export const viewport: Viewport = {
@@ -36,6 +49,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <a
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
+          href="#main-content"
+        >
+          Skip to main content
+        </a>
         {children}
       </body>
     </html>
