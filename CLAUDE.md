@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project
+
+- **Production URL**: https://themagiclab.app/
+- **Hosting**: Vercel
+
 ## Commands
 
 ```bash
@@ -15,7 +20,7 @@ pnpm check        # Check code quality (Ultracite)
 pnpm fix          # Auto-fix code quality issues (Ultracite)
 ```
 
-Requires Node >= 25 and pnpm >= 10.30.3.
+Requires Node 24.x and pnpm >= 10.
 
 ## Architecture
 
@@ -23,6 +28,8 @@ Requires Node >= 25 and pnpm >= 10.30.3.
 - **React 19** with React Compiler enabled for automatic memoization
 - **Tailwind CSS v4** via PostCSS plugin — utility-first styling with dark mode (`dark:` prefix) and CSS custom properties for theming in `globals.css`
 - **shadcn/ui** (new-york style) — component primitives built on Radix UI, styled with CVA + tailwind-merge + clsx via the `cn()` utility (`src/lib/utils.ts`)
+- **Vercel Analytics** (`@vercel/analytics`) for page-view tracking
+- **next-themes** for dark mode toggling via `ThemeProvider`
 - **Lucide React** for icons
 - **tw-animate-css** for animations
 - **Geist** font family (sans + mono)

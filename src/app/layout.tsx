@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://themagiclab.com"),
+  metadataBase: new URL("https://themagiclab.app"),
   title: {
     default: "The Magic Lab",
     template: "%s | The Magic Lab",
