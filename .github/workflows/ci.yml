@@ -20,13 +20,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642195b8c39bea2626db7af # v4
+        uses: actions/setup-node@v6
         with:
           node-version: "25"
           cache: pnpm

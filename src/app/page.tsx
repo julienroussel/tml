@@ -1,69 +1,43 @@
-import Image from "next/image";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted font-sans">
+    <div className="relative flex min-h-screen items-center justify-center px-6">
+      <div className="fixed top-4 right-4">
+        <ThemeToggle />
+      </div>
       <main
-        className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-background px-16 py-32 sm:items-start"
+        className="flex flex-col items-center gap-8 text-center"
         id="main-content"
       >
-        <Image
-          alt="Next.js logo"
-          className="dark:invert"
-          height={20}
-          priority
-          src="/next.svg"
-          width={100}
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs font-semibold text-3xl text-foreground leading-10 tracking-tight">
-            To get started, edit the page.tsx file.
+        <div className="flex flex-col items-center gap-3">
+          <h1 className="font-semibold text-4xl text-foreground tracking-tight sm:text-5xl">
+            The Magic Lab
           </h1>
-          <p className="max-w-md text-lg text-muted-foreground leading-8">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              className="font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              className="font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <div className="h-1 w-12 rounded-full bg-foreground/20" />
         </div>
-        <div className="flex flex-col gap-4 font-medium text-base sm:flex-row">
+        <p className="max-w-md text-lg text-muted-foreground leading-relaxed">
+          This project is under active development and will be available soon.
+        </p>
+        <Button asChild className="rounded-full" size="lg" variant="outline">
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 md:w-40"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://github.com/julienroussel/tml"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <Image
-              alt="Vercel logomark"
-              className="dark:invert"
-              height={16}
-              src="/vercel.svg"
-              width={16}
-            />
-            Deploy Now
+            <svg
+              aria-hidden="true"
+              className="size-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
+            </svg>
+            View on GitHub
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-border px-5 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 md:w-40"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Documentation
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        </div>
+        </Button>
       </main>
     </div>
   );
