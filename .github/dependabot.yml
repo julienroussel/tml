@@ -23,18 +23,29 @@ updates:
         update-types:
           - minor
           - patch
-      mantine:
+      next:
         patterns:
-          - '@mantine/*'
+          - 'next'
+          - '@next/*'
       react:
         patterns:
           - '@types/react'
           - '@types/react-dom'
           - 'react'
           - 'react-dom'
-      react-router:
+      tailwind:
         patterns:
-          - '@react-router/*'
+          - 'tailwindcss'
+          - '@tailwindcss/*'
+          - 'tw-animate-css'
+      shadcn:
+        patterns:
+          - 'shadcn'
+          - 'radix-ui'
+      biome:
+        patterns:
+          - '@biomejs/*'
+          - 'ultracite'
       vitest:
         patterns:
           - '@vitest/*'
