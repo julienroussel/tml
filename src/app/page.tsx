@@ -1,3 +1,6 @@
+import Image from "next/image";
+
+import { PushNotificationsLazy } from "@/components/push-notifications-lazy";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -12,10 +15,23 @@ export default function Home() {
         id="main-content"
       >
         <div className="flex flex-col items-center gap-3">
-          <h1 className="font-semibold text-4xl text-foreground tracking-tight sm:text-5xl">
-            The Magic Lab
-          </h1>
-          <div className="h-1 w-12 rounded-full bg-foreground/20" />
+          <h1 className="sr-only">The Magic Lab</h1>
+          <Image
+            alt=""
+            className="block dark:hidden"
+            height={100}
+            priority
+            src="/logo-light.svg"
+            width={300}
+          />
+          <Image
+            alt=""
+            className="hidden dark:block"
+            height={100}
+            priority
+            src="/logo-dark.svg"
+            width={300}
+          />
         </div>
         <p className="max-w-md text-lg text-muted-foreground leading-relaxed">
           This project is under active development and will be available soon.
@@ -38,6 +54,7 @@ export default function Home() {
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </Button>
+        <PushNotificationsLazy />
       </main>
     </div>
   );
