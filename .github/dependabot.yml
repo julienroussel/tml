@@ -1,0 +1,41 @@
+version: 2
+updates:
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    labels:
+      - 'dependencies'
+
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '04:00'
+      timezone: 'Europe/Paris'
+    open-pull-requests-limit: 5
+    target-branch: 'main'
+    labels:
+      - 'dependencies'
+    groups:
+      all-minor-patch:
+        update-types:
+          - minor
+          - patch
+      mantine:
+        patterns:
+          - '@mantine/*'
+      react:
+        patterns:
+          - '@types/react'
+          - '@types/react-dom'
+          - 'react'
+          - 'react-dom'
+      react-router:
+        patterns:
+          - '@react-router/*'
+      vitest:
+        patterns:
+          - '@vitest/*'
+          - 'vitest'
