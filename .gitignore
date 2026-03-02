@@ -42,3 +42,5 @@ next-env.d.ts
 
 # claude code generated artifacts
 .claude/audit-*
+
+TODO.txt
