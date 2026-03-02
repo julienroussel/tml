@@ -10,14 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-pnpm dev          # Start dev server
-pnpm build        # Production build
-pnpm start        # Start production server
-pnpm lint         # Lint and format check (Biome)
-pnpm format       # Auto-format code (Biome)
-pnpm test         # Run tests (Vitest)
-pnpm check        # Check code quality (Ultracite)
-pnpm fix          # Auto-fix code quality issues (Ultracite)
+pnpm dev            # Start dev server
+pnpm build          # Production build
+pnpm start          # Start production server
+pnpm lint           # Lint and format check (Ultracite)
+pnpm fix            # Auto-fix lint and format issues (Ultracite)
+pnpm test           # Run tests in watch mode (Vitest)
+pnpm test:run       # Run tests once
+pnpm test:coverage  # Run tests with coverage
+pnpm test:ui        # Open Vitest UI
 ```
 
 Requires Node 24.x and pnpm >= 10.
@@ -29,6 +30,8 @@ Requires Node 24.x and pnpm >= 10.
 - **Tailwind CSS v4** via PostCSS plugin — utility-first styling with dark mode (`dark:` prefix) and CSS custom properties for theming in `globals.css`
 - **shadcn/ui** (new-york style) — component primitives built on Radix UI, styled with CVA + tailwind-merge + clsx via the `cn()` utility (`src/lib/utils.ts`)
 - **Vercel Analytics** (`@vercel/analytics`) for page-view tracking
+- **Vercel Speed Insights** (`@vercel/speed-insights`) for performance monitoring
+- **PWA support** — web app manifest (`src/app/manifest.ts`), service worker (`public/sw.js`), push notifications (`web-push`)
 - **next-themes** for dark mode toggling via `ThemeProvider`
 - **Lucide React** for icons
 - **tw-animate-css** for animations

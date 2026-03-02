@@ -1,0 +1,42 @@
+# SECURITY: This workflow uses pull_request_target to get write permissions
+# needed for auto-approving and auto-merging Dependabot PRs. This is safe
+# because NO step checks out or executes code from the PR. If you modify
+# this workflow, NEVER add actions/checkout with the PR's ref — doing so
+# would allow arbitrary code execution with write permissions.
+
+name: Auto-merge Dependabot
+
+on:
+  pull_request_target:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    name: Auto-merge
+    permissions:
+      contents: write
+      pull-requests: write
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
+      - name: Approve PR
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr review --approve "$PR_URL"
+        env:
+          # PR_URL is set via env (not inline in run:) to prevent shell injection
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Enable auto-merge
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          # PR_URL is set via env (not inline in run:) to prevent shell injection
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
