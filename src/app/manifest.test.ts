@@ -19,11 +19,12 @@ describe("manifest", () => {
   it("includes required icon sizes", () => {
     const icons = manifest().icons;
     expect(icons).toBeDefined();
-    expect(icons).toHaveLength(2);
+    expect(icons).toHaveLength(3);
     expect(icons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sizes: "192x192" }),
         expect.objectContaining({ sizes: "512x512" }),
+        expect.objectContaining({ sizes: "512x512", purpose: "maskable" }),
       ])
     );
   });
