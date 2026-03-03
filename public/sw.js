@@ -27,5 +27,5 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow("https://themagiclab.app"));
+  event.waitUntil(clients.openWindow(self.location.origin));
 });
