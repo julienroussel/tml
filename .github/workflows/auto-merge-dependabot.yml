@@ -3,6 +3,12 @@
 # because NO step checks out or executes code from the PR. If you modify
 # this workflow, NEVER add actions/checkout with the PR's ref — doing so
 # would allow arbitrary code execution with write permissions.
+#
+# NOTE: `gh pr merge --auto` queues the merge but respects branch protection.
+# The CI workflow ("Lint, Type Check, Test & Build") MUST be configured as a
+# required status check on `main` — otherwise PRs can merge without validation.
+# Production dependencies (next, react, etc.) are excluded from auto-merge by
+# the `direct:development` guard in the condition below.
 
 name: Auto-merge Dependabot
 
@@ -27,14 +33,18 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
       - name: Approve PR
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' && steps.metadata.outputs.dependency-type == 'direct:development')
         run: gh pr review --approve "$PR_URL"
         env:
           # PR_URL is set via env (not inline in run:) to prevent shell injection
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Enable auto-merge
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' && steps.metadata.outputs.dependency-type == 'direct:development')
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           # PR_URL is set via env (not inline in run:) to prevent shell injection
