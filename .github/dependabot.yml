@@ -4,6 +4,9 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '04:00'
+      timezone: 'Europe/Paris'
     labels:
       - 'dependencies'
 
@@ -42,6 +45,7 @@ updates:
         patterns:
           - 'shadcn'
           - 'radix-ui'
+          - '@radix-ui/*'
       biome:
         patterns:
           - '@biomejs/*'
@@ -50,3 +54,12 @@ updates:
         patterns:
           - '@vitest/*'
           - 'vitest'
+    ignore:
+      - dependency-name: 'next'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@next/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-major']
