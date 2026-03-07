@@ -67,18 +67,23 @@ function PushNotificationManager() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
-      setSubscription(sub);
       const json = sub.toJSON();
       if (!(json.endpoint && json.keys?.p256dh && json.keys?.auth)) {
+        await sub.unsubscribe();
         throw new Error("Invalid push subscription: missing required fields");
       }
-      await subscribeUser({
+      const result = await subscribeUser({
         endpoint: json.endpoint,
         keys: {
           p256dh: json.keys.p256dh,
           auth: json.keys.auth,
         },
       });
+      if (!result.success) {
+        await sub.unsubscribe();
+        throw new Error(result.error);
+      }
+      setSubscription(sub);
     } catch (error) {
       console.error("Failed to subscribe to push:", error);
     }
@@ -88,7 +93,10 @@ function PushNotificationManager() {
     try {
       await subscription?.unsubscribe();
       setSubscription(null);
-      await unsubscribeUser();
+      const result = await unsubscribeUser();
+      if (!result.success) {
+        console.error("Failed to remove server subscription:", result.error);
+      }
     } catch (error) {
       console.error("Failed to unsubscribe from push:", error);
     }
@@ -97,8 +105,10 @@ function PushNotificationManager() {
   async function handleSendNotification() {
     try {
       if (message.trim()) {
-        await sendNotification(message);
-        setMessage("");
+        const result = await sendNotification(message);
+        if (result.success) {
+          setMessage("");
+        }
       }
     } catch (error) {
       console.error("Failed to send notification:", error);
@@ -121,8 +131,9 @@ function PushNotificationManager() {
             className="flex w-full max-w-sm gap-2"
             onSubmit={(e) => {
               e.preventDefault();
-              // Error handling is inside handleSendNotification
-              handleSendNotification();
+              handleSendNotification().catch((error) =>
+                console.error("Unhandled submit error:", error)
+              );
             }}
           >
             <input
@@ -133,7 +144,7 @@ function PushNotificationManager() {
               type="text"
               value={message}
             />
-            <Button size="sm" type="submit">
+            <Button aria-label="Send notification" size="sm" type="submit">
               Send
             </Button>
           </form>
@@ -160,7 +171,10 @@ function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    setIsIOS(IOS_REGEX.test(navigator.userAgent) && !("MSStream" in window));
+    setIsIOS(
+      IOS_REGEX.test(navigator.userAgent) &&
+        !("MSStream" in (window as unknown as Record<string, unknown>))
+    );
     setIsStandalone(window.matchMedia("(display-mode: standalone)").matches);
   }, []);
 

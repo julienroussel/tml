@@ -12,10 +12,6 @@ export default function ErrorPage({
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    console.error(error);
-  }, [error]);
-
-  useEffect(() => {
     // Re-focus when the error changes so users notice a new error
     if (error) {
       mainRef.current?.focus();
@@ -37,7 +33,7 @@ export default function ErrorPage({
       ref={mainRef}
       tabIndex={-1}
     >
-      <div>
+      <div role="alert">
         <h1 className="font-semibold text-xl">Something went wrong</h1>
         <p className="text-muted-foreground">An unexpected error occurred.</p>
       </div>

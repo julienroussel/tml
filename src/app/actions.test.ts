@@ -168,7 +168,7 @@ describe("server actions", () => {
       );
     });
 
-    it("propagates webpush.sendNotification failure", async () => {
+    it("returns error when webpush.sendNotification fails", async () => {
       vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "test-public-key");
       vi.stubEnv("VAPID_PRIVATE_KEY", "test-private-key");
 
@@ -180,9 +180,11 @@ describe("server actions", () => {
         new Error("Push service unavailable")
       );
 
-      await expect(sendNotification("Hello")).rejects.toThrow(
-        "Push service unavailable"
-      );
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to send notification",
+      });
     });
 
     it("returns error when rate limit is exceeded", async () => {
@@ -212,9 +214,7 @@ describe("server actions", () => {
       }
     });
 
-    // Rate limiting intentionally runs before message validation: even invalid requests
-    // consume a rate limit token to prevent abuse (e.g. probing validation rules without limit).
-    it("rate limit counter increments even for messages that fail validation", async () => {
+    it("invalid messages do not consume rate limit tokens", async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
       try {
@@ -224,18 +224,15 @@ describe("server actions", () => {
         const { subscribeUser, sendNotification } = await import("./actions");
         await subscribeUser(validSubscription);
 
-        // Send 10 invalid (empty) messages — rate limit is checked before validation
+        // Send 10 invalid (empty) messages — validation rejects before rate limit
         for (let i = 0; i < 10; i++) {
           const result = await sendNotification("   ");
           expect(result).toEqual({ success: false, error: "Invalid message" });
         }
 
-        // 11th request should be rate limited, even though it's valid
+        // Valid message should still succeed — empty messages didn't count
         const result = await sendNotification("Valid message");
-        expect(result).toEqual({
-          success: false,
-          error: "Rate limit exceeded",
-        });
+        expect(result).toEqual({ success: true });
       } finally {
         vi.useRealTimers();
       }
@@ -290,16 +287,18 @@ describe("server actions", () => {
       expect(webpush.setVapidDetails).toHaveBeenCalledOnce();
     });
 
-    it("throws when VAPID keys are not configured", async () => {
+    it("returns error when VAPID keys are not configured", async () => {
       vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "");
       vi.stubEnv("VAPID_PRIVATE_KEY", "");
 
       const { subscribeUser, sendNotification } = await import("./actions");
       await subscribeUser(validSubscription);
 
-      await expect(sendNotification("Hello")).rejects.toThrow(
-        "VAPID keys are not configured"
-      );
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Notification service unavailable",
+      });
     });
   });
 });
