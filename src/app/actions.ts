@@ -7,12 +7,11 @@ export type ActionResult =
   | { success: true }
   | { success: false; error: string };
 
-const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-const privateKey = process.env.VAPID_PRIVATE_KEY ?? "";
-
 let vapidInitialized = false;
 function ensureVapidInitialized() {
   if (!vapidInitialized) {
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
     if (!(publicKey && privateKey)) {
       throw new Error("VAPID keys are not configured");
     }
@@ -25,12 +24,15 @@ function ensureVapidInitialized() {
   }
 }
 
-// TODO: Replace in-memory state with persistent storage (e.g. database).
-// This won't persist across serverless invocations and is shared across all
-// users, which means only the last subscriber receives notifications.
+// TODO: Replace in-memory state with persistent storage (e.g. database) and
+// add authentication. This won't persist across serverless invocations and is
+// shared across all users, which means only the last subscriber receives
+// notifications. Without auth, any client can manipulate subscriptions.
 let subscription: webpush.PushSubscription | null = null;
 
-// Rate limiting for sendNotification
+// TODO: In-memory rate limiting resets across serverless invocations.
+// Move to a shared store (e.g. Vercel KV, Upstash Redis) alongside
+// subscription storage for reliable enforcement.
 const RATE_LIMIT_WINDOW = 60_000; // 1 minute
 const RATE_LIMIT_MAX = 10;
 let rateLimitCount = 0;
@@ -66,6 +68,10 @@ export async function unsubscribeUser(): Promise<ActionResult> {
 // TODO: Add authentication before production use — without auth, any client
 // can trigger push notifications to the stored subscriber.
 export async function sendNotification(message: string): Promise<ActionResult> {
+  if (!message.trim() || message.length > 1000) {
+    return { success: false, error: "Invalid message" };
+  }
+
   const now = Date.now();
   if (now > rateLimitReset) {
     rateLimitCount = 0;
@@ -76,15 +82,15 @@ export async function sendNotification(message: string): Promise<ActionResult> {
     return { success: false, error: "Rate limit exceeded" };
   }
 
-  if (!message.trim() || message.length > 1000) {
-    return { success: false, error: "Invalid message" };
-  }
-
   if (!subscription) {
     return { success: false, error: "No subscription available" };
   }
 
-  ensureVapidInitialized();
+  try {
+    ensureVapidInitialized();
+  } catch {
+    return { success: false, error: "Notification service unavailable" };
+  }
 
   const payload = JSON.stringify({
     title: "The Magic Lab",
@@ -92,6 +98,11 @@ export async function sendNotification(message: string): Promise<ActionResult> {
     icon: "/icon-192x192.png",
   });
 
-  await webpush.sendNotification(subscription, payload);
+  try {
+    await webpush.sendNotification(subscription, payload);
+  } catch {
+    return { success: false, error: "Failed to send notification" };
+  }
+
   return { success: true };
 }

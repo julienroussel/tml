@@ -52,15 +52,24 @@ describe("ErrorPage", () => {
     expect(reset).toHaveBeenCalledOnce();
   });
 
-  it("logs the error to console.error", () => {
-    const error = new Error("test error");
-    render(<ErrorPage error={error} reset={vi.fn()} />);
-    expect(console.error).toHaveBeenCalledWith(error);
+  it("does not log the error to console (Next.js handles error logging)", () => {
+    render(<ErrorPage error={new Error("test error")} reset={vi.fn()} />);
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   it("sets document.title on mount", () => {
     render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
     expect(document.title).toBe("Error | The Magic Lab");
+  });
+
+  it("restores document.title on unmount", () => {
+    document.title = "Previous Title";
+    const { unmount } = render(
+      <ErrorPage error={new Error("test")} reset={vi.fn()} />
+    );
+    expect(document.title).toBe("Error | The Magic Lab");
+    unmount();
+    expect(document.title).toBe("Previous Title");
   });
 
   it("moves focus to the main element on mount", () => {

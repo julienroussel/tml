@@ -189,7 +189,9 @@ describe("PushNotifications", () => {
       await screen.findByRole("button", { name: "Disable Notifications" })
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Notification message")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Send notification" })
+    ).toBeInTheDocument();
     expect(mockRegister).toHaveBeenCalledWith("/sw.js", {
       scope: "/",
       updateViaCache: "none",
@@ -275,10 +277,40 @@ describe("PushNotifications", () => {
     });
     await user.click(enableButton);
 
-    // After server failure, the component should ideally show Enable button
-    // (current behavior may differ — this test documents the actual behavior)
-    // If this test fails, it reveals the UX bug where UI shows subscribed state
-    // despite server-side subscription failure
+    expect(
+      screen.getByRole("button", { name: "Enable Notifications" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Disable Notifications" })
+    ).not.toBeInTheDocument();
+    expect(mockNewSubscription.unsubscribe).toHaveBeenCalled();
+  });
+
+  it("logs error when unsubscribeUser server action returns failure", async () => {
+    const { unsubscribeUser } = await import("@/app/actions");
+    vi.mocked(unsubscribeUser).mockResolvedValueOnce({
+      success: false,
+      error: "Server removal failed",
+    });
+    const consoleError = vi
+      .spyOn(console, "error")
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: suppress console.error output during test
+      .mockImplementation(() => {});
+    const user = userEvent.setup();
+    const mockSubscription = makeMockSubscription();
+    stubPushAPIs(mockSubscription);
+
+    render(<PushNotifications />);
+
+    const disableButton = await screen.findByRole("button", {
+      name: "Disable Notifications",
+    });
+    await user.click(disableButton);
+
+    expect(consoleError).toHaveBeenCalledWith(
+      "Failed to remove server subscription:",
+      "Server removal failed"
+    );
   });
 
   it("calls sendNotification when message is typed and Send is clicked", async () => {
@@ -294,7 +326,9 @@ describe("PushNotifications", () => {
     const input = screen.getByLabelText("Notification message");
     await user.type(input, "Hello world");
 
-    const sendButton = screen.getByRole("button", { name: "Send" });
+    const sendButton = screen.getByRole("button", {
+      name: "Send notification",
+    });
     await user.click(sendButton);
 
     expect(vi.mocked(sendNotification)).toHaveBeenCalledWith("Hello world");
@@ -312,15 +346,39 @@ describe("PushNotifications", () => {
 
     await screen.findByRole("button", { name: "Disable Notifications" });
 
-    const sendButton = screen.getByRole("button", { name: "Send" });
+    const sendButton = screen.getByRole("button", {
+      name: "Send notification",
+    });
     await user.click(sendButton);
 
     expect(vi.mocked(sendNotification)).not.toHaveBeenCalled();
   });
 
-  it.todo(
-    "handles sendNotification returning failure gracefully — input should NOT be cleared on failure (see #fix-send-notification-clear)"
-  );
+  it("does not clear input when sendNotification returns failure", async () => {
+    const { sendNotification } = await import("@/app/actions");
+    vi.mocked(sendNotification).mockResolvedValueOnce({
+      success: false,
+      error: "Send failed",
+    });
+    const user = userEvent.setup();
+    const mockSubscription = makeMockSubscription();
+    stubPushAPIs(mockSubscription);
+
+    render(<PushNotifications />);
+
+    await screen.findByRole("button", { name: "Disable Notifications" });
+
+    const input = screen.getByLabelText("Notification message");
+    await user.type(input, "Keep this");
+
+    const sendButton = screen.getByRole("button", {
+      name: "Send notification",
+    });
+    await user.click(sendButton);
+
+    expect(vi.mocked(sendNotification)).toHaveBeenCalledWith("Keep this");
+    expect(input).toHaveValue("Keep this");
+  });
 
   it("handles sendNotification rejection gracefully", async () => {
     const { sendNotification } = await import("@/app/actions");
@@ -342,7 +400,9 @@ describe("PushNotifications", () => {
     const input = screen.getByLabelText("Notification message");
     await user.type(input, "Fail test");
 
-    const sendButton = screen.getByRole("button", { name: "Send" });
+    const sendButton = screen.getByRole("button", {
+      name: "Send notification",
+    });
     await user.click(sendButton);
 
     expect(consoleError).toHaveBeenCalledWith(
@@ -353,6 +413,7 @@ describe("PushNotifications", () => {
     expect(
       screen.getByRole("button", { name: "Disable Notifications" })
     ).toBeInTheDocument();
+    expect(input).toHaveValue("Fail test");
   });
 
   it("calls sendNotification when Enter is pressed in the message input", async () => {
@@ -429,6 +490,37 @@ describe("PushNotifications", () => {
         configurable: true,
       });
     }
+  });
+
+  it("logs error when service worker registration fails", async () => {
+    const registrationError = new Error("SW registration failed");
+    Object.defineProperty(window, "PushManager", {
+      value: class PushManager {},
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, "serviceWorker", {
+      value: {
+        register: vi.fn().mockRejectedValue(registrationError),
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: promise that never resolves to keep SW in pending state
+        ready: new Promise(() => {}),
+      },
+      writable: true,
+      configurable: true,
+    });
+    const consoleError = vi
+      .spyOn(console, "error")
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: suppress console.error output during test
+      .mockImplementation(() => {});
+
+    render(<PushNotifications />);
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        "Failed to register service worker:",
+        registrationError
+      );
+    });
   });
 
   it("handles subscribe permission denied gracefully", async () => {
