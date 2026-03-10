@@ -44,3 +44,4 @@ next-env.d.ts
 .claude/audit-*
 
 TODO.txt
+.env*.local

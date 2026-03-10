@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
+- **Tagline**: Train. Plan. Perform. Elevate your magic.
+- **Description**: A personal workspace built for magicians — whether you're just starting out or performing professionally. A single place to organize your repertoire, plan your routines, track your practice sessions, and refine your performance over time.
+- **Core features**: Practice logging, goal setting & drills, set/routine planning, performance tracking, continuous improvement tools, and inventory management (props, books, gimmicks, and other items).
 - **Production URL**: https://themagiclab.app/
 - **Hosting**: Vercel
 
@@ -38,6 +41,25 @@ Requires Node 24.x and pnpm >= 10.
 - **Geist** font family (sans + mono)
 - **TypeScript** in strict mode — path alias `@/*` → `src/*`
 - Licensed under GPL-3.0
+
+## TypeScript Standards
+
+Type safety is a first-class concern in this project. All code must be rigorously typed.
+
+- **Never use `any`**. Use `unknown` when the type is genuinely unknown, then narrow it explicitly.
+- **No loose or weak typings**. Avoid `object`, `{}`, `Function`, or other overly broad types. Be specific.
+- **Explicit return types** on exported functions and public APIs. Inferred types are acceptable for local/private helpers only when unambiguous.
+- **Use modern type-level TypeScript**:
+  - Discriminated unions over optional fields for modeling variants.
+  - `satisfies` for validation without widening.
+  - `as const` for literal types and immutable data.
+  - Template literal types, mapped types, and conditional types where they improve safety.
+  - Branded/opaque types for domain identifiers (e.g. `UserId`, `TrickId`) to prevent accidental mixing.
+- **Prefer `interface` for object shapes** that may be extended; use `type` for unions, intersections, and computed types.
+- **Generic constraints** (`T extends ...`) should be as narrow as possible.
+- **No type assertions** (`as X`) unless absolutely unavoidable — prefer type guards and narrowing instead.
+- **No `@ts-ignore` or `@ts-expect-error`** without an accompanying explanation and a tracking issue.
+- **Exhaustive switch/if checks** — use `never` to catch unhandled cases at compile time.
 
 ## Tooling
 
