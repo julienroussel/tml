@@ -17,13 +17,8 @@ export default defineConfig({
         "src/**/*.test.*",
         "src/**/*.d.ts",
         "src/app/layout.tsx",
-        "src/app/(app)/layout.tsx",
-        "src/app/(app)/*/page.tsx",
         "src/app/global-error.tsx",
         "src/components/theme-provider.tsx",
-        "src/components/app-sidebar.tsx",
-        // shadcn vendor hook — tested upstream
-        "src/hooks/use-mobile.ts",
         // Lazy-loading wrapper that just re-exports via React.lazy; no logic to cover
         "src/components/push-notifications-lazy.tsx",
       ],
