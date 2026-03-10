@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Magic Lab
+
+**Train. Plan. Perform. Elevate your magic.**
+
+Every great magic performance starts long before the curtain rises. It starts with hours of practice, careful routine planning, and a deep understanding of your own repertoire.
+
+The Magic Lab is your personal space to do all of that — and more. Built by magicians, for magicians, it's designed to support every stage of your journey:
+
+- **Improve** — Log practice sessions and track your progress on individual sleights, moves, and techniques.
+- **Train** — Set goals, build drills, and stay consistent with structured practice.
+- **Plan** — Assemble and fine-tune your sets, from a quick close-up routine to a full stage show.
+- **Perform** — Keep notes on your performances, track audience reactions, and learn from every show.
+- **Enhance** — Discover new ideas, revisit what works, and continuously raise the bar.
+- **Collect** — Register and organize your props, books, gimmicks, and other items. Track, sort, and collect data on everything in your magician's toolkit.
+
+Whether you're working on your first ambitious card routine or polishing a headline act, The Magic Lab keeps your craft organized and your growth intentional.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Requires Node 24.x and pnpm >= 10.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+```bash
+pnpm dev            # Start dev server
+pnpm build          # Production build
+pnpm start          # Start production server
+pnpm lint           # Lint and format check (Ultracite)
+pnpm fix            # Auto-fix lint and format issues
+pnpm test           # Run tests in watch mode
+pnpm test:run       # Run tests once
+pnpm test:coverage  # Run tests with coverage
+pnpm test:ui        # Open Vitest UI
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Next.js 16](https://nextjs.org/) with App Router
+- [React 19](https://react.dev/) with React Compiler
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/) component primitives
+- [Vitest](https://vitest.dev/) for testing
+- [Biome](https://biomejs.dev/) via [Ultracite](https://github.com/haydenbleasel/ultracite) for linting and formatting
+- PWA support with push notifications
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+Hosted on [Vercel](https://vercel.com/). Pushes to `main` trigger automatic deployments.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[GPL-3.0](LICENSE)
