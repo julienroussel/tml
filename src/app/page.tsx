@@ -1,61 +1,105 @@
 import Image from "next/image";
-
-import { PushNotificationsLazy } from "@/components/push-notifications-lazy";
+import Link from "next/link";
+import type { ReactElement } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { getMainModules } from "@/lib/modules";
 
-export default function Home() {
+export default function Home(): ReactElement {
+  const modules = getMainModules();
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-6">
-      <div className="fixed top-4 right-4">
+    <div className="relative flex min-h-screen flex-col">
+      <div className="fixed top-4 right-4 z-10">
         <ThemeToggle />
       </div>
-      <main
-        className="flex flex-col items-center gap-8 text-center"
-        id="main-content"
-      >
-        <div className="flex flex-col items-center gap-3">
-          <h1 className="sr-only">The Magic Lab</h1>
-          <Image
-            alt=""
-            className="block dark:hidden"
-            height={100}
-            priority
-            src="/logo-light.svg"
-            width={300}
-          />
-          <Image
-            alt=""
-            className="hidden dark:block"
-            height={100}
-            priority
-            src="/logo-dark.svg"
-            width={300}
-          />
-        </div>
-        <p className="max-w-md text-lg text-muted-foreground leading-relaxed">
-          This project is under active development and will be available soon.
-        </p>
-        <Button asChild className="rounded-full" size="lg" variant="outline">
+
+      <main className="flex flex-1 flex-col" id="main-content">
+        {/* Hero */}
+        <section
+          aria-labelledby="hero-title"
+          className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-24 text-center"
+        >
+          <div className="flex flex-col items-center gap-3">
+            <h1 className="sr-only" id="hero-title">
+              The Magic Lab
+            </h1>
+            <Image
+              alt=""
+              className="block dark:hidden"
+              height={100}
+              priority
+              src="/logo-light.svg"
+              width={300}
+            />
+            <Image
+              alt=""
+              className="hidden dark:block"
+              height={100}
+              priority
+              src="/logo-dark.svg"
+              width={300}
+            />
+          </div>
+          <p className="max-w-lg text-muted-foreground text-xl leading-relaxed">
+            Train. Plan. Perform. Elevate your magic.
+          </p>
+          <p className="max-w-md text-muted-foreground leading-relaxed">
+            A personal workspace built for magicians — organize your repertoire,
+            plan routines, track practice sessions, and refine performances.
+          </p>
+          <Button asChild className="rounded-full" size="lg">
+            <Link href="/dashboard">Launch App</Link>
+          </Button>
+        </section>
+
+        {/* Feature Pillars */}
+        <section
+          aria-labelledby="features"
+          className="border-t bg-muted/30 px-6 py-24"
+        >
+          <div className="mx-auto max-w-5xl">
+            <h2
+              className="mb-12 text-center font-semibold text-2xl tracking-tight"
+              id="features"
+            >
+              Everything you need to level up
+            </h2>
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {modules.map((mod) => {
+                const Icon = mod.icon;
+                return (
+                  <div className="flex flex-col gap-3" key={mod.slug}>
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
+                      <Icon className="size-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-semibold">{mod.label}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {mod.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t px-6 py-8">
+        <div className="mx-auto flex max-w-5xl items-center justify-between text-muted-foreground text-sm">
+          <p>&copy; {new Date().getFullYear()} The Magic Lab</p>
           <a
+            className="transition-colors hover:text-foreground"
             href="https://github.com/julienroussel/tml"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <svg
-              aria-hidden="true"
-              className="size-5"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
-            </svg>
-            View on GitHub
+            GitHub
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
-        </Button>
-        <PushNotificationsLazy />
-      </main>
+        </div>
+      </footer>
     </div>
   );
 }
