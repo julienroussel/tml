@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import type { ReactElement, ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -17,11 +18,22 @@ export const metadata: Metadata = {
     template: "%s | The Magic Lab",
   },
   description:
-    "The Magic Lab — exploring the intersection of technology and creativity.",
+    "A personal workspace for magicians to organize their repertoire, plan routines, track practice sessions, and refine performances.",
+  keywords: [
+    "magic",
+    "magician",
+    "practice",
+    "repertoire",
+    "routine",
+    "performance",
+    "training",
+  ],
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "The Magic Lab",
+    description:
+      "A personal workspace for magicians to organize their repertoire, plan routines, track practice sessions, and refine performances.",
   },
   twitter: {
     card: "summary_large_image",
@@ -40,8 +52,8 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
-}>) {
+  children: ReactNode;
+}>): ReactElement {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased`}>
