@@ -89,15 +89,26 @@ export default function Home(): ReactElement {
       <footer className="border-t px-6 py-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} The Magic Lab</p>
-          <a
-            className="transition-colors hover:text-foreground"
-            href="https://github.com/julienroussel/tml"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            GitHub
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
+          <nav aria-label="Footer links" className="flex gap-4">
+            <a
+              className="transition-colors hover:text-foreground"
+              href="https://memdeck.org"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              MemDeck
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <a
+              className="transition-colors hover:text-foreground"
+              href="https://github.com/julienroussel/tml"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              GitHub
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </nav>
         </div>
       </footer>
     </div>
