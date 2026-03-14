@@ -113,5 +113,5 @@ function getAdminModules(): readonly Extract<
   );
 }
 
-export { APP_MODULES, getAdminModules, getMainModules, getModule };
 export type { AppModuleEntry, ModuleGroup, ModuleSlug };
+export { APP_MODULES, getAdminModules, getMainModules, getModule };
