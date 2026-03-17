@@ -1,33 +1,32 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { APP_MODULES } from "@/lib/modules";
 
-const STATIC_TITLES = {
-  dashboard: "Dashboard",
-  settings: "Settings",
-} as const satisfies Record<string, string>;
+type NavKey = Parameters<ReturnType<typeof useTranslations<"nav">>>[0];
 
-function isStaticTitleKey(key: string): key is keyof typeof STATIC_TITLES {
-  return key in STATIC_TITLES;
+const NAV_KEYS = [
+  "dashboard",
+  "settings",
+  ...APP_MODULES.map((m) => m.slug),
+] satisfies readonly NavKey[];
+
+const NAV_KEY_SET = new Set<string>(NAV_KEYS);
+
+function isNavKey(key: string): key is NavKey {
+  return NAV_KEY_SET.has(key);
 }
 
 export function HeaderTitle(): ReactElement | null {
   const pathname = usePathname();
+  const t = useTranslations("nav");
   const segment = pathname.split("/")[1];
 
-  const staticTitle =
-    segment !== undefined && isStaticTitleKey(segment)
-      ? STATIC_TITLES[segment]
-      : undefined;
-
-  const label =
-    staticTitle ?? APP_MODULES.find((m) => m.slug === segment)?.label;
-
-  if (!label) {
+  if (!(segment && isNavKey(segment))) {
     return null;
   }
 
-  return <span className="font-medium text-sm">{label}</span>;
+  return <span className="font-medium text-sm">{t(segment)}</span>;
 }

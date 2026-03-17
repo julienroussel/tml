@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useEffect, useRef } from "react";
 
 export default function GlobalError({
@@ -8,7 +9,7 @@ export default function GlobalError({
 }: {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}): ReactElement {
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

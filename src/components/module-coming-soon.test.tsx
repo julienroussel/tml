@@ -3,29 +3,26 @@ import { describe, expect, it } from "vitest";
 import { ModuleComingSoon } from "./module-coming-soon";
 
 describe("ModuleComingSoon", () => {
-  it("renders module label and description", () => {
-    render(<ModuleComingSoon slug="improve" />);
+  it("renders module label and description", async () => {
+    const element = await ModuleComingSoon({ slug: "improve" });
+    render(element);
 
-    expect(screen.getByText("Improve")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Track practice sessions and refine your skills over time."
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByText("improve.title")).toBeInTheDocument();
+    expect(screen.getByText("improve.description")).toBeInTheDocument();
   });
 
-  it("renders the coming soon badge", () => {
-    render(<ModuleComingSoon slug="train" />);
+  it("renders the coming soon badge", async () => {
+    const element = await ModuleComingSoon({ slug: "train" });
+    render(element);
 
-    expect(screen.getByText("Coming soon")).toBeInTheDocument();
-    expect(screen.getByText("Train")).toBeInTheDocument();
-    expect(
-      screen.getByText("Set goals, run drills, and build muscle memory.")
-    ).toBeInTheDocument();
+    expect(screen.getByText("common.comingSoon")).toBeInTheDocument();
+    expect(screen.getByText("train.title")).toBeInTheDocument();
+    expect(screen.getByText("train.description")).toBeInTheDocument();
   });
 
-  it("renders the module icon", () => {
-    const { container } = render(<ModuleComingSoon slug="improve" />);
+  it("renders the module icon", async () => {
+    const element = await ModuleComingSoon({ slug: "improve" });
+    const { container } = render(element);
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
   });

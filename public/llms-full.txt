@@ -1,0 +1,2485 @@
+# The Magic Lab -- Complete Documentation
+
+> A free, open-source workspace for magicians to organize their repertoire,
+> plan routines, track practice sessions, and refine performances.
+> Production URL: https://themagiclab.app/
+> GitHub: https://github.com/julienroussel/tml
+
+---
+Source: docs/architecture.md
+
+# Architecture Overview
+
+The Magic Lab is a free, open-source progressive web application (PWA) for magicians, built with an offline-first architecture.
+
+## Technology Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| Framework | Next.js 16 (App Router) | Server/client rendering, routing, API routes |
+| UI Library | React 19 + React Compiler | Automatic memoization, concurrent features |
+| Styling | Tailwind CSS v4 + shadcn/ui | Utility-first CSS, accessible component primitives |
+| Database | Neon Postgres | Serverless Postgres with branching |
+| ORM | Drizzle ORM | Type-safe SQL queries, migrations |
+| Sync Engine | PowerSync Cloud | Offline-first with local WASM SQLite |
+| Auth | Neon Auth (Better Auth) | Google OAuth, email OTP, session management |
+| Hosting | Vercel | Edge deployment, automatic CI/CD |
+| Analytics | Vercel Analytics + Speed Insights | Page views, Core Web Vitals |
+| Notifications | web-push + Resend | Push notifications, email fallback |
+| i18n | next-intl | 7-locale internationalization |
+
+## App Router Structure
+
+The application uses Next.js route groups to separate public marketing pages from the authenticated app experience:
+
+```
+src/app/
+  (marketing)/          # Public SEO-optimized pages
+    page.tsx            # Landing / hero page
+    ...
+  (app)/                # Authenticated application
+    layout.tsx          # Sidebar + header chrome
+    dashboard/page.tsx  # Home dashboard
+    improve/page.tsx    # Practice session logging
+    train/page.tsx      # Goal setting and drills
+    plan/page.tsx       # Routine and setlist builder
+    perform/page.tsx    # Performance tracking
+    enhance/page.tsx    # Insights and suggestions
+    collect/page.tsx    # Inventory management
+    settings/page.tsx   # User preferences
+    admin/page.tsx      # Admin panel
+  layout.tsx            # Root layout (theme, fonts, analytics)
+  api/                  # API routes
+```
+
+See [route-structure.md](./route-structure.md) for the complete route tree.
+
+## Feature Modules
+
+Each feature area is organized as a self-contained module defined in `src/lib/modules.ts`. Modules declare their slug, label, description, icon, and enabled state. The module registry drives both the sidebar navigation and the marketing feature grid.
+
+Current modules: **Improve**, **Train**, **Plan**, **Perform**, **Enhance**, **Collect**, **Admin**.
+
+See [diagrams/module-deps.md](./diagrams/module-deps.md) for feature module dependencies.
+
+## Rendering Strategy
+
+- **Server Components** (default) for data fetching and static content
+- **Client Components** (`"use client"`) for interactive UI, form state, and PowerSync queries
+- **React Compiler** enabled globally (`reactCompiler: true` in `next.config.ts`) for automatic memoization -- no manual `useMemo`/`useCallback` needed
+
+## Content Security Policy
+
+CSP headers are set in `next.config.ts` via the `headers()` function:
+
+- `default-src 'self'` as the baseline
+- `script-src` allows Vercel Analytics scripts and `'unsafe-inline'` (required by next-themes)
+- `connect-src` allows Vercel Analytics/Insights, PowerSync Cloud, and Neon Auth/Data API endpoints
+- `worker-src 'self'` for the service worker
+- `object-src 'none'`, `frame-ancestors 'none'` for clickjacking prevention
+
+See [csp-policy.md](./csp-policy.md) for the CSP builder details.
+
+## Offline-First Architecture
+
+The app is designed around an offline-first data model using PowerSync Cloud:
+
+1. **Local SQLite** (WASM) runs in the browser for instant reads and writes
+2. **PowerSync Cloud** handles bidirectional sync between local SQLite and Neon Postgres
+3. **Soft-delete with tombstones** ensures data consistency across devices
+4. **Last-Write-Wins (LWW)** conflict resolution using `updated_at` timestamps
+
+See [sync-engine.md](./sync-engine.md) and [data-model.md](./data-model.md) for details.
+
+## Security Headers
+
+The following security headers are applied to all routes via `next.config.ts`:
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+- Content-Security-Policy (see above)
+
+## PWA
+
+The app ships as a Progressive Web App with:
+
+- Web app manifest (`src/app/manifest.ts`)
+- Service worker (`public/sw.js`) for push notifications
+- Installable on mobile and desktop
+
+See [pwa-notifications.md](./pwa-notifications.md) for details.
+
+---
+Source: docs/auth-flow.md
+
+# Authentication Flow
+
+The Magic Lab uses Neon Auth (powered by Better Auth) for authentication and session management.
+
+## Overview
+
+- **Provider**: Neon Auth (Better Auth underneath)
+- **Storage**: User and session data stored in the `neon_auth` schema in Neon Postgres
+- **Sign-in methods**: Google OAuth, email OTP
+- **Session strategy**: Database sessions with secure HTTP-only cookies
+
+## Sign-In Methods
+
+| Method | Use Case |
+|---|---|
+| Google OAuth | Primary sign-in for most users |
+| Email OTP | Passwordless sign-in via one-time code |
+
+Google uses the Authorization Code flow with PKCE. Email OTP sends a time-limited code to the user's inbox.
+
+## Session Management
+
+### Server Components
+
+```typescript
+import { auth } from "@/auth/server";
+
+export default async function ProtectedPage() {
+  const { data: session } = await auth.getSession();
+  // session.user contains the authenticated user
+}
+```
+
+`auth.getSession()` reads the session cookie, validates it against the database, and returns the user data. If the session is invalid or expired, it returns `null`.
+
+### Client Components
+
+```typescript
+"use client";
+import { authClient } from "@/auth/client";
+
+// authClient is a Neon Auth client created with createAuthClient()
+// Use authClient.getSession() for one-off session checks
+// The NeonAuthUIProvider in the root layout provides auth context to the UI
+```
+
+## Route Protection (proxy.ts)
+
+Next.js 16 uses `proxy.ts` (not `middleware.ts`) for request interception. The proxy protects all `(app)/*` routes:
+
+```typescript
+// src/proxy.ts
+import { auth } from "@/auth/server";
+
+const authMiddleware = auth.middleware({
+  loginUrl: "/auth/sign-in",
+});
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+
+  // Redirect authenticated users away from auth pages
+  if (AUTH_ROUTES.has(pathname) && request.cookies.has(SESSION_COOKIE_NAME)) {
+    const { data: session } = await auth.getSession();
+    if (session?.user) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // Protect app routes — redirects unauthenticated users to sign-in
+  return authMiddleware(request);
+}
+
+export const config = {
+  matcher: [
+    "/auth/:path*",
+    "/dashboard/:path*",
+    "/improve/:path*",
+    "/train/:path*",
+    "/plan/:path*",
+    "/perform/:path*",
+    "/enhance/:path*",
+    "/collect/:path*",
+    "/settings/:path*",
+    "/admin/:path*",
+    "/account/:path*",
+  ],
+};
+```
+
+### Route Protection Rules
+
+| Route Group | Auth Required | Behavior |
+|---|---|---|
+| `(marketing)/*` | No | Public pages, SEO-optimized |
+| `(app)/*` | Yes | Redirect to `/auth/sign-in` if unauthenticated |
+| `/auth/*` | No | Auth pages; redirect to `/dashboard` if already signed in |
+| `/api/auth/*` | No | Auth endpoints (sign-in, callback, etc.) |
+| `/api/*` (other) | Yes | Return 401 if unauthenticated |
+
+## PowerSync Authentication
+
+PowerSync Cloud authenticates via Neon Auth tokens. The connector (`src/sync/connector.ts`) obtains a token from the Neon Auth client and passes it to PowerSync Cloud for sync authentication. There is no separate `/api/powersync/token` endpoint — the token is fetched client-side via the auth client.
+
+## Sign-In Flow
+
+1. User clicks "Sign In" on the landing page
+2. Neon Auth UI shows sign-in options (Google, email OTP)
+3. User authenticates with chosen method
+4. Neon Auth creates/updates user in `neon_auth` schema
+5. Session created with secure HTTP-only cookie
+6. User redirected to `/dashboard`
+
+## Sign-Out Flow
+
+Sign-out is handled by the Neon Auth UI component (`AccountView`) at `/account/*`. The flow:
+
+1. User navigates to account management
+2. Signs out via the Neon Auth UI
+3. Session cookie cleared
+4. User redirected to landing page
+
+## Security Considerations
+
+- Session cookies are `HttpOnly`, `Secure`, `SameSite=Lax`
+- CSRF protection via Better Auth's built-in CSRF tokens
+- Session rotation on privilege escalation
+- Idle session timeout (configurable, default 30 days)
+- All auth endpoints are rate-limited
+
+## See Also
+
+- [route-structure.md](./route-structure.md) -- Route protection details
+- [sync-engine.md](./sync-engine.md) -- PowerSync sync architecture
+
+---
+Source: docs/csp-policy.md
+
+# Content Security Policy
+
+The Magic Lab enforces a strict Content Security Policy (CSP) to prevent XSS, data injection, and other code execution attacks.
+
+## Implementation
+
+CSP headers are constructed by the `buildCsp()` function in `src/lib/csp.ts` and applied to all routes via `next.config.ts`.
+
+### Current Policy
+
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com;
+style-src 'self' 'unsafe-inline';
+img-src 'self' data: blob:;
+font-src 'self';
+connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.powersync.journeyapps.com https://*.neonauth.c-2.eu-central-1.aws.neon.tech https://*.apirest.c-2.eu-central-1.aws.neon.tech;
+worker-src 'self';
+object-src 'none';
+frame-ancestors 'none';
+base-uri 'self';
+form-action 'self' https://*.neonauth.c-2.eu-central-1.aws.neon.tech
+```
+
+### Directive Breakdown
+
+| Directive | Value | Reason |
+|---|---|---|
+| `default-src` | `'self'` | Baseline: only same-origin resources |
+| `script-src` | `'self' 'unsafe-inline'` | `unsafe-inline` required by next-themes for FOUC prevention |
+| | `https://va.vercel-scripts.com` | Vercel Analytics script |
+| `style-src` | `'self' 'unsafe-inline'` | Inline styles from CSS-in-JS and component libraries |
+| `img-src` | `'self' data: blob:` | Same-origin images, data URIs (icons), blob URLs (uploads) |
+| `font-src` | `'self'` | Self-hosted Geist font |
+| `connect-src` | `'self'` | API calls to same origin |
+| | `https://va.vercel-scripts.com` | Vercel Analytics data |
+| | `https://vitals.vercel-insights.com` | Vercel Speed Insights |
+| | `https://*.powersync.journeyapps.com` | PowerSync Cloud sync |
+| | `https://*.neonauth.c-2.eu-central-1.aws.neon.tech` | Neon Auth endpoints |
+| | `https://*.apirest.c-2.eu-central-1.aws.neon.tech` | Neon Data API |
+| `worker-src` | `'self'` | Service worker |
+| `object-src` | `'none'` | Block plugins (Flash, Java) |
+| `frame-ancestors` | `'none'` | Prevent framing (clickjacking) |
+| `base-uri` | `'self'` | Prevent base tag hijacking |
+| `form-action` | `'self'` + Neon Auth | Restrict form submissions to same origin and Neon Auth |
+
+## CSP Builder (`src/lib/csp.ts`)
+
+The CSP is built programmatically via a typed builder function:
+
+```typescript
+// src/lib/csp.ts
+const BASE_DIRECTIVES: CspDirectives = {
+  "default-src": ["'self'"],
+  "script-src": ["'self'", "'unsafe-inline'", "https://va.vercel-scripts.com"],
+  "connect-src": [
+    "'self'",
+    "https://va.vercel-scripts.com",
+    "https://vitals.vercel-insights.com",
+    "https://*.powersync.journeyapps.com",
+    "https://*.neonauth.c-2.eu-central-1.aws.neon.tech",
+    "https://*.apirest.c-2.eu-central-1.aws.neon.tech",
+  ],
+  // ... other directives
+};
+
+const DEV_EXTENSIONS: Partial<CspDirectives> = {
+  "connect-src": ["ws://localhost:*"],
+  "frame-src": ["https://local.drizzle.studio"],
+};
+
+function buildCsp(isDev: boolean): string {
+  const directives = isDev
+    ? mergeDirectives(BASE_DIRECTIVES, DEV_EXTENSIONS)
+    : BASE_DIRECTIVES;
+  return directivesToString(directives);
+}
+```
+
+### Environment-Aware Directives
+
+| Source | Dev Only | Production |
+|---|---|---|
+| `ws://localhost:*` (connect-src) | Yes | No |
+| `https://local.drizzle.studio` (frame-src) | Yes | No |
+| `https://*.powersync.journeyapps.com` (connect-src) | No | Yes |
+| `https://*.neonauth.c-2.eu-central-1.aws.neon.tech` (connect-src) | No | Yes |
+| `https://*.apirest.c-2.eu-central-1.aws.neon.tech` (connect-src) | No | Yes |
+| `https://va.vercel-scripts.com` (script/connect) | No | Yes |
+| `https://vitals.vercel-insights.com` (connect-src) | No | Yes |
+
+### Benefits of the Builder
+
+- **Type-safe**: TypeScript ensures all directives are valid
+- **Environment-aware**: Dev mode automatically adds HMR WebSocket and Drizzle Studio sources
+- **Testable**: Pure function that can be unit tested
+- **Maintainable**: Adding a new service means adding one line, not editing a long string
+
+## Service Worker CSP
+
+The service worker (`/sw.js`) has its own restrictive CSP:
+
+```
+default-src 'self';
+script-src 'self'
+```
+
+This prevents the service worker from loading any external scripts.
+
+## Nonce-Based CSP (Future)
+
+The current `'unsafe-inline'` in `script-src` is a known weakness. The planned migration path:
+
+1. Implement nonce-based CSP via Next.js middleware
+2. Pass nonce to next-themes via a custom script injection
+3. Remove `'unsafe-inline'` from `script-src`
+4. Keep `'unsafe-inline'` in `style-src` (required by many component libraries)
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Security headers overview
+- [local-development.md](./local-development.md) -- Dev environment differences
+
+---
+Source: docs/data-model.md
+
+# Data Model
+
+This document describes the database schema for The Magic Lab, stored in Neon Postgres and synced to client-side SQLite via PowerSync.
+
+## Design Principles
+
+- **UUID primary keys**: Generated via `defaultRandom()`, globally unique, no sequential leaks
+- **Branded ID types**: TypeScript branded types (`UserId`, `TrickId`, etc.) prevent accidental ID mixing at compile time
+- **Soft-delete**: All user-facing tables use a `deleted_at` timestamp instead of hard deletes, enabling sync tombstones and undo
+- **Sync metadata**: Every synced table includes `created_at`, `updated_at`, and `deleted_at` columns for conflict resolution and change tracking
+- **Tenant isolation**: All user data is scoped by `user_id` foreign key
+
+## Tables
+
+### users
+
+Application user profile. Synced from Neon Auth (`neon_auth.user`) on sign-up. Server-only — not synced to PowerSync.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `UserId` |
+| email | text | NOT NULL |
+| display_name | text | |
+| role | text | `"user"` or `"admin"`, default `"user"` |
+| locale | text | ISO 639-1, default `"en"` |
+| theme | text | `"light"`, `"dark"`, or `"system"`, default `"system"` |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+
+### tricks
+
+A trick, sleight, move, or technique in the magician's repertoire.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `TrickId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| name | text | NOT NULL |
+| description | text | |
+| category | text | e.g. "card", "coin", "mentalism" |
+| difficulty | integer | 1-5 scale |
+| status | text | `"new"`, `"learning"`, `"performance_ready"`, `"mastered"`, `"shelved"`, default `"new"` |
+| tags | text[] | Free-form tags |
+| notes | text | Personal notes |
+| source | text | Where the trick was learned |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### routines
+
+An ordered collection of tricks forming a performable routine.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `RoutineId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| name | text | NOT NULL |
+| description | text | |
+| estimated_duration_minutes | integer | |
+| tags | text[] | Free-form tags for organization |
+| language | text | Patter language (ISO 639-1, null = language-independent) |
+| environment | text | `"close_up"`, `"parlor"`, `"stage"`, `"any"` |
+| requirements | text[] | Structured constraint tags (see below) |
+| notes | text | |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+#### Routine Requirements
+
+The `requirements` column stores structured constraint tags used for show planning and compatibility checks:
+
+| Requirement | Description |
+|---|---|
+| `needs_camera` | Requires camera/video projection (stage shows) |
+| `needs_table` | Requires a close-up mat or table |
+| `needs_assistant` | Requires a volunteer or assistant on stage |
+| `audience_participation` | Requires spectator interaction |
+| `impromptu` | No setup needed, can perform anywhere |
+| `angle_sensitive` | Cannot be performed surrounded |
+| `needs_mic` | Patter-heavy, needs amplification for larger venues |
+| `reset_required` | Needs reset time between performances |
+
+### routine_tricks
+
+Join table linking tricks to routines with ordering.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| routine_id | UUID (FK -> routines) | NOT NULL, cascade delete |
+| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| position | integer | NOT NULL, display order (unique per routine) |
+| transition_notes | text | Notes on transitioning into this trick |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### practice_sessions
+
+A logged practice session.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `PracticeSessionId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| date | date | NOT NULL |
+| duration_minutes | integer | NOT NULL |
+| mood | integer | 1-5 self-rating |
+| notes | text | |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### practice_session_tricks
+
+Tricks practiced within a session, with per-trick feedback.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| practice_session_id | UUID (FK -> practice_sessions) | NOT NULL, cascade delete |
+| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| repetitions | integer | Number of reps |
+| rating | integer | 1-5 self-assessment |
+| notes | text | |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### performances
+
+A logged performance or show.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `PerformanceId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| date | date | NOT NULL |
+| venue | text | |
+| event_name | text | Show/event name |
+| routine_id | UUID (FK -> routines) | Optional, set null on routine delete |
+| audience_size | integer | |
+| audience_type | text | `"birthday"`, `"corporate"`, `"other"`, `"private"`, `"street"`, `"theater"`, `"wedding"` |
+| duration_minutes | integer | |
+| rating | integer | 1-5 self-assessment |
+| notes | text | |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### items
+
+Props, books, gimmicks, and other collectible items.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `ItemId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| name | text | NOT NULL |
+| type | text | NOT NULL: `"prop"`, `"book"`, `"gimmick"`, `"dvd"`, `"download"`, `"other"` |
+| description | text | |
+| brand | text | Manufacturer/creator |
+| condition | text | `"new"`, `"good"`, `"worn"`, `"needs_repair"` |
+| location | text | Storage location |
+| notes | text | |
+| purchase_date | date | |
+| purchase_price | numeric(10,2) | |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### item_tricks
+
+Join table linking items (props) to tricks that use them.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| item_id | UUID (FK -> items) | NOT NULL, cascade delete |
+| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+Unique constraint on `(item_id, trick_id)`.
+
+### goals
+
+Practice goals and training objectives.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `GoalId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| title | text | NOT NULL |
+| description | text | |
+| target_type | text | `"practice_streak"`, `"trick_mastery"`, `"show_count"`, `"custom"` |
+| target_value | integer | |
+| current_value | integer | Default 0 |
+| deadline | date | |
+| completed_at | timestamptz | |
+| trick_id | UUID (FK -> tricks) | Optional, set null on trick delete |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+### push_subscriptions
+
+Web Push API subscription data. Server-only — not synced to PowerSync.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Default random |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| endpoint | text | NOT NULL, unique |
+| p256dh | text | NOT NULL, client public key |
+| auth_key | text | NOT NULL, auth secret |
+| device_name | text | Browser/device info |
+| created_at | timestamptz | NOT NULL, default now() |
+| last_used_at | timestamptz | NOT NULL, default now() |
+
+### user_preferences
+
+Per-user application settings. Server-only — not synced to PowerSync.
+
+| Column | Type | Notes |
+|---|---|---|
+| user_id | UUID (PK, FK -> users) | Cascade delete |
+| push_enabled | boolean | Default true |
+| email_enabled | boolean | Default true |
+| practice_reminder_time | time | |
+| practice_reminder_days | text[] | |
+| weekly_summary_enabled | boolean | Default true |
+| timezone | text | IANA timezone |
+| updated_at | timestamptz | NOT NULL, default now() |
+
+## Sync Scope
+
+Not all tables are synced to the client via PowerSync:
+
+| Table | Synced | Notes |
+|---|---|---|
+| tricks | Yes | Filtered by `user_id` |
+| routines | Yes | Filtered by `user_id` |
+| routine_tricks | Yes | Global bucket (no `user_id`) |
+| practice_sessions | Yes | Filtered by `user_id` |
+| practice_session_tricks | Yes | Global bucket (no `user_id`) |
+| performances | Yes | Filtered by `user_id` |
+| items | Yes | Filtered by `user_id` |
+| item_tricks | Yes | Global bucket (no `user_id`) |
+| goals | Yes | Filtered by `user_id` |
+| users | No | Server-only, managed by Neon Auth |
+| user_preferences | No | Server-only |
+| push_subscriptions | No | Server-only |
+
+## Entity-Relationship Diagram
+
+See [diagrams/schema-er.md](./diagrams/schema-er.md) for the full Mermaid ER diagram.
+
+## Branded ID Types
+
+```typescript
+type UserId = string & { readonly __brand: "UserId" };
+type TrickId = string & { readonly __brand: "TrickId" };
+type RoutineId = string & { readonly __brand: "RoutineId" };
+type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
+type PerformanceId = string & { readonly __brand: "PerformanceId" };
+type ItemId = string & { readonly __brand: "ItemId" };
+type GoalId = string & { readonly __brand: "GoalId" };
+```
+
+These types prevent accidentally passing a `TrickId` where a `RoutineId` is expected, catching errors at compile time rather than runtime.
+
+---
+Source: docs/diagrams/infrastructure.md
+
+# Infrastructure Diagram
+
+Overview of The Magic Lab's cloud infrastructure and service dependencies.
+
+```mermaid
+graph TB
+    subgraph Browser["Browser / PWA"]
+        SW["Service Worker<br/>(push notifications)"]
+        SQLite["Local SQLite<br/>(WASM, Web Worker)"]
+        React["React 19 App<br/>(Next.js)"]
+        React <--> SQLite
+        SW --> React
+    end
+
+    subgraph Vercel["Vercel"]
+        Edge["Edge Network<br/>(CDN, routing)"]
+        Serverless["Serverless Functions<br/>(API routes)"]
+        Analytics["Vercel Analytics"]
+        Insights["Speed Insights"]
+        Edge --> Serverless
+    end
+
+    subgraph Neon["Neon"]
+        Postgres["Neon Postgres<br/>(serverless)"]
+        NeonAuth["Neon Auth<br/>(Better Auth)"]
+        NeonDataAPI["Neon Data API<br/>(upload endpoint)"]
+        Postgres --- NeonAuth
+        Postgres --- NeonDataAPI
+    end
+
+    subgraph PowerSync["PowerSync Cloud"]
+        SyncService["Sync Service<br/>(replication)"]
+    end
+
+    subgraph Resend["Resend"]
+        Email["Transactional Email<br/>(notifications)"]
+    end
+
+    subgraph PushService["Web Push Services"]
+        FCM["FCM / APNs /<br/>Mozilla Push"]
+    end
+
+    React -->|"static assets"| Edge
+    React -->|"API calls"| Serverless
+    React -->|"page views"| Analytics
+    React -->|"web vitals"| Insights
+
+    Serverless -->|"Drizzle ORM"| Postgres
+    Serverless -->|"auth"| NeonAuth
+    Serverless -->|"email"| Email
+    Serverless -->|"web-push"| FCM
+
+    SQLite <-->|"bidirectional sync"| SyncService
+    SQLite -->|"queued writes"| NeonDataAPI
+
+    SyncService <-->|"replication stream"| Postgres
+
+    FCM -->|"push message"| SW
+
+    style Browser fill:#f0f0ff,stroke:#666
+    style Vercel fill:#f0fff0,stroke:#666
+    style Neon fill:#fff0f0,stroke:#666
+    style PowerSync fill:#fffff0,stroke:#666
+    style Resend fill:#f0ffff,stroke:#666
+    style PushService fill:#fff0ff,stroke:#666
+```
+
+---
+Source: docs/diagrams/module-deps.md
+
+# Module Dependencies Diagram
+
+Feature module dependency graph showing how modules relate to each other and shared infrastructure.
+
+```mermaid
+graph TB
+    subgraph Core["Core Infrastructure"]
+        Auth["Auth<br/>(Better Auth)"]
+        Sync["Sync Engine<br/>(PowerSync)"]
+        DB["Database<br/>(Neon Postgres)"]
+        Notify["Notifications<br/>(web-push + Resend)"]
+        I18n["i18n<br/>(next-intl)"]
+    end
+
+    subgraph Modules["Feature Modules"]
+        Improve["Improve<br/>Practice Sessions"]
+        Train["Train<br/>Goals & Drills"]
+        Plan["Plan<br/>Routines & Sets"]
+        Perform["Perform<br/>Performances"]
+        Enhance["Enhance<br/>Insights"]
+        Collect["Collect<br/>Inventory"]
+    end
+
+    subgraph Shared["Shared Domain"]
+        Tricks["Tricks<br/>(repertoire)"]
+    end
+
+    %% Core dependencies
+    Auth --> Sync
+    Sync --> DB
+    Notify --> Auth
+
+    %% Module to core
+    Improve --> Sync
+    Improve --> Auth
+    Train --> Sync
+    Train --> Auth
+    Train --> Notify
+    Plan --> Sync
+    Plan --> Auth
+    Perform --> Sync
+    Perform --> Auth
+    Enhance --> Sync
+    Enhance --> Auth
+    Collect --> Sync
+    Collect --> Auth
+
+    %% Module to shared domain
+    Improve --> Tricks
+    Train --> Tricks
+    Plan --> Tricks
+    Perform --> Tricks
+    Collect --> Tricks
+
+    %% Cross-module dependencies
+    Improve -.->|"practice data"| Enhance
+    Train -.->|"goal progress"| Enhance
+    Perform -.->|"performance data"| Enhance
+    Plan -.->|"routines for shows"| Perform
+    Collect -.->|"props used in"| Tricks
+
+    %% i18n is used by everything
+    I18n -.->|"all modules"| Modules
+
+    style Core fill:#f3e5f5,stroke:#9c27b0
+    style Modules fill:#e3f2fd,stroke:#2196f3
+    style Shared fill:#fff3e0,stroke:#ff9800
+```
+
+## Module Descriptions
+
+| Module | Purpose | Key Entities |
+|---|---|---|
+| **Improve** | Log practice sessions, track skill progress | practice_sessions, practice_session_tricks |
+| **Train** | Set goals, create drills, build streaks | goals |
+| **Plan** | Build routines and setlists | routines, routine_tricks |
+| **Perform** | Log performances, review feedback | performances |
+| **Enhance** | Analytics, insights, improvement suggestions | Reads from all modules |
+| **Collect** | Manage inventory of props and materials | items, item_tricks |
+
+## Shared Domain: Tricks
+
+The `tricks` table is the central entity shared across modules:
+
+- **Improve**: Practice sessions reference tricks being practiced
+- **Train**: Goals can target specific tricks
+- **Plan**: Routines are ordered collections of tricks
+- **Perform**: (Indirect) Performances use routines which contain tricks
+- **Collect**: Items (props) are linked to tricks that use them
+
+## Data Flow
+
+```
+Collect (items) --> Tricks <-- Improve (practice)
+                      ^
+                      |
+              Plan (routines) --> Perform (shows)
+                      ^
+                      |
+                Train (goals)
+                      |
+                      v
+                Enhance (insights) <-- All modules
+```
+
+---
+Source: docs/diagrams/notification-flow.md
+
+# Notification Flow Diagram
+
+Push notification and email notification flow for The Magic Lab.
+
+## Push Notification Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App as React App
+    participant SW as Service Worker
+    participant Action as Server Action
+    participant Memory as In-Memory Store
+    participant WebPush as web-push lib
+    participant PushSvc as Push Service<br/>(FCM/APNs/Mozilla)
+
+    Note over User,App: Subscription
+
+    User->>App: Grant notification permission
+    App->>SW: pushManager.subscribe()
+    SW-->>App: PushSubscription
+    App->>Action: subscribeToPush()
+    Action->>Memory: Store subscription (per-user map)
+    Note over Memory: WARNING: In-memory only,<br/>lost on cold start.<br/>TODO: migrate to push_subscriptions table
+
+    Note over Action,PushSvc: Sending
+
+    Action->>Memory: Fetch user subscription
+    Memory-->>Action: Subscription data
+    Action->>WebPush: sendNotification()
+    WebPush->>PushSvc: Encrypted push message
+    PushSvc->>SW: push event
+    SW->>SW: showNotification()
+    User->>SW: Click notification
+    SW->>App: Open app / navigate
+```
+
+## Email Fallback Flow
+
+```mermaid
+sequenceDiagram
+    participant Trigger as Trigger<br/>(cron/event)
+    participant API as API Route
+    participant DB as Neon Postgres
+    participant Resend as Resend API
+    participant Inbox as User's Inbox
+
+    Trigger->>API: Notification event
+    API->>DB: Check user preferences
+    DB-->>API: preferences
+
+    alt Push enabled
+        API->>API: Send push notification<br/>(see push flow)
+    end
+
+    alt Email enabled
+        API->>DB: Fetch user email
+        DB-->>API: email
+        API->>Resend: POST /emails
+        Resend->>Inbox: Deliver email
+    end
+
+    alt Neither enabled
+        Note over API: Skip notification
+    end
+```
+
+## Notification Types
+
+```mermaid
+graph LR
+    subgraph Triggers
+        Cron["Scheduled Cron"]
+        Event["User Event"]
+    end
+
+    subgraph Types
+        PR["Practice Reminder<br/>(daily/weekly)"]
+        GD["Goal Deadline<br/>(upcoming due date)"]
+        SA["Streak Alert<br/>(inactivity warning)"]
+        AV["Achievement<br/>(milestone reached)"]
+    end
+
+    subgraph Channels
+        Push["Push Notification"]
+        Email["Email (Resend)"]
+    end
+
+    Cron --> PR
+    Cron --> GD
+    Cron --> SA
+    Event --> AV
+
+    PR --> Push
+    PR --> Email
+    GD --> Push
+    GD --> Email
+    SA --> Push
+    SA --> Email
+    AV --> Push
+    AV --> Email
+```
+
+---
+Source: docs/diagrams/route-map.md
+
+# Route Map
+
+<!-- Last verified: 2026-03-17 -->
+
+## Route Structure
+
+```mermaid
+graph TD
+  root["src/app/"]
+  root --> n0["(app)"]
+  n0 --> n1["account"]
+  n1 --> n2["[path]"]
+  n2 --> n3(["page.tsx"])
+  n0 --> n4["admin"]
+  n4 --> n5(["page.tsx"])
+  n0 --> n6["collect"]
+  n6 --> n7(["page.tsx"])
+  n0 --> n8["dashboard"]
+  n8 --> n9(["page.tsx"])
+  n0 --> n10["enhance"]
+  n10 --> n11(["page.tsx"])
+  n0 --> n12["improve"]
+  n12 --> n13(["page.tsx"])
+  n0 --> n15["perform"]
+  n15 --> n16(["page.tsx"])
+  n0 --> n17["plan"]
+  n17 --> n18(["page.tsx"])
+  n0 --> n19["settings"]
+  n19 --> n20(["page.tsx"])
+  n0 --> n21["train"]
+  n21 --> n22(["page.tsx"])
+  root --> n23["(marketing)"]
+  n23 --> n24["faq"]
+  n24 --> n25(["page.tsx"])
+  n23 --> n27(["page.tsx"])
+  n23 --> n28["privacy"]
+  n28 --> n29(["page.tsx"])
+  root --> n30["api"]
+  n30 --> n31["auth"]
+  n31 --> n32["[...path]"]
+  n32 --> n33(["API: route.ts"])
+  n30 --> n34["email"]
+  n34 --> n35["unsubscribe"]
+  n35 --> n36(["API: route.ts"])
+  root --> n37["auth"]
+  n37 --> n38["[path]"]
+  n38 --> n39(["page.tsx"])
+```
+
+## Route Groups
+
+### `(marketing)/` — Public Pages
+- `/` — Landing page (hero, features, CTAs)
+- `/privacy` — Privacy policy
+- `/faq` — Frequently asked questions
+
+### `(app)/` — Authenticated App
+- `/dashboard` — Main dashboard
+- `/improve` — Practice session logging
+- `/train` — Goal setting and drills
+- `/plan` — Routine builder
+- `/perform` — Performance tracking
+- `/enhance` — Insights and suggestions
+- `/collect` — Inventory management
+- `/settings` — User preferences
+- `/account/[path]` — Neon Auth account management
+- `/admin` — Admin dashboard (role-restricted)
+
+### `auth/` — Auth Pages
+- `/auth/[path]` — Sign-in, sign-up (Neon Auth UI)
+
+### `api/` — API Routes
+- `/api/auth/[...path]` — Neon Auth (Better Auth) catch-all
+- `/api/email/unsubscribe` — Email unsubscribe endpoint
+
+---
+Source: docs/diagrams/schema-er.md
+
+# Schema ER Diagram
+
+Entity-relationship diagram for The Magic Lab database schema.
+
+```mermaid
+erDiagram
+    users {
+        uuid id PK "default random"
+        text email UK
+        text display_name
+        text role "user, admin"
+        text locale "default en"
+        text theme "light, dark, system"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    tricks {
+        uuid id PK "default random"
+        uuid user_id FK
+        text name
+        text description
+        text category
+        integer difficulty
+        text status "new, learning, performance_ready, mastered, shelved"
+        text_arr tags
+        text notes
+        text source
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    routines {
+        uuid id PK "default random"
+        uuid user_id FK
+        text name
+        text description
+        integer estimated_duration_minutes
+        text_arr tags
+        text language
+        text environment "close_up, parlor, stage, any"
+        text_arr requirements
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    routine_tricks {
+        uuid id PK "default random"
+        uuid routine_id FK
+        uuid trick_id FK
+        integer position
+        text transition_notes
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    practice_sessions {
+        uuid id PK "default random"
+        uuid user_id FK
+        date date
+        integer duration_minutes
+        integer mood "1-5"
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    practice_session_tricks {
+        uuid id PK "default random"
+        uuid practice_session_id FK
+        uuid trick_id FK
+        integer repetitions
+        integer rating "1-5"
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    performances {
+        uuid id PK "default random"
+        uuid user_id FK
+        date date
+        text venue
+        text event_name
+        uuid routine_id FK "nullable"
+        integer audience_size
+        text audience_type "birthday, corporate, other, private, street, theater, wedding"
+        integer duration_minutes
+        integer rating "1-5"
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    items {
+        uuid id PK "default random"
+        uuid user_id FK
+        text name
+        text type "prop, book, gimmick, dvd, download, other"
+        text description
+        text brand
+        text condition "new, good, worn, needs_repair"
+        text location
+        text notes
+        date purchase_date
+        numeric purchase_price
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    item_tricks {
+        uuid id PK "default random"
+        uuid item_id FK
+        uuid trick_id FK
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    goals {
+        uuid id PK "default random"
+        uuid user_id FK
+        text title
+        text description
+        text target_type "practice_streak, trick_mastery, show_count, custom"
+        integer target_value
+        integer current_value "default 0"
+        date deadline
+        timestamptz completed_at
+        uuid trick_id FK "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    push_subscriptions {
+        uuid id PK "default random"
+        uuid user_id FK
+        text endpoint UK
+        text p256dh
+        text auth_key
+        text device_name
+        timestamptz created_at
+        timestamptz last_used_at
+    }
+
+    user_preferences {
+        uuid user_id PK_FK
+        boolean push_enabled "default true"
+        boolean email_enabled "default true"
+        time practice_reminder_time
+        text_arr practice_reminder_days
+        boolean weekly_summary_enabled "default true"
+        text timezone
+        timestamptz updated_at
+    }
+
+    users ||--o{ tricks : "owns"
+    users ||--o{ routines : "owns"
+    users ||--o{ practice_sessions : "owns"
+    users ||--o{ performances : "owns"
+    users ||--o{ items : "owns"
+    users ||--o{ goals : "owns"
+    users ||--o{ push_subscriptions : "has"
+    users ||--o| user_preferences : "has"
+
+    routines ||--o{ routine_tricks : "contains"
+    tricks ||--o{ routine_tricks : "used in"
+
+    practice_sessions ||--o{ practice_session_tricks : "includes"
+    tricks ||--o{ practice_session_tricks : "practiced in"
+
+    performances ||--o| routines : "performed"
+
+    items ||--o{ item_tricks : "used for"
+    tricks ||--o{ item_tricks : "requires"
+
+    tricks ||--o{ goals : "targeted by"
+```
+
+---
+Source: docs/diagrams/sync-flow.md
+
+# Sync Flow Diagram
+
+Sequence diagram showing the offline-first data synchronization flow.
+
+## Write Flow (Client to Server)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Component as React Component
+    participant SQLite as Local SQLite
+    participant Queue as Upload Queue
+    participant Connector as PowerSync Connector
+    participant NeonAPI as Neon Data API
+    participant Neon as Neon Postgres
+
+    User->>Component: Create/update/delete
+    Component->>SQLite: execute(sql)
+    Note over SQLite: Immediate local write
+    SQLite-->>Component: Updated data
+    Component-->>User: Instant UI update
+
+    SQLite->>Queue: Enqueue write
+    Note over Queue: Persisted locally
+
+    alt Online
+        Queue->>Connector: getNextCrudTransaction()
+        loop Each CRUD operation
+            Connector->>NeonAPI: POST (SQL + Bearer token)
+            NeonAPI->>Neon: Execute query
+            Neon-->>NeonAPI: Result
+            NeonAPI-->>Connector: 200 OK
+        end
+        Connector->>Queue: transaction.complete()
+    else Offline
+        Note over Queue: Writes accumulate<br/>until connectivity resumes
+    end
+```
+
+## Read Flow (Server to Client)
+
+```mermaid
+sequenceDiagram
+    participant Neon as Neon Postgres
+    participant PS as PowerSync Cloud
+    participant SQLite as Local SQLite
+    participant Hook as useQuery()
+    participant Component as React Component
+
+    Note over Neon: Data changes<br/>(from any client)
+    Neon->>PS: Replication stream
+    PS->>SQLite: WebSocket push
+    Note over SQLite: Update local tables
+    SQLite->>Hook: Change notification
+    Hook->>Component: Re-render with new data
+```
+
+## Multi-Client Sync
+
+```mermaid
+sequenceDiagram
+    participant Client_A as Client A<br/>(Phone)
+    participant SQLite_A as SQLite A
+    participant PS as PowerSync Cloud
+    participant Neon as Neon Postgres
+    participant SQLite_B as SQLite B
+    participant Client_B as Client B<br/>(Desktop)
+
+    Client_A->>SQLite_A: Create trick
+    SQLite_A->>PS: Upload via Neon Data API
+    PS->>Neon: Write to Postgres
+    Neon->>PS: Replication event
+    PS->>SQLite_B: Push change
+    SQLite_B->>Client_B: Re-render
+    Note over Client_B: Trick appears<br/>automatically
+```
+
+## Conflict Resolution
+
+```mermaid
+sequenceDiagram
+    participant A as Client A<br/>(offline)
+    participant B as Client B<br/>(offline)
+    participant PS as PowerSync Cloud
+    participant Neon as Neon Postgres
+
+    Note over A,B: Both clients edit<br/>the same trick offline
+
+    A->>A: Update name<br/>updated_at = T1
+    B->>B: Update name<br/>updated_at = T2 (later)
+
+    Note over A,B: Both come online
+
+    A->>PS: Upload (T1)
+    PS->>Neon: Write (T1)
+    B->>PS: Upload (T2)
+    PS->>Neon: Write (T2)
+
+    Note over Neon: T2 > T1<br/>Last-Write-Wins
+    Note over Neon: Client B's change<br/>is the final state
+
+    Neon->>PS: Replication
+    PS->>A: Push final state
+    PS->>B: Push final state
+```
+
+---
+Source: docs/i18n.md
+
+# Internationalization (i18n)
+
+The Magic Lab uses next-intl for internationalization, supporting 7 locales.
+
+## Supported Locales
+
+| Code | Language | Status |
+|---|---|---|
+| `en` | English | Default, complete |
+| `fr` | French | Planned |
+| `es` | Spanish | Planned |
+| `pt` | Portuguese | Planned |
+| `it` | Italian | Planned |
+| `de` | German | Planned |
+| `nl` | Dutch | Planned |
+
+## Locale Strategy
+
+The app uses a dual strategy for locale detection:
+
+### Marketing Pages -- Subpath Routing
+
+Public marketing pages use URL subpaths for locale:
+
+```
+/           --> English (default)
+/fr         --> French
+/es         --> Spanish
+```
+
+This approach is SEO-friendly: each locale has its own URL, enabling proper `hreflang` tags and search engine indexing.
+
+### App Pages -- Cookie-Based
+
+Authenticated app pages use a cookie-based locale preference:
+
+```
+/dashboard  --> Locale from user_preferences.locale or cookie
+```
+
+This avoids cluttering app URLs with locale prefixes while still respecting the user's language choice. The preference is stored in the `user_preferences` table and synced via cookie.
+
+## Message Catalog Structure
+
+Messages are organized by feature module and shared components:
+
+```
+messages/
+  en/
+    common.json         # Shared strings (buttons, labels, errors)
+    navigation.json     # Sidebar, header, breadcrumbs
+    dashboard.json      # Dashboard module
+    improve.json        # Improve module
+    train.json          # Train module
+    plan.json           # Plan module
+    perform.json        # Perform module
+    enhance.json        # Enhance module
+    collect.json        # Collect module
+    settings.json       # Settings
+    marketing.json      # Landing page, about, FAQ
+  fr/
+    common.json
+    ...
+```
+
+### Message Format
+
+Messages use ICU MessageFormat syntax via next-intl:
+
+```json
+{
+  "greeting": "Hello, {name}!",
+  "sessions": "You have {count, plural, =0 {no sessions} one {# session} other {# sessions}}.",
+  "lastPractice": "Last practice: {date, date, medium}"
+}
+```
+
+## Translation Workflow
+
+1. **Development**: Write all strings in English message catalogs
+2. **Extraction**: New keys are added to the English catalog first
+3. **Translation**: Translate to other locales (manual or automated)
+4. **Review**: Native speakers review translations
+5. **Integration**: Translated catalogs are committed to the repo
+
+## SEO (hreflang)
+
+Marketing pages include `hreflang` link tags for search engines:
+
+```html
+<link rel="alternate" hreflang="en" href="https://themagiclab.app/" />
+<link rel="alternate" hreflang="fr" href="https://themagiclab.app/fr" />
+<link rel="alternate" hreflang="es" href="https://themagiclab.app/es" />
+<link rel="alternate" hreflang="x-default" href="https://themagiclab.app/" />
+```
+
+The Next.js `generateMetadata` function and `alternates` API handle this automatically based on the configured locales.
+
+## Offline Availability
+
+For offline-first support, message catalogs are:
+
+- **Bundled at build time** into the client bundle via next-intl's compilation step
+- **Cached by the service worker** as part of the app shell
+- Available immediately without network requests
+
+This ensures the UI remains fully localized even when the device is offline.
+
+## Usage in Components
+
+### Server Components
+
+```typescript
+import { getTranslations } from "next-intl/server";
+
+export default async function TrainPage() {
+  const t = await getTranslations("train");
+  return <h1>{t("title")}</h1>;
+}
+```
+
+### Client Components
+
+```typescript
+"use client";
+import { useTranslations } from "next-intl";
+
+export function GoalCard() {
+  const t = useTranslations("train");
+  return <p>{t("goalDescription")}</p>;
+}
+```
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Overall architecture
+- [route-structure.md](./route-structure.md) -- Locale routing patterns
+
+---
+Source: docs/local-development.md
+
+# Local Development
+
+Guide for setting up and running The Magic Lab locally.
+
+## Prerequisites
+
+- **Node.js 24.x** (use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schniz/fnm) to manage versions)
+- **pnpm >= 10** (`corepack enable && corepack prepare pnpm@latest --activate`)
+- **Git**
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/julienroussel/tml.git
+cd tml
+
+# Install dependencies
+pnpm install
+
+# Start the dev server
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Environment Variables
+
+Create a `.env.local` file in the project root. Required variables (when backend is integrated):
+
+```bash
+# Database (Neon)
+DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
+
+# Sync (PowerSync) — leave empty for local-only mode
+NEXT_PUBLIC_POWERSYNC_URL=
+# Neon Data API — used by PowerSync connector for uploads
+NEXT_PUBLIC_NEON_DATA_API_URL=
+
+# Auth (Neon Auth) — copy Auth URL from Neon Console > Auth > Configuration
+NEON_AUTH_BASE_URL=
+NEON_AUTH_COOKIE_SECRET=  # openssl rand -base64 32
+
+# Push (VAPID) — npx web-push generate-vapid-keys
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_public_key_here
+VAPID_PRIVATE_KEY=your_private_key_here
+
+# App URL — used for email unsubscribe links (defaults to https://themagiclab.app)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Email (Resend)
+RESEND_API_KEY=
+```
+
+The app can run without backend services for frontend-only development — leave sync and auth variables empty.
+
+## Database Setup
+
+### Neon Dev Branch
+
+Each developer gets their own Neon database branch:
+
+```bash
+# Create a dev branch (via Neon CLI or dashboard)
+neonctl branches create --name dev/your-name
+
+# Set DATABASE_URL to the branch connection string
+```
+
+Benefits:
+- Isolated from production data
+- Can be reset/recreated freely
+- Branches are cheap (copy-on-write)
+
+### Running Migrations
+
+```bash
+# Generate migration from schema changes
+pnpm drizzle-kit generate
+
+# Apply pending migrations
+pnpm drizzle-kit migrate
+
+# Open Drizzle Studio for visual inspection
+pnpm drizzle-kit studio
+```
+
+## PowerSync Cloud Dev Instance
+
+- Use a separate PowerSync Cloud instance for development
+- Configure sync rules to match the dev database
+- Point `NEXT_PUBLIC_POWERSYNC_URL` to the dev instance
+
+## Auth on Localhost
+
+Neon Auth works on localhost out of the box:
+
+- Set `NEON_AUTH_BASE_URL` to your Neon Auth URL from the console
+- Set `NEON_AUTH_COOKIE_SECRET` (generate with `openssl rand -base64 32`)
+- Google OAuth: Add `http://localhost:3000` to authorized JavaScript origins and redirect URIs in the Google Cloud Console
+
+## Push Notifications on Localhost
+
+Push notifications work on localhost in most browsers:
+
+1. Generate VAPID keys: `npx web-push generate-vapid-keys`
+2. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` in `.env.local`
+3. The service worker (`public/sw.js`) is served by the Next.js dev server
+4. Chrome, Edge, and Firefox support push on `localhost`
+5. Safari requires HTTPS -- use a tunneling service for testing
+
+## Email
+
+- **Provider**: Resend
+- **Dev mode**: Resend provides a test API key that logs emails instead of sending
+- Set `RESEND_API_KEY` to your Resend dev key
+
+## Available Scripts
+
+```bash
+pnpm dev              # Start dev server (with hot reload)
+pnpm build            # Production build
+pnpm start            # Start production server
+pnpm lint             # Lint and format check (Ultracite/Biome)
+pnpm fix              # Auto-fix lint and format issues
+pnpm test             # Run tests in watch mode
+pnpm test:run         # Run tests once
+pnpm test:coverage    # Run tests with coverage report
+pnpm test:ui          # Open Vitest UI in browser
+pnpm typecheck        # TypeScript type checking
+```
+
+## Mobile Testing
+
+To test the PWA on a mobile device on the same network:
+
+1. Find your local IP: `ipconfig getifaddr en0` (macOS)
+2. Start the dev server: `pnpm dev --hostname 0.0.0.0`
+3. Open `http://YOUR_IP:3000` on your mobile device
+4. Note: Push notifications require HTTPS on mobile -- use a tunneling service
+
+## Code Quality
+
+- **Pre-commit hook**: Lefthook runs `ultracite fix` on staged files automatically
+- **Biome**: Formatting (2-space indent) and linting
+- **TypeScript**: Strict mode enabled, path alias `@/*` mapped to `src/*`
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Tech stack and architecture overview
+- [testing.md](./testing.md) -- Testing strategy and patterns
+- [migrations.md](./migrations.md) -- Database migration workflow
+
+---
+Source: docs/migrations.md
+
+# Database Migrations
+
+The Magic Lab uses Drizzle ORM for database schema management and migrations against Neon Postgres.
+
+## Migration Workflow
+
+### 1. Define Schema
+
+Schema is defined in TypeScript using Drizzle's schema API:
+
+```typescript
+// src/db/schema/tricks.ts
+import { pgTable, text, integer, timestamp, uuid } from "drizzle-orm/pg-core";
+
+export const tricks = pgTable("tricks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category"),
+  difficulty: integer("difficulty"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+```
+
+### 2. Generate Migration
+
+```bash
+pnpm drizzle-kit generate
+```
+
+This compares the current schema definitions with the last known state and generates a SQL migration file in `src/db/migrations/` (configured via `drizzle.config.ts`).
+
+### 3. Review SQL
+
+Always review the generated SQL before applying:
+
+```bash
+cat src/db/migrations/0001_add_tricks_table.sql
+```
+
+Check for:
+- Destructive changes (column drops, type changes)
+- Missing indexes
+- Correct foreign key references
+- Proper default values
+
+### 4. Apply Migration
+
+```bash
+pnpm drizzle-kit migrate
+```
+
+This runs the pending migration(s) against the target database.
+
+## Environment Strategy
+
+### Development
+
+- **Database**: Neon dev branch (isolated from production)
+- **Workflow**: Iterate freely, reset branch if needed
+- **Drizzle Studio**: Available in dev for visual schema inspection (`pnpm drizzle-kit studio`)
+
+### Preview (PR Deployments)
+
+- **Database**: Neon preview branch (created per PR via Vercel integration)
+- **Workflow**: Migrations run automatically during Vercel build
+- **Isolation**: Each PR gets its own database branch
+
+### Production
+
+- **Database**: Neon main branch
+- **Workflow**: Migrations run during Vercel deployment build step
+- **Safety**: Never run destructive migrations without a rollback plan
+
+## Rollback Strategy
+
+Drizzle does not generate automatic rollback migrations. The strategy is:
+
+1. **Forward-fix**: Write a new migration that undoes the change
+2. **Additive-first**: Prefer additive changes (new columns, new tables) over destructive ones
+3. **Multi-step for breaking changes**:
+   - Step 1: Add new column, backfill data
+   - Step 2: Update application code to use new column
+   - Step 3: Drop old column in a later migration
+
+For emergencies:
+- Neon supports **point-in-time restore** (PITR) to roll back to any point within the retention window
+- Neon branches can be used to test rollback scenarios before applying to production
+
+## Dual Schema Problem
+
+The Magic Lab has two schema definitions that must stay in sync:
+
+### Server Schema (Drizzle)
+
+- Defined in `src/db/schema/*.ts`
+- Used by Drizzle ORM for server-side queries
+- Source of truth for Neon Postgres
+- Generates SQL migrations
+
+### Client Schema (PowerSync)
+
+- Defined in `src/sync/schema.ts`
+- Used by PowerSync for local SQLite
+- Must mirror the server schema (column names, types)
+- Does not support all Postgres types (e.g. no `uuid` type -- uses `text`)
+
+### Keeping Schemas in Sync
+
+1. **Server schema is the source of truth**: Always modify the Drizzle schema first
+2. **Update PowerSync schema**: After generating a Drizzle migration, update the PowerSync schema to match
+3. **Type mapping**: Postgres types map to SQLite types:
+
+| Postgres | SQLite (PowerSync) |
+|---|---|
+| `uuid` | `text` |
+| `text` | `text` |
+| `integer` | `integer` |
+| `numeric` | `real` |
+| `timestamptz` | `text` (ISO 8601) |
+| `boolean` | `integer` (0/1) |
+| `date` | `text` (YYYY-MM-DD) |
+
+4. **Validation**: A CI check (planned) compares both schemas and fails if they diverge
+
+## Migration File Naming
+
+Drizzle generates migration files with sequential prefixes:
+
+```
+src/db/migrations/
+  0000_initial_schema.sql
+  0001_add_tricks_table.sql
+  0002_add_routines.sql
+  ...
+```
+
+## See Also
+
+- [data-model.md](./data-model.md) -- Complete schema documentation
+- [sync-engine.md](./sync-engine.md) -- PowerSync sync architecture
+- [local-development.md](./local-development.md) -- Dev database setup
+
+---
+Source: docs/pwa-notifications.md
+
+# PWA & Push Notifications
+
+The Magic Lab is a Progressive Web App with push notification support for practice reminders and goal tracking.
+
+## PWA Setup
+
+### Web App Manifest
+
+The manifest is generated dynamically by `src/app/manifest.ts`:
+
+- **Name**: The Magic Lab
+- **Short name**: Magic Lab
+- **Display**: standalone (full-screen, no browser chrome)
+- **Icons**: 192x192 and 512x512 PNG icons with maskable variant
+- **Theme color**: `#ffffff` (manifest uses a single value; viewport meta tag provides light/dark variants)
+
+### Service Worker
+
+The service worker (`public/sw.js`) handles:
+
+1. **Push notifications**: Receiving and displaying push messages
+2. **Notification click**: Opening the app when a notification is tapped
+3. **Installation**: Immediate activation via `skipWaiting()` and `clients.claim()`
+
+Future enhancements (planned):
+- **Workbox integration** for precaching the app shell
+- **Runtime caching strategies** for API responses
+- **Background sync** for offline write queue
+
+### Service Worker Registration
+
+The service worker is registered client-side in a React component that:
+
+1. Checks for service worker support
+2. Registers `sw.js` on mount
+3. Handles updates by prompting the user to refresh
+
+## Push Notifications
+
+### Architecture
+
+```
+App Server                  Push Service              Browser
++----------------+         +----------------+        +----------------+
+| API Route      |         | Web Push       |        | Service Worker |
+| (web-push lib) |-------->| (FCM/APNs/     |------->| push event     |
+|                |         |  Mozilla Push)  |        | showNotification|
++----------------+         +----------------+        +----------------+
+```
+
+### VAPID Keys
+
+Push notifications use VAPID (Voluntary Application Server Identification):
+
+- **Public key**: Shared with the client for subscription
+- **Private key**: Used server-side to sign push messages
+- Keys are stored as environment variables: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
+
+### Subscription Flow
+
+1. User grants notification permission (browser prompt)
+2. Client calls `pushManager.subscribe()` with the VAPID public key
+3. Subscription data (endpoint, p256dh, auth) sent to the server via a server action
+4. Server currently stores subscriptions in an **in-memory map** (per-instance, lost on cold start). A persistent storage migration to the `push_subscriptions` table is planned for production use.
+
+### push_subscriptions Table
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID | Primary key, default random |
+| user_id | UUID | FK to users, cascade delete |
+| endpoint | text | NOT NULL, unique, push service endpoint URL |
+| p256dh | text | NOT NULL, client public key |
+| auth_key | text | NOT NULL, auth secret |
+| device_name | text | Browser/device info |
+| created_at | timestamptz | NOT NULL, default now() |
+| last_used_at | timestamptz | NOT NULL, default now() |
+
+### Sending Notifications
+
+The server uses the `web-push` library to send notifications:
+
+```typescript
+import webPush from "web-push";
+
+await webPush.sendNotification(subscription, JSON.stringify({
+  title: "Time to practice!",
+  body: "You have a daily practice goal waiting.",
+  icon: "/icon-192x192.png",
+}));
+```
+
+### Notification Types (Planned)
+
+| Type | Trigger | Description |
+|---|---|---|
+| Practice reminder | Scheduled | Daily/weekly practice nudge |
+| Goal deadline | Time-based | Upcoming goal due date |
+| Streak alert | Inactivity | "Don't break your streak!" |
+| Achievement | Event | Milestone reached (e.g. 100 sessions) |
+
+### Permission UX
+
+Best practices for requesting notification permission:
+
+1. **Do not prompt immediately** on first visit
+2. Show an in-app banner explaining the benefit first
+3. Only trigger the browser permission prompt after the user opts in
+4. Provide a way to manage/disable notifications in Settings
+5. Gracefully degrade if permission is denied
+
+## Email Fallback (Planned)
+
+For users who decline push notifications or are on unsupported platforms:
+
+- **Provider**: Resend (transactional email service)
+- **Templates**: Same notification types as push, formatted as emails
+- **Preference**: Users choose push, email, both, or neither in Settings
+- **Frequency**: Digest option to batch notifications into a daily/weekly email
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Overall architecture
+- [diagrams/notification-flow.md](./diagrams/notification-flow.md) -- Notification flow diagram
+- [local-development.md](./local-development.md) -- Testing push notifications locally
+
+---
+Source: docs/route-structure.md
+
+# Route Structure
+
+The Magic Lab uses Next.js App Router with two route groups to separate public marketing pages from the authenticated application.
+
+## Dual Route Group Pattern
+
+```
+src/app/
+  (marketing)/              # Public, SEO-optimized pages
+  (app)/                    # Authenticated application
+```
+
+### Why Route Groups?
+
+- **Separate layouts**: Marketing pages use a minimal layout (no sidebar). The app uses a full sidebar + header layout.
+- **Auth boundaries**: The proxy (`src/proxy.ts`) redirects unauthenticated users away from `(app)/` routes.
+- **SEO isolation**: Marketing pages have full metadata, Open Graph tags, and structured data. App pages use `noindex`.
+
+## Full Route Tree
+
+### Marketing Routes -- `(marketing)/`
+
+| Path | Page | Description |
+|---|---|---|
+| `/` | Landing page | Hero, feature grid, CTA |
+| `/faq` | FAQ | Common questions |
+| `/privacy` | Privacy policy | Data handling |
+| `/about` | About (planned) | Project story and mission |
+| `/terms` | Terms of service (planned) | Usage terms |
+
+### App Routes -- `(app)/`
+
+| Path | Page | Module | Description |
+|---|---|---|---|
+| `/dashboard` | Dashboard | -- | Home with module grid and quick stats |
+| `/improve` | Improve | Improve | Practice session logging and history |
+| `/train` | Train | Train | Goal setting, drills, streaks |
+| `/plan` | Plan | Plan | Routine builder, setlist management |
+| `/perform` | Perform | Perform | Performance logging and review |
+| `/enhance` | Enhance | Enhance | Insights, suggestions, analytics |
+| `/collect` | Collect | Collect | Inventory of props, books, gimmicks |
+| `/settings` | Settings | -- | User preferences, account |
+| `/admin` | Admin | Admin | Application administration |
+| `/account/[path]` | Account | -- | Neon Auth account management (sign-in, sign-up, etc.) |
+
+### Auth Routes
+
+| Path | Description |
+|---|---|
+| `/auth/[path]` | Auth pages (sign-in, sign-up) — redirects to `/dashboard` if already authenticated |
+
+### API Routes
+
+| Path | Method | Description |
+|---|---|---|
+| `/api/auth/[...path]` | Various | Neon Auth (Better Auth) endpoints |
+| `/api/email/unsubscribe` | GET | Email unsubscribe handler |
+
+## Proxy Behavior
+
+The proxy (`src/proxy.ts`) handles auth-based redirects:
+
+```
+Unauthenticated user
+  |
+  +--> visits /dashboard, /improve, etc.
+  |      --> Redirect to /auth/sign-in
+  |
+  +--> visits /
+         --> Show landing page
+
+Authenticated user
+  |
+  +--> visits /auth/sign-in, /auth/sign-up
+  |      --> Redirect to /dashboard
+  |
+  +--> visits /dashboard, /improve, etc.
+         --> Show app page
+```
+
+## Layout Hierarchy
+
+```
+RootLayout (src/app/layout.tsx)
+  |-- ThemeProvider, NeonAuthUIProvider, NextIntlClientProvider, fonts, analytics
+  |
+  +-- (marketing)/layout.tsx
+  |     |-- Minimal layout (no sidebar)
+  |     +-- page.tsx (landing)
+  |
+  +-- (app)/layout.tsx
+  |     |-- SidebarProvider + AppSidebar
+  |     |-- SidebarInset + header
+  |     +-- dashboard/page.tsx
+  |     +-- improve/page.tsx
+  |     +-- train/page.tsx
+  |     +-- ...
+  |
+  +-- auth/[path]/page.tsx (Neon Auth UI)
+  +-- account/[path]/page.tsx (Neon Auth account management)
+```
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Overall architecture
+- [auth-flow.md](./auth-flow.md) -- Authentication and route protection
+- [diagrams/route-map.md](./diagrams/route-map.md) -- Visual route map
+
+---
+Source: docs/sync-engine.md
+
+# Sync Engine
+
+The Magic Lab uses PowerSync Cloud for offline-first data synchronization between the browser's local SQLite database and the server-side Neon Postgres instance.
+
+## Architecture Overview
+
+PowerSync provides bidirectional sync with a local-first approach: the app reads and writes to a WASM-based SQLite database in the browser, and PowerSync Cloud handles replication to/from Neon Postgres in the background.
+
+```
+Browser                    Cloud                    Database
++-------------------+     +------------------+     +------------------+
+| React Components  |     | PowerSync Cloud  |     | Neon Postgres    |
+|   useQuery()      |<----|   Sync Service   |<----|   (source of     |
+|   execute()       |---->|                  |     |    truth)        |
+|   Local SQLite    |     |                  |     |                  |
++-------------------+     +------------------+     +------------------+
+                               |                         ^
+                               |    Neon Data API        |
+                               +-------------------------+
+```
+
+## Write Path
+
+1. **User action** triggers a write in the React component
+2. **`execute()`** writes to the local SQLite database immediately (instant UI update)
+3. The write is placed in the **upload queue** (persisted locally)
+4. The PowerSync connector uploads queued writes directly to the **Neon Data API** (`NEXT_PUBLIC_NEON_DATA_API_URL`)
+5. Each CRUD operation is sent as a separate HTTP request with a Bearer token from Neon Auth
+6. PowerSync receives confirmation and removes the item from the queue
+
+```
+Component
+  |
+  v
+execute(sql)  -->  Local SQLite (immediate)
+  |
+  v
+Upload Queue  -->  PowerSync Connector  -->  Neon Data API  -->  Neon Postgres
+```
+
+The connector (`src/sync/connector.ts`) handles:
+- **PUT**: Upsert via `INSERT ... ON CONFLICT DO UPDATE`
+- **PATCH**: Standard `UPDATE ... SET ... WHERE`
+- **DELETE**: Soft-delete by setting `deleted_at` and `updated_at`
+
+If the device is offline, writes accumulate in the upload queue and sync when connectivity resumes.
+
+## Read Path
+
+1. **PowerSync Cloud** watches the Neon Postgres replication stream for changes
+2. Changes are pushed to connected clients via WebSocket
+3. The **local SQLite** database is updated with incoming changes
+4. **`useQuery()`** hooks automatically re-render components with fresh data
+
+```
+Neon  -->  PowerSync Cloud  -->  WebSocket  -->  Local SQLite  -->  useQuery()  -->  Component
+```
+
+## Conflict Resolution
+
+The sync engine uses **Last-Write-Wins (LWW)** with `updated_at` timestamps:
+
+- Every mutation sets `updated_at` to the current timestamp
+- When two clients modify the same row, the write with the later `updated_at` wins
+- PowerSync Cloud handles conflict detection and resolution automatically
+- The LWW strategy is simple and predictable -- suitable for a single-user workspace
+
+## Deletion Strategy
+
+The app uses **soft-delete with tombstones** to ensure reliable sync:
+
+1. **Soft-delete**: Setting `deleted_at` to the current timestamp marks a row as deleted
+2. **Tombstone retention**: Deleted rows are retained for 30 days to ensure all clients receive the deletion
+3. **Hard-delete cleanup**: Planned -- a scheduled job will permanently remove rows where `deleted_at` is older than 30 days (not yet implemented)
+4. **UI filtering**: Queries exclude rows where `deleted_at IS NOT NULL` unless explicitly viewing deleted items
+
+This approach ensures that:
+- Offline clients receive deletion events when they reconnect
+- Users can undo accidental deletions within the retention window
+- The database does not grow unbounded with deleted rows
+
+## PowerSync Client Setup
+
+The PowerSync client is initialized with:
+
+- **WASM SQLite** for the local database (runs in a Web Worker)
+- **Schema definition** matching the server-side Drizzle schema (see [migrations.md](./migrations.md) for the dual-schema problem)
+- **Token from Neon Auth** for authenticating with PowerSync Cloud (fetched client-side via the auth client)
+
+## Sync Rules
+
+PowerSync sync rules define which data each user can access:
+
+- All tables are filtered by `user_id = token_parameters.user_id`
+- This ensures tenant isolation -- users only sync their own data
+- Sync rules are defined in the PowerSync Cloud dashboard
+
+## Offline Behavior
+
+When the device is offline:
+
+- **Reads** continue to work from local SQLite (no loading states)
+- **Writes** are queued locally and applied immediately to the local database
+- A **sync status indicator** shows the user that changes are pending
+- When connectivity resumes, the upload queue drains automatically
+
+## See Also
+
+- [data-model.md](./data-model.md) -- Database schema
+- [diagrams/sync-flow.md](./diagrams/sync-flow.md) -- Sequence diagram of the sync flow
+- [auth-flow.md](./auth-flow.md) -- Token authentication for PowerSync
+
+---
+Source: docs/testing.md
+
+# Testing Strategy
+
+The Magic Lab uses Vitest for testing with a focus on high-value, maintainable tests.
+
+## Test Framework
+
+- **Runner**: Vitest 4.x
+- **Environment**: jsdom (for DOM/React testing)
+- **React testing**: @testing-library/react + @testing-library/user-event
+- **Assertions**: Vitest built-in + @testing-library/jest-dom matchers
+- **Coverage**: V8 provider with 80% threshold
+
+## Configuration
+
+Test configuration lives in `vitest.config.mts`:
+
+- Path aliases via `vite-tsconfig-paths` (matches `@/*` from tsconfig)
+- React plugin via `@vitejs/plugin-react`
+- Setup file: `vitest.setup.ts` (jest-dom matchers, global mocks)
+- Coverage thresholds: 80% statements, branches, functions, lines
+
+## Co-Located Test Files
+
+Tests are co-located with their source files using the `.test.ts` / `.test.tsx` suffix:
+
+```
+src/
+  lib/
+    utils.ts
+    utils.test.ts
+  components/
+    theme-toggle.tsx
+    theme-toggle.test.tsx
+  app/
+    page.tsx
+    page.test.tsx
+```
+
+This pattern keeps tests close to implementation, making it easy to find and update tests when code changes.
+
+## Coverage Thresholds
+
+### Global Threshold
+
+All metrics (statements, branches, functions, lines) must meet 80%.
+
+### Per-Tier Targets
+
+| Tier | Target | What |
+|---|---|---|
+| Domain logic | 95% | Pure functions, utilities, data transformations |
+| Server actions | 85% | API routes, server actions, data fetching |
+| Components | 70% | React components, hooks, UI interactions |
+
+### Excluded from Coverage
+
+The following are excluded from coverage metrics (configured in `vitest.config.mts`):
+
+- **Layout wrappers**: `src/app/layout.tsx`, `src/app/(app)/layout.tsx` -- compose other components, tested via integration
+- **Module pages**: `src/app/(app)/*/page.tsx` -- thin wrappers, mostly layout
+- **Global error boundary**: `src/app/global-error.tsx` -- framework-level error handling
+- **Theme provider**: `src/components/theme-provider.tsx` -- wraps next-themes
+- **shadcn vendor components**: `src/components/ui/*.tsx` (badge, card, input, etc.) -- tested upstream
+- **shadcn hooks**: `src/hooks/use-mobile.ts` -- tested upstream
+- **Lazy wrappers**: `src/components/push-notifications-lazy.tsx` -- just `React.lazy()`
+
+## Test Utilities
+
+### Test Factories (Planned)
+
+```typescript
+// src/test/factories.ts
+function createTrick(overrides?: Partial<Trick>): Trick {
+  return {
+    id: crypto.randomUUID() as TrickId,
+    name: "Ambitious Card",
+    category: "card",
+    difficulty: 3,
+    ...overrides,
+  };
+}
+```
+
+### Mock Providers (Planned)
+
+```typescript
+// src/test/render.tsx
+function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
+  return render(ui, {
+    wrapper: ({ children }) => (
+      <ThemeProvider>
+        <PowerSyncProvider>{children}</PowerSyncProvider>
+      </ThemeProvider>
+    ),
+    ...options,
+  });
+}
+```
+
+### Common Mocks (Planned)
+
+- `next/navigation` (useRouter, usePathname, useSearchParams)
+- `next/image` (renders as plain img)
+- PowerSync hooks (useQuery, useStatus)
+- Better Auth hooks (useSession)
+
+## Test Patterns
+
+### Testing Pure Functions
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { cn } from "./utils";
+
+describe("cn", () => {
+  it("merges class names", () => {
+    expect(cn("foo", "bar")).toBe("foo bar");
+  });
+});
+```
+
+### Testing Components
+
+```typescript
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { ThemeToggle } from "./theme-toggle";
+
+describe("ThemeToggle", () => {
+  it("renders a toggle button", () => {
+    render(<ThemeToggle />);
+    expect(screen.getByRole("button")).toBeDefined();
+  });
+});
+```
+
+### Testing Async / Server Actions
+
+```typescript
+import { describe, expect, it, vi } from "vitest";
+
+describe("subscribeUser", () => {
+  it("stores the push subscription", async () => {
+    const result = await subscribeUser(mockSubscription);
+    expect(result.success).toBe(true);
+  });
+});
+```
+
+## What NOT to Test
+
+- **shadcn/ui primitives**: Tested upstream by Radix UI
+- **Next.js framework behavior**: Routing, middleware, SSR hydration
+- **Third-party library internals**: Tailwind class generation, theme toggling
+- **Pure layout composition**: Components that only arrange children
+- **CSS / visual styling**: Use visual regression testing tools instead
+- **Implementation details**: Internal state, private methods, render counts
+
+## Running Tests
+
+```bash
+pnpm test              # Watch mode
+pnpm test:run          # Single run
+pnpm test:coverage     # With coverage report
+pnpm test:ui           # Vitest UI browser interface
+```
+
+## CI Integration
+
+Tests run on every pull request via GitHub Actions:
+
+- `pnpm test:run` -- all tests must pass
+- `pnpm test:coverage` -- coverage thresholds enforced
+- Coverage report uploaded as LCOV for PR annotations
+
+## E2E Testing
+
+End-to-end smoke tests use Playwright to validate the app boots and critical pages render correctly.
+
+- **Framework**: Playwright (Chromium only)
+- **Test directory**: `e2e/` (separate from unit tests)
+- **Config**: `playwright.config.ts`
+- **Dev server**: Playwright starts `pnpm dev` automatically via `webServer` config
+
+### What Smoke Tests Cover
+
+- Landing page loads with tagline and `<main id="main-content">`
+- FAQ page renders at `/faq`
+- Privacy page renders at `/privacy`
+- Unauthenticated `/dashboard` access redirects to `/auth/sign-in`
+- Auth sign-in page renders
+
+### Running E2E Tests
+
+```bash
+pnpm test:e2e       # Run all E2E tests (headless)
+pnpm test:e2e:ui    # Open Playwright UI mode for debugging
+```
+
+### CI Integration
+
+E2E tests run as a separate GitHub Actions job after the main CI job passes. The job uses `continue-on-error: true` while stability is validated. Playwright browsers are cached, and test reports are uploaded as artifacts.
+
+### Prerequisites
+
+Install Playwright browsers before first run:
+
+```bash
+pnpm exec playwright install --with-deps chromium
+```
+
+The dev server requires `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` environment variables (or a `.env` file) to start.
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Overall architecture
+- [local-development.md](./local-development.md) -- Dev environment setup
+
+---
+Source: docs/ui-conventions.md
+
+# UI & Design Conventions
+
+Design principles and component conventions for The Magic Lab.
+
+## Design Language
+
+### Color
+
+- **Accent**: Violet -- used for primary actions, active states, and brand identity
+- **Neutral palette**: Gray scale via OKLCH color space (defined in `globals.css`)
+- **Dark mode**: Full dark mode support via `next-themes` and Tailwind's `dark:` variant
+- **Semantic colors**: destructive (red), muted (gray), accent (violet) -- all defined as CSS custom properties
+
+### Typography
+
+- **Font family**: Geist Sans (variable font) via `next/font/google`
+- **Scale**: Tailwind default type scale
+- **Monospace**: Geist Mono (for code blocks, technical data)
+
+### Spacing & Layout
+
+- **Mobile-first**: All styles start with mobile layout, progressively enhanced for larger screens
+- **Touch targets**: Minimum 44x44px for all interactive elements (WCAG 2.1 AA)
+- **Content width**: Max-width containers (`max-w-5xl` for marketing, sidebar-constrained for app)
+- **Padding**: Consistent `p-4` / `px-6` spacing rhythm
+
+### Motion
+
+- **Duration**: Sub-200ms for micro-interactions (hover, focus, toggle)
+- **Easing**: Default Tailwind easing curves
+- **Animation library**: tw-animate-css for enter/exit animations
+- **Reduced motion**: Respect `prefers-reduced-motion` media query
+
+## Layout Patterns
+
+### Mobile Navigation
+
+- **Bottom tab bar** for primary module navigation (Improve, Train, Plan, Perform, Collect)
+- Fixed to bottom of viewport
+- 44px minimum touch targets
+- Active state indicated by violet accent
+
+### Desktop Navigation
+
+- **Collapsible sidebar** (shadcn SidebarProvider)
+- Shows module icons + labels
+- Trigger button in the header
+- Persists collapse state across sessions
+
+### App Chrome
+
+```
++------------------------------------------+
+| [=] Module Name                          |  <- Header (48px, border-bottom)
++------------------------------------------+
+|                                          |
+|          Page Content                    |  <- Scrollable content area
+|          (p-4)                           |
+|                                          |
++------------------------------------------+
+| [Improve] [Train] [Plan] [Perform] [...] |  <- Bottom tabs (mobile only)
++------------------------------------------+
+```
+
+## Component States
+
+Every data-driven component must handle three states:
+
+### Loading State
+
+- Use skeleton placeholders (shadcn `Skeleton` component)
+- Match the layout of the loaded state
+- No layout shift when data arrives
+
+### Empty State
+
+- Centered illustration or icon
+- Clear heading explaining what belongs here
+- Call-to-action button to create the first item
+- Example: "No tricks yet. Add your first trick to get started."
+
+### Error State
+
+- Clear error message (user-friendly, not technical)
+- Retry button when applicable
+- Fallback to cached data when offline
+
+## shadcn/ui Components
+
+The project uses shadcn/ui (new-york style) components built on Radix UI:
+
+| Component | Usage |
+|---|---|
+| Button | Primary actions, navigation, forms |
+| Card | Content containers, module cards |
+| Input | Text input fields |
+| Separator | Visual dividers |
+| Sheet | Mobile slide-over panels |
+| Sidebar | App navigation (desktop) |
+| Skeleton | Loading placeholders |
+| Tooltip | Contextual help text |
+| Badge | Status indicators, tags |
+
+### Component Styling
+
+- Components use CVA (class-variance-authority) for variant management
+- Styles composed with `cn()` utility (`clsx` + `tailwind-merge`)
+- Custom variants extend the base shadcn styles, never override
+
+## Accessibility
+
+- **Skip link**: "Skip to main content" link on every page
+- **Semantic HTML**: Proper heading hierarchy, landmarks, ARIA labels
+- **Keyboard navigation**: All interactive elements focusable and operable via keyboard
+- **Screen reader**: Meaningful alt text, `sr-only` labels for icon-only buttons
+- **Focus indicators**: Visible focus rings on all interactive elements
+- **Color contrast**: WCAG 2.1 AA minimum (4.5:1 for text, 3:1 for large text)
+
+## Icons
+
+- **Library**: Lucide React
+- **Size**: `size-4` (16px) inline, `size-6` (24px) in buttons/nav, `size-12` (48px) feature cards
+- **Style**: Consistent stroke width, no filled variants
+
+## Responsive Breakpoints
+
+Following Tailwind's default breakpoints:
+
+| Prefix | Min Width | Use |
+|---|---|---|
+| (none) | 0px | Mobile (default) |
+| `sm` | 640px | Large phones, small tablets |
+| `md` | 768px | Tablets |
+| `lg` | 1024px | Small desktops |
+| `xl` | 1280px | Large desktops |
+
+## See Also
+
+- [architecture.md](./architecture.md) -- Tech stack details
+- [testing.md](./testing.md) -- Component testing approach
+

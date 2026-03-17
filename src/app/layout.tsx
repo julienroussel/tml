@@ -1,8 +1,12 @@
+import { NeonAuthUIProvider } from "@neondatabase/auth/react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
+import { authClient } from "@/auth/client";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -49,22 +53,34 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
-}>): ReactElement {
+}>): Promise<ReactElement> {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const t = await getTranslations("common");
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <a
-            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
-            href="#main-content"
+          <NeonAuthUIProvider
+            authClient={authClient}
+            emailOTP
+            social={{ providers: ["google"] }}
           >
-            Skip to main content
-          </a>
-          {children}
+            <NextIntlClientProvider messages={messages}>
+              <a
+                className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
+                href="#main-content"
+              >
+                {t("skipToContent")}
+              </a>
+              {children}
+            </NextIntlClientProvider>
+          </NeonAuthUIProvider>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

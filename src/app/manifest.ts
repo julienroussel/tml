@@ -5,11 +5,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "The Magic Lab",
     short_name: "Magic Lab",
     description:
-      "The Magic Lab — exploring the intersection of technology and creativity.",
-    start_url: "/",
+      "A personal workspace for magicians to organize your repertoire, plan routines, track practice sessions, and refine performances.",
+    start_url: "/dashboard",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#ffffff",
+    categories: ["productivity", "entertainment"],
     icons: [
       {
         src: "/icon-192x192.png",
@@ -26,6 +27,18 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Log Practice",
+        url: "/improve",
+        description: "Log a practice session",
+      },
+      {
+        name: "My Routines",
+        url: "/plan",
+        description: "View and manage your routines",
       },
     ],
   };

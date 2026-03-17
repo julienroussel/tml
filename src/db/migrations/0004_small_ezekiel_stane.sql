@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "practice_session_tricks_session_trick_idx" ON "practice_session_tricks" USING btree ("practice_session_id","trick_id") WHERE deleted_at IS NULL;

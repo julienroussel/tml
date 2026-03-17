@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { type ReactElement, useEffect, useRef, useState } from "react";
 
 import {
   sendNotification,
@@ -8,6 +9,8 @@ import {
   unsubscribeUser,
 } from "@/app/actions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { trackEvent } from "@/lib/analytics";
 
 export function urlBase64ToUint8Array(
   base64String: string
@@ -24,16 +27,23 @@ export function urlBase64ToUint8Array(
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
-const IOS_REGEX = /iPad|iPhone|iPod/;
-
-function PushNotificationManager() {
+function PushNotificationManager(): ReactElement {
+  const t = useTranslations("pushNotifications");
   const [isSupported, setIsSupported] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   );
   const [message, setMessage] = useState("");
 
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
+    isMountedRef.current = true;
+    setMounted(true);
+
+    let removeLoadListener: (() => void) | undefined;
+
     if ("serviceWorker" in navigator && "PushManager" in window) {
       setIsSupported(true);
       const register = async () => {
@@ -42,7 +52,9 @@ function PushNotificationManager() {
           updateViaCache: "none",
         });
         const sub = await registration.pushManager.getSubscription();
-        setSubscription(sub);
+        if (isMountedRef.current) {
+          setSubscription(sub);
+        }
       };
       const onLoad = () => {
         register().catch((error) => {
@@ -53,11 +65,14 @@ function PushNotificationManager() {
         onLoad();
       } else {
         window.addEventListener("load", onLoad, { once: true });
-        return () => {
-          window.removeEventListener("load", onLoad);
-        };
+        removeLoadListener = () => window.removeEventListener("load", onLoad);
       }
     }
+
+    return () => {
+      isMountedRef.current = false;
+      removeLoadListener?.();
+    };
   }, []);
 
   async function subscribeToPush() {
@@ -84,20 +99,23 @@ function PushNotificationManager() {
         throw new Error(result.error);
       }
       setSubscription(sub);
-    } catch (error) {
+      trackEvent("push_notifications_enabled");
+    } catch (error: unknown) {
       console.error("Failed to subscribe to push:", error);
     }
   }
 
   async function unsubscribeFromPush() {
     try {
-      await subscription?.unsubscribe();
-      setSubscription(null);
       const result = await unsubscribeUser();
       if (!result.success) {
         console.error("Failed to remove server subscription:", result.error);
+        return;
       }
-    } catch (error) {
+      await subscription?.unsubscribe();
+      setSubscription(null);
+      trackEvent("push_notifications_disabled");
+    } catch (error: unknown) {
       console.error("Failed to unsubscribe from push:", error);
     }
   }
@@ -110,17 +128,17 @@ function PushNotificationManager() {
           setMessage("");
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to send notification:", error);
     }
   }
 
+  if (!mounted) {
+    return <div aria-hidden="true" />;
+  }
+
   if (!isSupported) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        Push notifications are not supported in this browser.
-      </p>
-    );
+    return <p className="text-muted-foreground text-sm">{t("notSupported")}</p>;
   }
 
   return (
@@ -136,45 +154,56 @@ function PushNotificationManager() {
               );
             }}
           >
-            <input
-              aria-label="Notification message"
-              className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            <Input
+              aria-label={t("messageAriaLabel")}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter notification message"
+              placeholder={t("messagePlaceholder")}
               type="text"
               value={message}
             />
-            <Button aria-label="Send notification" size="sm" type="submit">
-              Send
+            <Button aria-label={t("sendAriaLabel")} size="sm" type="submit">
+              {t("send")}
             </Button>
           </form>
           <Button
-            onClick={unsubscribeFromPush}
+            onClick={() => {
+              unsubscribeFromPush().catch((error: unknown) =>
+                console.error("Unhandled unsubscribe error:", error)
+              );
+            }}
             size="sm"
             type="button"
             variant="outline"
           >
-            Disable Notifications
+            {t("disable")}
           </Button>
         </>
       ) : (
-        <Button onClick={subscribeToPush} size="sm" type="button">
-          Enable Notifications
+        <Button
+          onClick={() => {
+            subscribeToPush().catch((error: unknown) =>
+              console.error("Unhandled subscribe error:", error)
+            );
+          }}
+          size="sm"
+          type="button"
+        >
+          {t("enable")}
         </Button>
       )}
     </div>
   );
 }
 
-function InstallPrompt() {
+const IOS_REGEX = /iPad|iPhone|iPod/;
+
+function InstallPrompt(): ReactElement | null {
+  const t = useTranslations("pushNotifications");
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    setIsIOS(
-      IOS_REGEX.test(navigator.userAgent) &&
-        !("MSStream" in (window as unknown as Record<string, unknown>))
-    );
+    setIsIOS(IOS_REGEX.test(navigator.userAgent) && !("MSStream" in window));
     setIsStandalone(window.matchMedia("(display-mode: standalone)").matches);
   }, []);
 
@@ -185,10 +214,7 @@ function InstallPrompt() {
   if (isIOS) {
     return (
       <p className="max-w-sm text-center text-muted-foreground text-sm">
-        To install this app, tap the share button
-        <span aria-hidden="true"> (share) </span>
-        and then &quot;Add to Home Screen&quot;
-        <span aria-hidden="true"> (+) </span>.
+        {t("iosInstallPrompt")}
       </p>
     );
   }
@@ -196,7 +222,7 @@ function InstallPrompt() {
   return null;
 }
 
-export function PushNotifications() {
+export function PushNotifications(): ReactElement {
   return (
     <div className="flex flex-col items-center gap-4">
       <PushNotificationManager />

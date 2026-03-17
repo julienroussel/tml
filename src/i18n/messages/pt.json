@@ -1,0 +1,187 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Avançar",
+    "search": "Pesquisar",
+    "filter": "Filtrar",
+    "loading": "A carregar...",
+    "error": "Algo correu mal",
+    "retry": "Tentar novamente",
+    "comingSoon": "Em breve",
+    "getStarted": "Começar",
+    "signIn": "Entrar",
+    "signOut": "Sair",
+    "goToDashboard": "Ir para o painel",
+    "toggleTheme": "Alternar tema"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "improve": "Melhorar",
+    "train": "Treinar",
+    "plan": "Planear",
+    "perform": "Apresentar",
+    "enhance": "Aperfeiçoar",
+    "collect": "Colecionar",
+    "settings": "Definições",
+    "admin": "Admin",
+    "modules": "Módulos"
+  },
+  "landing": {
+    "tagline": "Treinar. Planear. Apresentar. Eleve a sua magia.",
+    "description": "Um espaço pessoal feito para mágicos — organize o seu repertório, planeie rotinas, registe sessões de prática e aperfeiçoe as suas apresentações.",
+    "freeForever": "Grátis para sempre",
+    "openSource": "Código aberto",
+    "worksOffline": "Funciona offline",
+    "builtForMagicians": "Feito para mágicos, por um mágico",
+    "howItWorks": "Como funciona",
+    "buildRepertoire": "Construa o seu repertório",
+    "buildRepertoireDesc": "Adicione os seus truques, técnicas e rotinas. Organize-os por categoria, dificuldade e estado.",
+    "planSets": "Planeie os seus espetáculos",
+    "planSetsDesc": "Organize rotinas em programas prontos para o palco. Reordene, anote transições e estime a duração.",
+    "trackImprove": "Registe e melhore",
+    "trackImproveDesc": "Registe sessões de prática, reveja apresentações e defina metas para evoluir continuamente.",
+    "features": "Tudo o que precisa para evoluir",
+    "openSourceTitle": "Código aberto, magia aberta",
+    "openSourceDesc": "O The Magic Lab é gratuito e de código aberto sob a licença GPL-3.0. Os seus dados são seus. Contribua, faça fork ou aloje por conta própria — a escolha é sua.",
+    "ctaTitle": "Pronto para elevar a sua magia?",
+    "ctaDesc": "Comece a organizar o seu repertório, planear rotinas e acompanhar o seu progresso — tudo de graça.",
+    "viewOnGitHub": "Ver no GitHub"
+  },
+  "dashboard": {
+    "title": "Painel",
+    "welcome": "Bem-vindo ao The Magic Lab. Escolha um módulo para começar.",
+    "welcomeBack": "Bem-vindo de volta, {name}. Tem {count, plural, one {# truque} other {# truques}} no seu repertório."
+  },
+  "improve": {
+    "title": "Melhorar",
+    "description": "Acompanhe sessões de prática e aperfeiçoe as suas competências ao longo do tempo.",
+    "logPractice": "Registar prática"
+  },
+  "train": {
+    "title": "Treinar",
+    "description": "Defina metas, faça exercícios e desenvolva a memória muscular."
+  },
+  "plan": {
+    "title": "Planear",
+    "description": "Crie espetáculos, rotinas e ordens de apresentação."
+  },
+  "perform": {
+    "title": "Apresentar",
+    "description": "Registe apresentações, acompanhe locais e reveja feedback."
+  },
+  "enhance": {
+    "title": "Aperfeiçoar",
+    "description": "Descubra análises e sugestões para elevar a sua magia."
+  },
+  "collect": {
+    "title": "Colecionar",
+    "description": "Faça a gestão do seu inventário de adereços, livros, gimmicks e outros itens."
+  },
+  "admin": {
+    "title": "Administração",
+    "description": "Definições e administração da aplicação."
+  },
+  "settings": {
+    "title": "Definições",
+    "description": "Faça a gestão da sua conta e preferências."
+  },
+  "faq": {
+    "title": "Perguntas frequentes",
+    "q1": "What is The Magic Lab?",
+    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan routines, track practice sessions, log performances, and manage your props and inventory — all in one place.",
+    "q2": "How do I organize my magic repertoire?",
+    "a2": "Add your tricks to The Magic Lab with details like category (card, coin, mentalism, stage), difficulty level, current status (learning, performance-ready, mastered), and where you learned it. Filter, search, and sort to find exactly what you need.",
+    "q3": "What's the best way to track magic practice?",
+    "a3": "Use the Improve module to log practice sessions. Record what you practiced, for how long, and rate your performance. Over time, you'll see trends, identify gaps, and maintain practice streaks.",
+    "q4": "How do I plan a magic show setlist?",
+    "a4": "The Plan module lets you assemble tricks into routines with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
+    "q5": "Does The Magic Lab work offline?",
+    "a5": "Yes. The Magic Lab is a Progressive Web App (PWA) with offline-first sync. Your data is stored locally on your device and syncs when you're online. Practice backstage without signal — your data is always available.",
+    "q6": "Is The Magic Lab really free?",
+    "a6": "Yes, completely free. The Magic Lab is open source under the GPL-3.0 license. There are no paid plans, no ads, and no hidden fees. Your data stays yours.",
+    "q7": "Can I use it on my phone?",
+    "a7": "Absolutely. The Magic Lab is designed mobile-first and works as a PWA. Install it on your phone's home screen for a native app experience — no app store needed.",
+    "q8": "How do I manage my magic props and books?",
+    "a8": "The Collect module lets you catalog props, books, gimmicks, DVDs, and downloads. Track condition, purchase history, and link items to the tricks that use them.",
+    "q9": "Can I contribute to The Magic Lab?",
+    "a9": "Yes! The Magic Lab is open source on GitHub. You can report bugs, suggest features, or contribute code. Check the repository for contribution guidelines."
+  },
+  "privacy": {
+    "title": "Política de privacidade",
+    "intro": "The Magic Lab is a free, open-source application. Your privacy is important to us.",
+    "dataCollectTitle": "Data we collect",
+    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, routines, practice sessions, etc.).",
+    "dataUseTitle": "How we use your data",
+    "dataUseDesc": "Your data is used solely to provide the app's functionality. We do not sell, share, or use your data for advertising. Anonymous analytics (page views, performance metrics) help us improve the app.",
+    "dataStorageTitle": "Data storage",
+    "dataStorageDesc": "Data is stored in a secure Postgres database (Neon) and synchronized to your device for offline access. Your data is encrypted in transit and at rest.",
+    "rightsTitle": "Your rights",
+    "rightsDesc": "You can export your data at any time from the Settings page. You can delete your account and all associated data. For questions, reach out via the GitHub repository.",
+    "analyticsTitle": "Analytics",
+    "analyticsDesc": "We use Vercel Analytics for anonymous page-view tracking and Vercel Speed Insights for performance monitoring. No personal information is shared with these services."
+  },
+  "sync": {
+    "online": "Online",
+    "offline": "Offline",
+    "syncing": "A sincronizar",
+    "pendingChanges": "Alterações pendentes",
+    "error": "Erro de sincronização"
+  },
+  "pushNotifications": {
+    "notSupported": "As notificações push não são compatíveis com este navegador.",
+    "messagePlaceholder": "Introduza a mensagem de notificação",
+    "send": "Enviar",
+    "sendAriaLabel": "Enviar notificação",
+    "messageAriaLabel": "Mensagem de notificação",
+    "disable": "Desativar notificações",
+    "enable": "Ativar notificações",
+    "iosInstallTip": "Para instalar esta aplicação, toque no botão de partilha e depois em \"Adicionar ao ecrã inicial\"."
+  },
+  "marketing": {
+    "tagline": "Treinar. Planear. Apresentar. Eleve a sua magia.",
+    "description": "Um espaço pessoal feito para mágicos — organize o seu repertório, planeie rotinas, registe sessões de prática e aperfeiçoe as suas apresentações.",
+    "getStarted": "Começar",
+    "viewOnGitHub": "Ver no GitHub",
+    "freeForever": "Grátis para sempre",
+    "openSource": "Código aberto",
+    "worksOffline": "Funciona offline",
+    "builtByMagician": "Feito para mágicos, por um mágico",
+    "howItWorks": "Como funciona",
+    "step1Title": "Construa o seu repertório",
+    "step1Desc": "Adicione os seus truques, técnicas e rotinas. Organize-os por categoria, dificuldade e estado.",
+    "step2Title": "Planeie os seus espetáculos",
+    "step2Desc": "Organize rotinas em programas prontos para o palco. Reordene, anote transições e estime a duração.",
+    "step3Title": "Registe e melhore",
+    "step3Desc": "Registe sessões de prática, reveja apresentações e defina metas para evoluir continuamente.",
+    "features": "Tudo o que precisa para evoluir",
+    "comingSoon": "Em breve",
+    "openSourceTitle": "Código aberto, magia aberta",
+    "openSourceDesc": "O The Magic Lab é gratuito e de código aberto sob a licença GPL-3.0. Os seus dados são seus. Contribua, faça fork ou aloje por conta própria — a escolha é sua.",
+    "ctaTitle": "Pronto para elevar a sua magia?",
+    "ctaDesc": "Comece a organizar o seu repertório, planear rotinas e acompanhar o seu progresso — tudo de graça."
+  },
+  "footer": {
+    "copyright": "© {year} The Magic Lab",
+    "privacy": "Privacidade",
+    "faq": "FAQ",
+    "memDeck": "MemDeck",
+    "memDeckSrOnly": "(abre num novo separador)",
+    "gitHub": "GitHub",
+    "gitHubSrOnly": "(abre num novo separador)"
+  },
+  "errors": {
+    "notFound": "Página não encontrada",
+    "notFoundDesc": "A página que procura não existe.",
+    "goHome": "Ir para a página inicial",
+    "somethingWrong": "Algo correu mal",
+    "unexpectedError": "Ocorreu um erro inesperado.",
+    "tryAgain": "Tentar novamente",
+    "authError": "Erro de autenticação",
+    "authErrorDesc": "Algo correu mal durante a autenticação."
+  }
+}

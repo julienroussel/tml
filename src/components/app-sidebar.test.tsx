@@ -40,6 +40,10 @@ vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle" />,
 }));
 
+vi.mock("@neondatabase/auth/react", () => ({
+  UserButton: () => <div data-testid="user-button" />,
+}));
+
 vi.mock("@/components/ui/sidebar", () => ({
   Sidebar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SidebarContent: ({ children }: { children: ReactNode }) => (
@@ -65,8 +69,9 @@ vi.mock("@/components/ui/sidebar", () => ({
 }));
 
 describe("AppSidebar", () => {
-  it("renders the home/logo link pointing to /dashboard", () => {
-    render(<AppSidebar />);
+  it("renders the home/logo link pointing to /dashboard", async () => {
+    const element = await AppSidebar();
+    render(element);
 
     const links = screen.getAllByRole("link");
     const homeLink = links.find(
@@ -75,22 +80,25 @@ describe("AppSidebar", () => {
     expect(homeLink).toBeInTheDocument();
   });
 
-  it('renders "The Magic Lab" sr-only text', () => {
-    render(<AppSidebar />);
+  it('renders "The Magic Lab" sr-only text', async () => {
+    const element = await AppSidebar();
+    render(element);
 
     const srText = screen.getByText("The Magic Lab");
     expect(srText).toBeInTheDocument();
     expect(srText.className).toContain("sr-only");
   });
 
-  it("renders the Dashboard nav item", () => {
-    render(<AppSidebar />);
+  it("renders the Dashboard nav item", async () => {
+    const element = await AppSidebar();
+    render(element);
 
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
   });
 
-  it("renders all main module nav items", () => {
-    render(<AppSidebar />);
+  it("renders all main module nav items", async () => {
+    const element = await AppSidebar();
+    render(element);
 
     const mainModules = getMainModules();
     for (const mod of mainModules) {
@@ -105,8 +113,9 @@ describe("AppSidebar", () => {
     expect(renderedMainItems).toHaveLength(mainModules.length);
   });
 
-  it("renders all admin module nav items", () => {
-    render(<AppSidebar />);
+  it("renders all admin module nav items", async () => {
+    const element = await AppSidebar();
+    render(element);
 
     const adminModules = getAdminModules();
     for (const mod of adminModules) {
@@ -121,10 +130,11 @@ describe("AppSidebar", () => {
     expect(renderedAdminItems).toHaveLength(adminModules.length);
   });
 
-  it("renders the Settings nav item", () => {
-    render(<AppSidebar />);
+  it("renders the Settings nav item", async () => {
+    const element = await AppSidebar();
+    render(element);
 
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByText("nav.settings")).toBeInTheDocument();
     const navItems = screen.getAllByTestId("sidebar-nav-item");
     const settingsItem = navItems.find(
       (item) => item.getAttribute("data-href") === "/settings"

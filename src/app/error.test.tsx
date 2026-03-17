@@ -16,28 +16,30 @@ describe("ErrorPage", () => {
   it("renders the error heading", () => {
     render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
     expect(
-      screen.getByRole("heading", { name: "Something went wrong" })
+      screen.getByRole("heading", { name: "errors.somethingWrong" })
     ).toBeInTheDocument();
   });
 
   it("renders the retry button", () => {
     render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
     expect(
-      screen.getByRole("button", { name: "Try again" })
+      screen.getByRole("button", { name: "errors.tryAgain" })
     ).toBeInTheDocument();
   });
 
   it("calls reset when retry button is clicked", async () => {
     const reset = vi.fn();
     render(<ErrorPage error={new Error("test")} reset={reset} />);
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "errors.tryAgain" })
+    );
     expect(reset).toHaveBeenCalledOnce();
   });
 
   it("calls reset when retry button is activated via keyboard (Enter)", async () => {
     const reset = vi.fn();
     render(<ErrorPage error={new Error("test")} reset={reset} />);
-    const button = screen.getByRole("button", { name: "Try again" });
+    const button = screen.getByRole("button", { name: "errors.tryAgain" });
     button.focus();
     await userEvent.keyboard("{Enter}");
     expect(reset).toHaveBeenCalledOnce();
@@ -46,15 +48,16 @@ describe("ErrorPage", () => {
   it("calls reset when retry button is activated via keyboard (Space)", async () => {
     const reset = vi.fn();
     render(<ErrorPage error={new Error("test")} reset={reset} />);
-    const button = screen.getByRole("button", { name: "Try again" });
+    const button = screen.getByRole("button", { name: "errors.tryAgain" });
     button.focus();
     await userEvent.keyboard(" ");
     expect(reset).toHaveBeenCalledOnce();
   });
 
-  it("does not log the error to console (Next.js handles error logging)", () => {
-    render(<ErrorPage error={new Error("test error")} reset={vi.fn()} />);
-    expect(console.error).not.toHaveBeenCalled();
+  it("logs the error to console", () => {
+    const error = new Error("test error");
+    render(<ErrorPage error={error} reset={vi.fn()} />);
+    expect(console.error).toHaveBeenCalledWith(error);
   });
 
   it("sets document.title on mount", () => {
@@ -85,10 +88,10 @@ describe("ErrorPage", () => {
     });
     render(<ErrorPage error={error} reset={vi.fn()} />);
     expect(
-      screen.getByRole("heading", { name: "Something went wrong" })
+      screen.getByRole("heading", { name: "errors.somethingWrong" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Try again" })
+      screen.getByRole("button", { name: "errors.tryAgain" })
     ).toBeInTheDocument();
   });
 });

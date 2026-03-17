@@ -1,0 +1,143 @@
+import { readdirSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const ROUTE_FILE_RE = /^(page|layout|route)\.(tsx?|jsx?)$/;
+
+interface RouteNode {
+  children: RouteNode[];
+  isApi: boolean;
+  isLayout: boolean;
+  isPage: boolean;
+  name: string;
+  path: string;
+}
+
+function scanDirectory(dir: string, basePath: string): RouteNode[] {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const nodes: RouteNode[] = [];
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".") || entry.name === "node_modules") {
+      continue;
+    }
+
+    const fullPath = join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      const children = scanDirectory(fullPath, join(basePath, entry.name));
+      if (children.length > 0) {
+        nodes.push({
+          name: entry.name,
+          path: join(basePath, entry.name),
+          children,
+          isPage: false,
+          isLayout: false,
+          isApi: basePath.includes("api") || entry.name === "api",
+        });
+      }
+    } else if (
+      ROUTE_FILE_RE.test(entry.name) &&
+      !entry.name.includes(".test.")
+    ) {
+      const type = entry.name.split(".")[0];
+      nodes.push({
+        name: entry.name,
+        path: join(basePath, entry.name),
+        children: [],
+        isPage: type === "page" || type === "route",
+        isLayout: type === "layout",
+        isApi: basePath.includes("api"),
+      });
+    }
+  }
+
+  return nodes;
+}
+
+function nodeToMermaid(
+  node: RouteNode,
+  parentId: string,
+  lines: string[],
+  idCounter: { value: number }
+): void {
+  const id = `n${idCounter.value++}`;
+
+  if (node.children.length > 0) {
+    const label = node.name;
+    lines.push(`  ${parentId} --> ${id}["${label}"]`);
+
+    for (const child of node.children) {
+      nodeToMermaid(child, id, lines, idCounter);
+    }
+  } else if (node.isPage) {
+    const label = node.isApi ? `API: ${node.name}` : node.name;
+    lines.push(`  ${parentId} --> ${id}(["${label}"])`);
+  }
+}
+
+function generateMermaid(appDir: string): string {
+  const nodes = scanDirectory(appDir, "");
+  const lines = ["graph TD"];
+  lines.push('  root["src/app/"]');
+
+  const idCounter = { value: 0 };
+  for (const node of nodes) {
+    nodeToMermaid(node, "root", lines, idCounter);
+  }
+
+  return lines.join("\n");
+}
+
+function generateRouteMap(projectRoot: string): string {
+  const appDir = join(projectRoot, "src", "app");
+  const mermaid = generateMermaid(appDir);
+
+  return `# Route Map
+
+<!-- Last verified: ${new Date().toISOString().split("T")[0]} -->
+
+## Route Structure
+
+\`\`\`mermaid
+${mermaid}
+\`\`\`
+
+## Route Groups
+
+### \`(marketing)/\` — Public Pages
+- \`/\` — Landing page (hero, features, CTAs)
+- \`/privacy\` — Privacy policy
+- \`/faq\` — Frequently asked questions
+
+### \`(app)/\` — Authenticated App
+- \`/dashboard\` — Main dashboard
+- \`/improve\` — Practice session logging
+- \`/train\` — Goal setting and drills
+- \`/plan\` — Routine builder
+- \`/perform\` — Performance tracking
+- \`/enhance\` — Insights and suggestions
+- \`/collect\` — Inventory management
+- \`/settings\` — User preferences
+- \`/account/[path]\` — Neon Auth account management
+- \`/admin\` — Admin dashboard (role-restricted)
+
+### \`auth/\` — Auth Pages
+- \`/auth/[path]\` — Sign-in, sign-up (Neon Auth UI)
+
+### \`api/\` — API Routes
+- \`/api/auth/[...path]\` — Neon Auth (Better Auth) catch-all
+- \`/api/email/unsubscribe\` — Email unsubscribe endpoint
+`;
+}
+
+function main(): void {
+  const projectRoot = join(import.meta.dirname, "..");
+  const content = generateRouteMap(projectRoot);
+  const outputPath = join(projectRoot, "docs", "diagrams", "route-map.md");
+  writeFileSync(outputPath, content, "utf-8");
+  console.log(`Route map generated: ${relative(projectRoot, outputPath)}`);
+}
+
+export { generateMermaid, generateRouteMap };
+
+main();
