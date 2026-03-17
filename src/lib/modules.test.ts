@@ -36,6 +36,24 @@ describe("modules registry", () => {
       expect(["main", "admin"]).toContain(mod.group);
     }
   });
+
+  it("module slugs are unique", () => {
+    const slugs = APP_MODULES.map((m) => m.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("module groups are valid values", () => {
+    const validGroups = new Set(["main", "admin"]);
+    for (const mod of APP_MODULES) {
+      expect(validGroups.has(mod.group)).toBe(true);
+    }
+  });
+
+  it("all modules are currently disabled", () => {
+    for (const mod of APP_MODULES) {
+      expect(mod.enabled).toBe(false);
+    }
+  });
 });
 
 describe("getModule", () => {

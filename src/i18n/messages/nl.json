@@ -1,0 +1,187 @@
+{
+  "common": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "close": "Sluiten",
+    "back": "Terug",
+    "next": "Volgende",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "loading": "Laden...",
+    "error": "Er is iets misgegaan",
+    "retry": "Opnieuw proberen",
+    "comingSoon": "Binnenkort beschikbaar",
+    "getStarted": "Aan de slag",
+    "signIn": "Inloggen",
+    "signOut": "Uitloggen",
+    "goToDashboard": "Naar dashboard",
+    "toggleTheme": "Thema wisselen"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "improve": "Verbeteren",
+    "train": "Trainen",
+    "plan": "Plannen",
+    "perform": "Optreden",
+    "enhance": "Optimaliseren",
+    "collect": "Verzamelen",
+    "settings": "Instellingen",
+    "admin": "Admin",
+    "modules": "Modules"
+  },
+  "landing": {
+    "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",
+    "description": "Een persoonlijke werkruimte voor goochelaars — organiseer je repertoire, plan routines, registreer oefensessies en verfijn je optredens.",
+    "freeForever": "Voor altijd gratis",
+    "openSource": "Open source",
+    "worksOffline": "Werkt offline",
+    "builtForMagicians": "Gemaakt voor goochelaars, door een goochelaar",
+    "howItWorks": "Hoe het werkt",
+    "buildRepertoire": "Bouw je repertoire op",
+    "buildRepertoireDesc": "Voeg je trucs, handgrepen en routines toe. Organiseer ze op categorie, moeilijkheid en status.",
+    "planSets": "Plan je sets",
+    "planSetsDesc": "Stel routines samen tot podiumklare programma's. Herorden, annoteer overgangen en schat de timing in.",
+    "trackImprove": "Registreer en verbeter",
+    "trackImproveDesc": "Registreer oefensessies, bekijk optredens en stel doelen om jezelf continu te verbeteren.",
+    "features": "Alles wat je nodig hebt om te groeien",
+    "openSourceTitle": "Open source, open magie",
+    "openSourceDesc": "The Magic Lab is gratis en open source onder de GPL-3.0-licentie. Je gegevens blijven van jou. Draag bij, fork of host zelf — jij beslist.",
+    "ctaTitle": "Klaar om je magie naar een hoger niveau te tillen?",
+    "ctaDesc": "Begin met het organiseren van je repertoire, het plannen van routines en het bijhouden van je voortgang — helemaal gratis.",
+    "viewOnGitHub": "Bekijk op GitHub"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welkom bij The Magic Lab. Kies een module om te beginnen.",
+    "welcomeBack": "Welkom terug, {name}. Je hebt {count, plural, one {# truc} other {# trucs}} in je repertoire."
+  },
+  "improve": {
+    "title": "Verbeteren",
+    "description": "Registreer oefensessies en verfijn je vaardigheden in de loop van de tijd.",
+    "logPractice": "Oefening registreren"
+  },
+  "train": {
+    "title": "Trainen",
+    "description": "Stel doelen, oefen drills en bouw spiergeheugen op."
+  },
+  "plan": {
+    "title": "Plannen",
+    "description": "Ontwerp sets, routines en draaiboeken."
+  },
+  "perform": {
+    "title": "Optreden",
+    "description": "Registreer optredens, volg locaties en bekijk feedback."
+  },
+  "enhance": {
+    "title": "Optimaliseren",
+    "description": "Ontdek inzichten en suggesties om je magie te verbeteren."
+  },
+  "collect": {
+    "title": "Verzamelen",
+    "description": "Beheer je inventaris van rekwisieten, boeken, gimmicks en meer."
+  },
+  "admin": {
+    "title": "Admin",
+    "description": "Applicatie-instellingen en beheer."
+  },
+  "settings": {
+    "title": "Instellingen",
+    "description": "Beheer je account en voorkeuren."
+  },
+  "faq": {
+    "title": "Veelgestelde vragen",
+    "q1": "What is The Magic Lab?",
+    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan routines, track practice sessions, log performances, and manage your props and inventory — all in one place.",
+    "q2": "How do I organize my magic repertoire?",
+    "a2": "Add your tricks to The Magic Lab with details like category (card, coin, mentalism, stage), difficulty level, current status (learning, performance-ready, mastered), and where you learned it. Filter, search, and sort to find exactly what you need.",
+    "q3": "What's the best way to track magic practice?",
+    "a3": "Use the Improve module to log practice sessions. Record what you practiced, for how long, and rate your performance. Over time, you'll see trends, identify gaps, and maintain practice streaks.",
+    "q4": "How do I plan a magic show setlist?",
+    "a4": "The Plan module lets you assemble tricks into routines with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
+    "q5": "Does The Magic Lab work offline?",
+    "a5": "Yes. The Magic Lab is a Progressive Web App (PWA) with offline-first sync. Your data is stored locally on your device and syncs when you're online. Practice backstage without signal — your data is always available.",
+    "q6": "Is The Magic Lab really free?",
+    "a6": "Yes, completely free. The Magic Lab is open source under the GPL-3.0 license. There are no paid plans, no ads, and no hidden fees. Your data stays yours.",
+    "q7": "Can I use it on my phone?",
+    "a7": "Absolutely. The Magic Lab is designed mobile-first and works as a PWA. Install it on your phone's home screen for a native app experience — no app store needed.",
+    "q8": "How do I manage my magic props and books?",
+    "a8": "The Collect module lets you catalog props, books, gimmicks, DVDs, and downloads. Track condition, purchase history, and link items to the tricks that use them.",
+    "q9": "Can I contribute to The Magic Lab?",
+    "a9": "Yes! The Magic Lab is open source on GitHub. You can report bugs, suggest features, or contribute code. Check the repository for contribution guidelines."
+  },
+  "privacy": {
+    "title": "Privacybeleid",
+    "intro": "The Magic Lab is a free, open-source application. Your privacy is important to us.",
+    "dataCollectTitle": "Data we collect",
+    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, routines, practice sessions, etc.).",
+    "dataUseTitle": "How we use your data",
+    "dataUseDesc": "Your data is used solely to provide the app's functionality. We do not sell, share, or use your data for advertising. Anonymous analytics (page views, performance metrics) help us improve the app.",
+    "dataStorageTitle": "Data storage",
+    "dataStorageDesc": "Data is stored in a secure Postgres database (Neon) and synchronized to your device for offline access. Your data is encrypted in transit and at rest.",
+    "rightsTitle": "Your rights",
+    "rightsDesc": "You can export your data at any time from the Settings page. You can delete your account and all associated data. For questions, reach out via the GitHub repository.",
+    "analyticsTitle": "Analytics",
+    "analyticsDesc": "We use Vercel Analytics for anonymous page-view tracking and Vercel Speed Insights for performance monitoring. No personal information is shared with these services."
+  },
+  "sync": {
+    "online": "Online",
+    "offline": "Offline",
+    "syncing": "Synchroniseren",
+    "pendingChanges": "Openstaande wijzigingen",
+    "error": "Synchronisatiefout"
+  },
+  "pushNotifications": {
+    "notSupported": "Pushmeldingen worden niet ondersteund in deze browser.",
+    "messagePlaceholder": "Typ een meldingsbericht",
+    "send": "Verzenden",
+    "sendAriaLabel": "Melding verzenden",
+    "messageAriaLabel": "Meldingsbericht",
+    "disable": "Meldingen uitschakelen",
+    "enable": "Meldingen inschakelen",
+    "iosInstallTip": "Om deze app te installeren, tik op de deelknop en vervolgens op \"Zet op beginscherm\"."
+  },
+  "marketing": {
+    "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",
+    "description": "Een persoonlijke werkruimte voor goochelaars — organiseer je repertoire, plan routines, registreer oefensessies en verfijn je optredens.",
+    "getStarted": "Aan de slag",
+    "viewOnGitHub": "Bekijk op GitHub",
+    "freeForever": "Voor altijd gratis",
+    "openSource": "Open source",
+    "worksOffline": "Werkt offline",
+    "builtByMagician": "Gemaakt voor goochelaars, door een goochelaar",
+    "howItWorks": "Hoe het werkt",
+    "step1Title": "Bouw je repertoire op",
+    "step1Desc": "Voeg je trucs, handgrepen en routines toe. Organiseer ze op categorie, moeilijkheid en status.",
+    "step2Title": "Plan je sets",
+    "step2Desc": "Stel routines samen tot podiumklare programma's. Herorden, annoteer overgangen en schat de timing in.",
+    "step3Title": "Registreer en verbeter",
+    "step3Desc": "Registreer oefensessies, bekijk optredens en stel doelen om jezelf continu te verbeteren.",
+    "features": "Alles wat je nodig hebt om te groeien",
+    "comingSoon": "Binnenkort beschikbaar",
+    "openSourceTitle": "Open source, open magie",
+    "openSourceDesc": "The Magic Lab is gratis en open source onder de GPL-3.0-licentie. Je gegevens blijven van jou. Draag bij, fork of host zelf — jij beslist.",
+    "ctaTitle": "Klaar om je magie naar een hoger niveau te tillen?",
+    "ctaDesc": "Begin met het organiseren van je repertoire, het plannen van routines en het bijhouden van je voortgang — helemaal gratis."
+  },
+  "footer": {
+    "copyright": "© {year} The Magic Lab",
+    "privacy": "Privacy",
+    "faq": "FAQ",
+    "memDeck": "MemDeck",
+    "memDeckSrOnly": "(opent in een nieuw tabblad)",
+    "gitHub": "GitHub",
+    "gitHubSrOnly": "(opent in een nieuw tabblad)"
+  },
+  "errors": {
+    "notFound": "Pagina niet gevonden",
+    "notFoundDesc": "De pagina die je zoekt bestaat niet.",
+    "goHome": "Ga naar de startpagina",
+    "somethingWrong": "Er is iets misgegaan",
+    "unexpectedError": "Er is een onverwachte fout opgetreden.",
+    "tryAgain": "Opnieuw proberen",
+    "authError": "Authenticatiefout",
+    "authErrorDesc": "Er is iets misgegaan tijdens de authenticatie."
+  }
+}

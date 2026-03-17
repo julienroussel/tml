@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { type ReactElement, useEffect, useRef } from "react";
+
+import { Button } from "@/components/ui/button";
 
 export default function ErrorPage({
   error,
@@ -8,14 +11,13 @@ export default function ErrorPage({
 }: {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}): ReactElement {
+  const t = useTranslations("errors");
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    // Re-focus when the error changes so users notice a new error
-    if (error) {
-      mainRef.current?.focus();
-    }
+    console.error(error);
+    mainRef.current?.focus();
   }, [error]);
 
   useEffect(() => {
@@ -34,16 +36,12 @@ export default function ErrorPage({
       tabIndex={-1}
     >
       <div role="alert">
-        <h1 className="font-semibold text-xl">Something went wrong</h1>
-        <p className="text-muted-foreground">An unexpected error occurred.</p>
+        <h1 className="font-semibold text-xl">{t("somethingWrong")}</h1>
+        <p className="text-muted-foreground">{t("unexpectedError")}</p>
       </div>
-      <button
-        className="rounded-md bg-primary px-4 py-2 text-primary-foreground text-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        onClick={reset}
-        type="button"
-      >
-        Try again
-      </button>
+      <Button onClick={reset} type="button">
+        {t("tryAgain")}
+      </Button>
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
 import { Badge } from "@/components/ui/badge";
 import { getModule, type ModuleSlug } from "@/lib/modules";
@@ -6,9 +7,10 @@ interface ModuleComingSoonProps {
   slug: ModuleSlug;
 }
 
-export function ModuleComingSoon({
+export async function ModuleComingSoon({
   slug,
-}: ModuleComingSoonProps): ReactElement {
+}: ModuleComingSoonProps): Promise<ReactElement> {
+  const t = await getTranslations();
   const mod = getModule(slug);
   const Icon = mod.icon;
 
@@ -18,10 +20,14 @@ export function ModuleComingSoon({
         <Icon className="size-8 text-muted-foreground" />
       </div>
       <div className="flex flex-col gap-2">
-        <h1 className="font-semibold text-2xl tracking-tight">{mod.label}</h1>
-        <p className="max-w-md text-muted-foreground">{mod.description}</p>
+        <h1 className="font-semibold text-2xl tracking-tight">
+          {t(`${slug}.title`)}
+        </h1>
+        <p className="max-w-md text-muted-foreground">
+          {t(`${slug}.description`)}
+        </p>
       </div>
-      <Badge variant="secondary">Coming soon</Badge>
+      <Badge variant="secondary">{t("common.comingSoon")}</Badge>
     </div>
   );
 }

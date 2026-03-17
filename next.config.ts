@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+import { buildCsp } from "./src/lib/csp";
+
+const isDev = process.env.NODE_ENV === "development";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  devIndicators: {
+    position: "bottom-right",
+  },
   reactCompiler: true,
   poweredByHeader: false,
   headers: async () => [
@@ -25,8 +34,7 @@ const nextConfig: NextConfig = {
           // theme on page load. Replacing it with a nonce-based CSP requires
           // architectural changes (custom Document, middleware) and should be
           // tackled as a separate task.
-          value:
-            "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com; worker-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+          value: buildCsp(isDev),
         },
       ],
     },
@@ -50,4 +58,4 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

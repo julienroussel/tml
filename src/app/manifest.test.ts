@@ -12,8 +12,19 @@ describe("manifest", () => {
     expect(manifest().display).toBe("standalone");
   });
 
-  it("starts from root URL", () => {
-    expect(manifest().start_url).toBe("/");
+  it("starts from dashboard URL", () => {
+    expect(manifest().start_url).toBe("/dashboard");
+  });
+
+  it("includes shortcuts", () => {
+    const m = manifest();
+    expect(m.shortcuts).toBeDefined();
+    expect(m.shortcuts).toHaveLength(2);
+  });
+
+  it("includes categories", () => {
+    const m = manifest();
+    expect(m.categories).toContain("productivity");
   });
 
   it("includes required icon sizes", () => {

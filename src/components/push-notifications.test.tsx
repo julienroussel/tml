@@ -142,15 +142,13 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     expect(
-      await screen.findByText(
-        "Push notifications are not supported in this browser."
-      )
+      await screen.findByText("pushNotifications.notSupported")
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Enable Notifications" })
+      screen.queryByRole("button", { name: "pushNotifications.enable" })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Disable Notifications" })
+      screen.queryByRole("button", { name: "pushNotifications.disable" })
     ).not.toBeInTheDocument();
   });
 
@@ -167,15 +165,13 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     expect(
-      await screen.findByText(
-        "Push notifications are not supported in this browser."
-      )
+      await screen.findByText("pushNotifications.notSupported")
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Enable Notifications" })
+      screen.queryByRole("button", { name: "pushNotifications.enable" })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Disable Notifications" })
+      screen.queryByRole("button", { name: "pushNotifications.disable" })
     ).not.toBeInTheDocument();
   });
 
@@ -186,11 +182,13 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     expect(
-      await screen.findByRole("button", { name: "Disable Notifications" })
+      await screen.findByRole("button", { name: "pushNotifications.disable" })
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Notification message")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Send notification" })
+      screen.getByLabelText("pushNotifications.messageAriaLabel")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "pushNotifications.sendAriaLabel" })
     ).toBeInTheDocument();
     expect(mockRegister).toHaveBeenCalledWith("/sw.js", {
       scope: "/",
@@ -210,14 +208,14 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     const disableButton = await screen.findByRole("button", {
-      name: "Disable Notifications",
+      name: "pushNotifications.disable",
     });
     await user.click(disableButton);
 
     expect(mockUnsubscribe).toHaveBeenCalled();
     expect(vi.mocked(unsubscribeUser)).toHaveBeenCalled();
     expect(
-      await screen.findByRole("button", { name: "Enable Notifications" })
+      await screen.findByRole("button", { name: "pushNotifications.enable" })
     ).toBeInTheDocument();
   });
 
@@ -229,7 +227,7 @@ describe("PushNotifications", () => {
     // After the useEffect runs, isSupported becomes true and subscription
     // resolves to null, so the Enable Notifications button should appear.
     const button = await screen.findByRole("button", {
-      name: "Enable Notifications",
+      name: "pushNotifications.enable",
     });
     expect(button).toBeInTheDocument();
   });
@@ -244,7 +242,7 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     const enableButton = await screen.findByRole("button", {
-      name: "Enable Notifications",
+      name: "pushNotifications.enable",
     });
     await user.click(enableButton);
 
@@ -255,7 +253,7 @@ describe("PushNotifications", () => {
       })
     );
     expect(
-      await screen.findByRole("button", { name: "Disable Notifications" })
+      await screen.findByRole("button", { name: "pushNotifications.disable" })
     ).toBeInTheDocument();
   });
 
@@ -273,15 +271,15 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     const enableButton = await screen.findByRole("button", {
-      name: "Enable Notifications",
+      name: "pushNotifications.enable",
     });
     await user.click(enableButton);
 
     expect(
-      screen.getByRole("button", { name: "Enable Notifications" })
+      screen.getByRole("button", { name: "pushNotifications.enable" })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Disable Notifications" })
+      screen.queryByRole("button", { name: "pushNotifications.disable" })
     ).not.toBeInTheDocument();
     expect(mockNewSubscription.unsubscribe).toHaveBeenCalled();
   });
@@ -303,7 +301,7 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     const disableButton = await screen.findByRole("button", {
-      name: "Disable Notifications",
+      name: "pushNotifications.disable",
     });
     await user.click(disableButton);
 
@@ -321,13 +319,13 @@ describe("PushNotifications", () => {
 
     render(<PushNotifications />);
 
-    await screen.findByRole("button", { name: "Disable Notifications" });
+    await screen.findByRole("button", { name: "pushNotifications.disable" });
 
-    const input = screen.getByLabelText("Notification message");
+    const input = screen.getByLabelText("pushNotifications.messageAriaLabel");
     await user.type(input, "Hello world");
 
     const sendButton = screen.getByRole("button", {
-      name: "Send notification",
+      name: "pushNotifications.sendAriaLabel",
     });
     await user.click(sendButton);
 
@@ -344,10 +342,10 @@ describe("PushNotifications", () => {
 
     render(<PushNotifications />);
 
-    await screen.findByRole("button", { name: "Disable Notifications" });
+    await screen.findByRole("button", { name: "pushNotifications.disable" });
 
     const sendButton = screen.getByRole("button", {
-      name: "Send notification",
+      name: "pushNotifications.sendAriaLabel",
     });
     await user.click(sendButton);
 
@@ -366,13 +364,13 @@ describe("PushNotifications", () => {
 
     render(<PushNotifications />);
 
-    await screen.findByRole("button", { name: "Disable Notifications" });
+    await screen.findByRole("button", { name: "pushNotifications.disable" });
 
-    const input = screen.getByLabelText("Notification message");
+    const input = screen.getByLabelText("pushNotifications.messageAriaLabel");
     await user.type(input, "Keep this");
 
     const sendButton = screen.getByRole("button", {
-      name: "Send notification",
+      name: "pushNotifications.sendAriaLabel",
     });
     await user.click(sendButton);
 
@@ -395,13 +393,13 @@ describe("PushNotifications", () => {
 
     render(<PushNotifications />);
 
-    await screen.findByRole("button", { name: "Disable Notifications" });
+    await screen.findByRole("button", { name: "pushNotifications.disable" });
 
-    const input = screen.getByLabelText("Notification message");
+    const input = screen.getByLabelText("pushNotifications.messageAriaLabel");
     await user.type(input, "Fail test");
 
     const sendButton = screen.getByRole("button", {
-      name: "Send notification",
+      name: "pushNotifications.sendAriaLabel",
     });
     await user.click(sendButton);
 
@@ -411,7 +409,7 @@ describe("PushNotifications", () => {
     );
     // Component should still be functional
     expect(
-      screen.getByRole("button", { name: "Disable Notifications" })
+      screen.getByRole("button", { name: "pushNotifications.disable" })
     ).toBeInTheDocument();
     expect(input).toHaveValue("Fail test");
   });
@@ -424,9 +422,9 @@ describe("PushNotifications", () => {
     stubPushAPIs(mockSubscription);
 
     render(<PushNotifications />);
-    await screen.findByRole("button", { name: "Disable Notifications" });
+    await screen.findByRole("button", { name: "pushNotifications.disable" });
 
-    const input = screen.getByLabelText("Notification message");
+    const input = screen.getByLabelText("pushNotifications.messageAriaLabel");
     await user.type(input, "Hello world{Enter}");
 
     expect(vi.mocked(sendNotification)).toHaveBeenCalledWith("Hello world");
@@ -449,7 +447,7 @@ describe("PushNotifications", () => {
     render(<PushNotifications />);
 
     const disableButton = await screen.findByRole("button", {
-      name: "Disable Notifications",
+      name: "pushNotifications.disable",
     });
     await user.click(disableButton);
 
@@ -476,7 +474,7 @@ describe("PushNotifications", () => {
 
       // After load event, component should show enable button (supported but not subscribed)
       const button = await screen.findByRole("button", {
-        name: "Enable Notifications",
+        name: "pushNotifications.enable",
       });
       expect(button).toBeInTheDocument();
       expect(navigator.serviceWorker.register).toHaveBeenCalledWith("/sw.js", {
@@ -554,7 +552,7 @@ describe("PushNotifications", () => {
 
     render(<PushNotifications />);
     const enableButton = await screen.findByRole("button", {
-      name: "Enable Notifications",
+      name: "pushNotifications.enable",
     });
 
     await user.click(enableButton);
@@ -565,7 +563,7 @@ describe("PushNotifications", () => {
     );
     // Component should still be functional — Enable button should remain
     expect(
-      screen.getByRole("button", { name: "Enable Notifications" })
+      screen.getByRole("button", { name: "pushNotifications.enable" })
     ).toBeInTheDocument();
   });
 
@@ -597,7 +595,7 @@ describe("PushNotifications", () => {
 
     render(<PushNotifications />);
     const enableButton = await screen.findByRole("button", {
-      name: "Enable Notifications",
+      name: "pushNotifications.enable",
     });
 
     await user.click(enableButton);
@@ -608,17 +606,16 @@ describe("PushNotifications", () => {
     );
     // Component should remain in unsubscribed state after failure
     expect(
-      screen.getByRole("button", { name: "Enable Notifications" })
+      screen.getByRole("button", { name: "pushNotifications.enable" })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Disable Notifications" })
+      screen.queryByRole("button", { name: "pushNotifications.disable" })
     ).not.toBeInTheDocument();
   });
 });
 
-const PUSH_NOT_SUPPORTED = /push notifications are not supported/i;
-const INSTALL_THIS_APP = /install this app/i;
-const ADD_TO_HOME_SCREEN = /Add to Home Screen/i;
+const PUSH_NOT_SUPPORTED = /pushNotifications\.notSupported/;
+const INSTALL_THIS_APP = /pushNotifications\.iosInstallPrompt/;
 
 describe("InstallPrompt (via PushNotifications)", () => {
   const originalUserAgent = navigator.userAgent;
@@ -677,7 +674,6 @@ describe("InstallPrompt (via PushNotifications)", () => {
     render(<PushNotifications />);
 
     expect(screen.getByText(INSTALL_THIS_APP)).toBeInTheDocument();
-    expect(screen.getByText(ADD_TO_HOME_SCREEN)).toBeInTheDocument();
   });
 
   it("returns null on non-iOS, non-standalone browsers", () => {

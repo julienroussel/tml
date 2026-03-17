@@ -1,10 +1,13 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { type ReactElement, useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
-export function ThemeToggle() {
+export function ThemeToggle(): ReactElement {
+  const t = useTranslations("common");
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -13,14 +16,18 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <div className="size-9" />;
+    return <div aria-hidden="true" className="size-11" />;
   }
 
   return (
     <button
-      aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
-      className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      aria-label={t("toggleTheme")}
+      className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+      onClick={() => {
+        const next = resolvedTheme === "dark" ? "light" : "dark";
+        setTheme(next);
+        trackEvent("theme_changed", { theme: next });
+      }}
       type="button"
     >
       {resolvedTheme === "dark" ? (

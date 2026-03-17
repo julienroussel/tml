@@ -11,19 +11,19 @@ describe("HeaderTitle", () => {
   it("renders 'Dashboard' for /dashboard", () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard");
     render(<HeaderTitle />);
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
   });
 
   it("renders 'Settings' for /settings", () => {
     vi.mocked(usePathname).mockReturnValue("/settings");
     render(<HeaderTitle />);
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByText("nav.settings")).toBeInTheDocument();
   });
 
   it("renders module label for /improve", () => {
     vi.mocked(usePathname).mockReturnValue("/improve");
     render(<HeaderTitle />);
-    expect(screen.getByText("Improve")).toBeInTheDocument();
+    expect(screen.getByText("nav.improve")).toBeInTheDocument();
   });
 
   it("renders nothing for unknown route", () => {
@@ -35,6 +35,6 @@ describe("HeaderTitle", () => {
   it("uses first segment for sub-routes", () => {
     vi.mocked(usePathname).mockReturnValue("/improve/details");
     render(<HeaderTitle />);
-    expect(screen.getByText("Improve")).toBeInTheDocument();
+    expect(screen.getByText("nav.improve")).toBeInTheDocument();
   });
 });

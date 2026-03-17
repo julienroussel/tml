@@ -1,4 +1,17 @@
 User-Agent: *
 Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /dashboard
+Disallow: /improve
+Disallow: /train
+Disallow: /plan
+Disallow: /perform
+Disallow: /enhance
+Disallow: /collect
+Disallow: /settings
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
 
 Sitemap: https://themagiclab.app/sitemap.xml

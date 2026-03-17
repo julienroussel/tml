@@ -1,6 +1,8 @@
+import { UserButton } from "@neondatabase/auth/react";
 import { LayoutDashboard, UserCog } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
 import { SidebarNavItem } from "@/components/sidebar-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -17,7 +19,8 @@ import {
 } from "@/components/ui/sidebar";
 import { getAdminModules, getMainModules } from "@/lib/modules";
 
-export function AppSidebar(): ReactElement {
+export async function AppSidebar(): Promise<ReactElement> {
+  const t = await getTranslations("nav");
   const mainModules = getMainModules();
   const adminModules = getAdminModules();
 
@@ -46,7 +49,7 @@ export function AppSidebar(): ReactElement {
         <SidebarGroup className="pt-0">
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarNavItem href="/dashboard" label="Dashboard">
+              <SidebarNavItem href="/dashboard" label={t("dashboard")}>
                 <LayoutDashboard />
               </SidebarNavItem>
             </SidebarMenu>
@@ -54,7 +57,7 @@ export function AppSidebar(): ReactElement {
         </SidebarGroup>
         <SidebarSeparator />
         <SidebarGroup>
-          <SidebarGroupLabel>Modules</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("modules")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainModules.map((mod) => {
@@ -74,7 +77,7 @@ export function AppSidebar(): ReactElement {
         </SidebarGroup>
         <SidebarSeparator />
         <SidebarGroup>
-          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("admin")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminModules.map((mod) => {
@@ -95,11 +98,12 @@ export function AppSidebar(): ReactElement {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarNavItem href="/settings" label="Settings">
+          <SidebarNavItem href="/settings" label={t("settings")}>
             <UserCog />
           </SidebarNavItem>
         </SidebarMenu>
-        <div className="flex items-center justify-end px-2">
+        <div className="flex items-center justify-between px-2">
+          <UserButton size="icon" />
           <ThemeToggle />
         </div>
       </SidebarFooter>

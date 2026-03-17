@@ -26,7 +26,7 @@ describe("ThemeToggle", () => {
     expect(button).toBeInTheDocument();
   });
 
-  it('shows aria-label "Switch to dark mode" when light theme', () => {
+  it("shows translated aria-label", () => {
     vi.mocked(useTheme).mockReturnValue({
       resolvedTheme: "light",
       setTheme: mockSetTheme,
@@ -34,20 +34,7 @@ describe("ThemeToggle", () => {
     });
     render(<ThemeToggle />);
     const button = screen.getByRole("button", {
-      name: "Switch to dark mode",
-    });
-    expect(button).toBeInTheDocument();
-  });
-
-  it('shows aria-label "Switch to light mode" when dark theme', () => {
-    vi.mocked(useTheme).mockReturnValue({
-      resolvedTheme: "dark",
-      setTheme: mockSetTheme,
-      themes: ["light", "dark"],
-    });
-    render(<ThemeToggle />);
-    const button = screen.getByRole("button", {
-      name: "Switch to light mode",
+      name: "common.toggleTheme",
     });
     expect(button).toBeInTheDocument();
   });
@@ -59,8 +46,7 @@ describe("ThemeToggle", () => {
       themes: ["light", "dark"],
     });
     render(<ThemeToggle />);
-    // Moon icon is shown in light mode; the button label references switching to dark
-    const button = screen.getByRole("button", { name: "Switch to dark mode" });
+    const button = screen.getByRole("button", { name: "common.toggleTheme" });
     expect(button).toBeInTheDocument();
     // Lucide Moon renders with class "lucide-moon", distinguishing it from Sun
     const svg = button.querySelector("svg.lucide-moon");
@@ -76,9 +62,8 @@ describe("ThemeToggle", () => {
       themes: ["light", "dark"],
     });
     render(<ThemeToggle />);
-    // Sun icon is shown in dark mode; the button label references switching to light
     const button = screen.getByRole("button", {
-      name: "Switch to light mode",
+      name: "common.toggleTheme",
     });
     expect(button).toBeInTheDocument();
     // Lucide Sun renders with class "lucide-sun", distinguishing it from Moon
@@ -125,7 +110,7 @@ describe("ThemeToggle", () => {
     // With resolvedTheme undefined, the toggle treats it as light mode (fallback branch).
     const button = screen.getByRole("button");
     expect(button).toBeInTheDocument();
-    expect(button).toHaveAttribute("aria-label", "Switch to dark mode");
+    expect(button).toHaveAttribute("aria-label", "common.toggleTheme");
 
     // Should render Moon icon (light/undefined theme fallback)
     const svg = button.querySelector("svg.lucide-moon");

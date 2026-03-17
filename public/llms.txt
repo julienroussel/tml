@@ -1,0 +1,14 @@
+# The Magic Lab
+
+> A free, open-source workspace for magicians to organize their repertoire,
+> plan routines, track practice sessions, and refine performances.
+
+## Docs
+
+- [Home](https://themagiclab.app): Overview and features
+- [Privacy](https://themagiclab.app/privacy): Privacy policy
+- [FAQ](https://themagiclab.app/faq): Common questions
+
+## Optional
+
+- [Full docs](https://themagiclab.app/llms-full.txt): Complete documentation
