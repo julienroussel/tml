@@ -213,7 +213,9 @@ describe("PushNotifications", () => {
     await user.click(disableButton);
 
     expect(mockUnsubscribe).toHaveBeenCalled();
-    expect(vi.mocked(unsubscribeUser)).toHaveBeenCalled();
+    expect(vi.mocked(unsubscribeUser)).toHaveBeenCalledWith(
+      "https://example.com"
+    );
     expect(
       await screen.findByRole("button", { name: "pushNotifications.enable" })
     ).toBeInTheDocument();

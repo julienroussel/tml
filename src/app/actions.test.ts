@@ -28,6 +28,28 @@ vi.mock("@/auth/server", () => ({
   },
 }));
 
+const mockReturning = vi.fn().mockResolvedValue([{ id: "test-uuid" }]);
+const mockOnConflictDoUpdate = vi.fn(() => ({ returning: mockReturning }));
+const mockInsertValues = vi.fn(() => ({
+  onConflictDoUpdate: mockOnConflictDoUpdate,
+}));
+const mockInsert = vi.fn(() => ({ values: mockInsertValues }));
+
+const mockSelectWhere = vi.fn().mockResolvedValue([]);
+const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
+const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
+
+const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
+const mockDelete = vi.fn(() => ({ where: mockDeleteWhere }));
+
+vi.mock("@/db", () => ({
+  getDb: () => ({
+    insert: mockInsert,
+    select: mockSelect,
+    delete: mockDelete,
+  }),
+}));
+
 // p256dh: 88 chars base64url (65 bytes), auth: 22 chars base64url (16 bytes)
 const validSubscription: PushSubscriptionInput = {
   endpoint: "https://fcm.googleapis.com/push/abc",
@@ -36,6 +58,12 @@ const validSubscription: PushSubscriptionInput = {
       "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8p8REfWLkA",
     auth: "tBHItJI5svbpC7-M3xJrOw",
   },
+};
+
+const validSubscriptionRow = {
+  endpoint: validSubscription.endpoint,
+  p256dh: validSubscription.keys.p256dh,
+  authKey: validSubscription.keys.auth,
 };
 
 function stubVapidEnv(): void {
@@ -53,6 +81,7 @@ async function setupSubscribedUser(): Promise<{
   const webpush = (await import("web-push")).default;
   const actions = await import("./actions");
   await actions.subscribeUser(validSubscription);
+  mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
   return { webpush, ...actions };
 }
 
@@ -61,6 +90,8 @@ describe("server actions", () => {
     vi.clearAllMocks();
     vi.resetModules();
     vi.unstubAllEnvs();
+    mockReturning.mockResolvedValue([{ id: "test-uuid" }]);
+    mockSelectWhere.mockResolvedValue([]);
   });
 
   describe("unauthenticated user rejection", () => {
@@ -78,7 +109,7 @@ describe("server actions", () => {
       vi.mocked(auth.getSession).mockResolvedValueOnce(unauthenticatedSession);
 
       const { unsubscribeUser } = await import("./actions");
-      const result = await unsubscribeUser();
+      const result = await unsubscribeUser("https://example.com");
       expect(result).toEqual({ success: false, error: "Not authenticated" });
     });
 
@@ -97,6 +128,43 @@ describe("server actions", () => {
       const { subscribeUser } = await import("./actions");
       const result = await subscribeUser(validSubscription);
       expect(result).toEqual({ success: true });
+      expect(mockInsert).toHaveBeenCalled();
+      expect(mockInsertValues).toHaveBeenCalledWith({
+        userId: "test-user",
+        endpoint: validSubscription.endpoint,
+        p256dh: validSubscription.keys.p256dh,
+        authKey: validSubscription.keys.auth,
+      });
+      expect(mockOnConflictDoUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: expect.anything(),
+          set: expect.objectContaining({
+            p256dh: validSubscription.keys.p256dh,
+            authKey: validSubscription.keys.auth,
+          }),
+          where: expect.anything(),
+        })
+      );
+    });
+
+    it("returns error when database insert fails", async () => {
+      mockReturning.mockRejectedValueOnce(new Error("DB error"));
+      const { subscribeUser } = await import("./actions");
+      const result = await subscribeUser(validSubscription);
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to save subscription",
+      });
+    });
+
+    it("returns error when endpoint is owned by another user", async () => {
+      mockReturning.mockResolvedValueOnce([]);
+      const { subscribeUser } = await import("./actions");
+      const result = await subscribeUser(validSubscription);
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to save subscription",
+      });
     });
 
     it("returns error on missing endpoint", async () => {
@@ -197,16 +265,18 @@ describe("server actions", () => {
   });
 
   describe("unsubscribeUser", () => {
-    it("clears the subscription so sendNotification fails", async () => {
+    it("deletes the subscription from the database", async () => {
       const { subscribeUser, unsubscribeUser, sendNotification } = await import(
         "./actions"
       );
-      const subResult = await subscribeUser(validSubscription);
-      expect(subResult).toEqual({ success: true });
+      await subscribeUser(validSubscription);
 
-      const result = await unsubscribeUser();
+      const result = await unsubscribeUser(validSubscription.endpoint);
       expect(result).toEqual({ success: true });
+      expect(mockDelete).toHaveBeenCalledTimes(1);
+      expect(mockDeleteWhere).toHaveBeenCalledTimes(1);
 
+      // Select returns empty after unsubscribe (default mock)
       const sendResult = await sendNotification("Hello");
       expect(sendResult).toEqual({
         success: false,
@@ -214,10 +284,39 @@ describe("server actions", () => {
       });
     });
 
+    it("returns error on empty endpoint", async () => {
+      const { unsubscribeUser } = await import("./actions");
+      const result = await unsubscribeUser("");
+      expect(result).toEqual({ success: false, error: "Invalid endpoint" });
+    });
+
+    it("returns error on non-https endpoint", async () => {
+      const { unsubscribeUser } = await import("./actions");
+      const result = await unsubscribeUser("http://example.com/push");
+      expect(result).toEqual({ success: false, error: "Invalid endpoint" });
+    });
+
+    it("returns error on endpoint exceeding length limit", async () => {
+      const { unsubscribeUser } = await import("./actions");
+      const longEndpoint = `https://fcm.googleapis.com/${"a".repeat(2048)}`;
+      const result = await unsubscribeUser(longEndpoint);
+      expect(result).toEqual({ success: false, error: "Invalid endpoint" });
+    });
+
     it("succeeds even without a prior subscription", async () => {
       const { unsubscribeUser } = await import("./actions");
-      const result = await unsubscribeUser();
+      const result = await unsubscribeUser("https://example.com/nonexistent");
       expect(result).toEqual({ success: true });
+    });
+
+    it("returns error when database delete fails", async () => {
+      mockDeleteWhere.mockRejectedValueOnce(new Error("DB error"));
+      const { unsubscribeUser } = await import("./actions");
+      const result = await unsubscribeUser(validSubscription.endpoint);
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to remove subscription",
+      });
     });
   });
 
@@ -272,6 +371,17 @@ describe("server actions", () => {
       });
     });
 
+    it("returns error when database select fails", async () => {
+      stubVapidEnv();
+      mockSelectWhere.mockRejectedValueOnce(new Error("DB error"));
+      const { sendNotification } = await import("./actions");
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to send notification",
+      });
+    });
+
     it("sends notification after subscribing", async () => {
       const { webpush, sendNotification } = await setupSubscribedUser();
 
@@ -284,13 +394,121 @@ describe("server actions", () => {
         "test-private-key"
       );
       expect(webpush.sendNotification).toHaveBeenCalledWith(
-        validSubscription,
+        {
+          endpoint: validSubscription.endpoint,
+          keys: {
+            p256dh: validSubscription.keys.p256dh,
+            auth: validSubscription.keys.auth,
+          },
+        },
         JSON.stringify({
           title: "The Magic Lab",
           body: "Hello world",
           icon: "/icon-192x192.png",
         })
       );
+    });
+
+    it("sends to multiple subscriptions", async () => {
+      stubVapidEnv();
+      const secondSub = {
+        endpoint: "https://fcm.googleapis.com/push/def",
+        p256dh: "second-p256dh",
+        authKey: "second-auth",
+      };
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
+
+      const webpush = (await import("web-push")).default;
+      const { sendNotification } = await import("./actions");
+
+      const result = await sendNotification("Hello all devices");
+      expect(result).toEqual({ success: true });
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(2);
+    });
+
+    it("returns success when at least one device succeeds", async () => {
+      stubVapidEnv();
+      const secondSub = {
+        endpoint: "https://fcm.googleapis.com/push/def",
+        p256dh: "second-p256dh",
+        authKey: "second-auth",
+      };
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
+
+      const webpush = (await import("web-push")).default;
+      const { sendNotification } = await import("./actions");
+
+      const goneError = Object.assign(new Error("Gone"), { statusCode: 410 });
+      vi.mocked(webpush.sendNotification)
+        .mockResolvedValueOnce({} as never)
+        .mockRejectedValueOnce(goneError);
+
+      const result = await sendNotification("Partial");
+      expect(result).toEqual({ success: true });
+      // 410 endpoint should be cleaned up — exactly one delete with a WHERE clause
+      expect(mockDelete).toHaveBeenCalledTimes(1);
+      expect(mockDeleteWhere).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns success even when 410 cleanup fails", async () => {
+      stubVapidEnv();
+      const secondSub = {
+        endpoint: "https://fcm.googleapis.com/push/def",
+        p256dh: "second-p256dh",
+        authKey: "second-auth",
+      };
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
+
+      const webpush = (await import("web-push")).default;
+      const { sendNotification } = await import("./actions");
+
+      const goneError = Object.assign(new Error("Gone"), { statusCode: 410 });
+      vi.mocked(webpush.sendNotification)
+        .mockResolvedValueOnce({} as never)
+        .mockRejectedValueOnce(goneError);
+
+      // Set up DB cleanup failure. This must be placed before sendNotification
+      // because the 410 handler triggers the delete during that call.
+      mockDeleteWhere.mockRejectedValueOnce(new Error("DB cleanup failed"));
+
+      const consoleError = vi
+        .spyOn(console, "error")
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: suppress console.error output during test
+        .mockImplementation(() => {});
+
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({ success: true });
+      expect(consoleError).toHaveBeenCalledWith(
+        "Failed to clean up stale subscriptions:",
+        expect.any(Error)
+      );
+      consoleError.mockRestore();
+    });
+
+    it("returns error when all deliveries fail with non-410 errors", async () => {
+      stubVapidEnv();
+      const secondSub = {
+        endpoint: "https://fcm.googleapis.com/push/def",
+        p256dh: "second-p256dh",
+        authKey: "second-auth",
+      };
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
+
+      const webpush = (await import("web-push")).default;
+      const { sendNotification } = await import("./actions");
+
+      const serverError = new Error("Internal Server Error");
+      vi.mocked(webpush.sendNotification)
+        .mockRejectedValueOnce(serverError)
+        .mockRejectedValueOnce(serverError);
+
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to send notification",
+      });
+      // Non-410 errors should NOT trigger cleanup
+      expect(mockDelete).not.toHaveBeenCalled();
     });
 
     it("returns error when webpush.sendNotification fails", async () => {
@@ -318,6 +536,7 @@ describe("server actions", () => {
       vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
       try {
         stubVapidEnv();
+        mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
 
         const { subscribeUser, sendNotification } = await import("./actions");
         await subscribeUser(validSubscription);
@@ -342,6 +561,7 @@ describe("server actions", () => {
       vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
       try {
         stubVapidEnv();
+        mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
 
         const { subscribeUser, sendNotification } = await import("./actions");
         await subscribeUser(validSubscription);
@@ -367,6 +587,7 @@ describe("server actions", () => {
       vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
       try {
         stubVapidEnv();
+        mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
 
         const { subscribeUser, sendNotification } = await import("./actions");
         await subscribeUser(validSubscription);
@@ -464,8 +685,12 @@ describe("server actions", () => {
         error: "Failed to send notification",
       });
 
+      // Verify the 410 handler cleaned up the subscription via DB delete
+      expect(mockDelete).toHaveBeenCalledTimes(1);
+
       // Subsequent send should fail with "No subscription available" since
-      // the 410 handler removed the subscription.
+      // the DB now returns empty.
+      mockSelectWhere.mockResolvedValue([]);
       const retryResult = await sendNotification("Retry");
       expect(retryResult).toEqual({
         success: false,
@@ -487,8 +712,10 @@ describe("server actions", () => {
         error: "Failed to send notification",
       });
 
-      // Subscription should still exist — next send should not fail with
-      // "No subscription available".
+      // Delete should NOT have been called for non-410 errors
+      expect(mockDelete).not.toHaveBeenCalled();
+
+      // Subscription should still exist — next send should succeed
       vi.mocked(webpush.sendNotification).mockResolvedValueOnce({} as never);
       const retryResult = await sendNotification("Retry");
       expect(retryResult).toEqual({ success: true });
@@ -508,10 +735,39 @@ describe("server actions", () => {
     it("returns error when VAPID keys are not configured", async () => {
       vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "");
       vi.stubEnv("VAPID_PRIVATE_KEY", "");
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
 
       const { subscribeUser, sendNotification } = await import("./actions");
       await subscribeUser(validSubscription);
 
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Notification service unavailable",
+      });
+    });
+
+    it("returns error when only public VAPID key is configured", async () => {
+      vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "test-public-key");
+      vi.stubEnv("VAPID_PRIVATE_KEY", "");
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
+
+      const { subscribeUser, sendNotification } = await import("./actions");
+      await subscribeUser(validSubscription);
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Notification service unavailable",
+      });
+    });
+
+    it("returns error when only private VAPID key is configured", async () => {
+      vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "");
+      vi.stubEnv("VAPID_PRIVATE_KEY", "test-private-key");
+      mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
+
+      const { subscribeUser, sendNotification } = await import("./actions");
+      await subscribeUser(validSubscription);
       const result = await sendNotification("Hello");
       expect(result).toEqual({
         success: false,
