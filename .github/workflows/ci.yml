@@ -72,7 +72,7 @@ jobs:
         run: pnpm build
         env:
           NEON_AUTH_BASE_URL: http://localhost:4000
-          NEON_AUTH_COOKIE_SECRET: ci-dummy-secret
+          NEON_AUTH_COOKIE_SECRET: ci-dummy-secret-that-is-at-least-32-characters-long
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
 
   e2e:
