@@ -107,7 +107,10 @@ function PushNotificationManager(): ReactElement {
 
   async function unsubscribeFromPush() {
     try {
-      const result = await unsubscribeUser();
+      if (!subscription) {
+        return;
+      }
+      const result = await unsubscribeUser(subscription.endpoint);
       if (!result.success) {
         console.error("Failed to remove server subscription:", result.error);
         return;

@@ -1,8 +1,11 @@
 "use server";
 
 import "server-only";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import webpush from "web-push";
 import { auth } from "@/auth/server";
+import { getDb } from "@/db";
+import { pushSubscriptions } from "@/db/schema/push-subscriptions";
 
 export type ActionResult =
   | { success: true }
@@ -65,14 +68,6 @@ function ensureVapidInitialized(): void {
   vapidReady = true;
 }
 
-// WARNING: Per-user in-memory subscription map. Prevents cross-user leaks
-// within the same instance, but subscriptions are lost on every Vercel
-// serverless cold start — each invocation may land on a different isolate.
-// TODO(critical): Migrate to the `push_subscriptions` database table
-// (src/db/schema/push-subscriptions.ts) before enabling push in production.
-// Without this, subscriptions are effectively useless in a serverless env.
-const subscriptionsByUser = new Map<string, PushSubscriptionInput>();
-
 // NOTE: In-memory rate limiting resets on serverless cold starts. For production
 // hardening, replace with Redis/Upstash-based rate limiting. This provides
 // basic protection against rapid repeated submissions within a single instance.
@@ -113,13 +108,18 @@ export async function subscribeUser(
   if (!sub?.endpoint || typeof sub.endpoint !== "string") {
     return { success: false, error: "Invalid subscription" };
   }
-  if (!sub.endpoint.startsWith("https://")) {
+  if (!sub.endpoint.startsWith("https://") || sub.endpoint.length > 2048) {
     return { success: false, error: "Invalid endpoint URL" };
   }
 
   try {
     const endpointUrl = new URL(sub.endpoint);
     const hostname = endpointUrl.hostname.toLowerCase();
+    // Suffix entries start with a leading dot (e.g. ".push.apple.com"), so
+    // `endsWith` already guarantees a label-boundary match — "evilpush.apple.com"
+    // will NOT match ".push.apple.com". Deeply nested subdomains like
+    // "a.b.push.apple.com" still match, but those are controlled by the
+    // respective push-service operators (Apple, Microsoft), not by end users.
     const isAllowed =
       ALLOWED_PUSH_HOSTS.includes(hostname) ||
       ALLOWED_PUSH_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
@@ -141,18 +141,157 @@ export async function subscribeUser(
   ) {
     return { success: false, error: "Invalid subscription keys" };
   }
-  subscriptionsByUser.set(session.user.id, sub);
+  try {
+    const db = getDb();
+    const result = await db
+      .insert(pushSubscriptions)
+      .values({
+        userId: session.user.id,
+        endpoint: sub.endpoint,
+        p256dh: sub.keys.p256dh,
+        authKey: sub.keys.auth,
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: {
+          p256dh: sub.keys.p256dh,
+          authKey: sub.keys.auth,
+          lastUsedAt: sql`NOW()`,
+        },
+        where: eq(pushSubscriptions.userId, session.user.id),
+      })
+      .returning({ id: pushSubscriptions.id });
+
+    if (result.length === 0) {
+      return { success: false, error: "Failed to save subscription" };
+    }
+  } catch (error: unknown) {
+    console.error("Failed to save push subscription:", {
+      userId: session.user.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { success: false, error: "Failed to save subscription" };
+  }
+
   return { success: true };
 }
 
-export async function unsubscribeUser(): Promise<ActionResult> {
+export async function unsubscribeUser(endpoint: string): Promise<ActionResult> {
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     return { success: false, error: "Not authenticated" };
   }
 
-  subscriptionsByUser.delete(session.user.id);
+  if (!endpoint?.startsWith("https://") || endpoint.length > 2048) {
+    return { success: false, error: "Invalid endpoint" };
+  }
+
+  try {
+    const db = getDb();
+    await db
+      .delete(pushSubscriptions)
+      .where(
+        and(
+          eq(pushSubscriptions.userId, session.user.id),
+          eq(pushSubscriptions.endpoint, endpoint)
+        )
+      );
+  } catch (error: unknown) {
+    console.error("Failed to remove push subscription:", {
+      userId: session.user.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { success: false, error: "Failed to remove subscription" };
+  }
+
   return { success: true };
+}
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  let rateLimit = rateLimitsByUser.get(userId);
+  if (rateLimit && now > rateLimit.reset) {
+    rateLimit = undefined;
+  }
+  if (!rateLimit) {
+    rateLimit = { count: 0, reset: now + RATE_LIMIT_WINDOW };
+    rateLimitsByUser.set(userId, rateLimit);
+    cleanupExpiredRateLimits(userId, now);
+  }
+  rateLimit.count++;
+  return rateLimit.count > RATE_LIMIT_MAX;
+}
+
+function fetchUserSubscriptions(userId: string) {
+  const db = getDb();
+  return db
+    .select({
+      endpoint: pushSubscriptions.endpoint,
+      p256dh: pushSubscriptions.p256dh,
+      authKey: pushSubscriptions.authKey,
+    })
+    .from(pushSubscriptions)
+    .where(eq(pushSubscriptions.userId, userId));
+}
+
+type SubscriptionRow = Awaited<
+  ReturnType<typeof fetchUserSubscriptions>
+>[number];
+
+async function deliverToSubscriptions(
+  subscriptions: SubscriptionRow[],
+  payload: string
+): Promise<{ anySuccess: boolean; goneEndpoints: string[] }> {
+  const goneEndpoints: string[] = [];
+  let anySuccess = false;
+
+  const results = await Promise.allSettled(
+    subscriptions.map((sub) =>
+      webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.authKey },
+        },
+        payload
+      )
+    )
+  );
+
+  for (const [i, result] of results.entries()) {
+    if (result.status === "fulfilled") {
+      anySuccess = true;
+    } else {
+      const error: unknown = result.reason;
+      if (isWebPushError(error) && error.statusCode === 410) {
+        goneEndpoints.push(subscriptions[i].endpoint);
+      }
+      console.error("Failed to send push notification:", error);
+    }
+  }
+
+  return { anySuccess, goneEndpoints };
+}
+
+async function cleanupGoneSubscriptions(
+  endpoints: string[],
+  userId: string
+): Promise<void> {
+  if (endpoints.length === 0) {
+    return;
+  }
+  try {
+    const db = getDb();
+    await db
+      .delete(pushSubscriptions)
+      .where(
+        and(
+          inArray(pushSubscriptions.endpoint, endpoints),
+          eq(pushSubscriptions.userId, userId)
+        )
+      );
+  } catch (cleanupError: unknown) {
+    console.error("Failed to clean up stale subscriptions:", cleanupError);
+  }
 }
 
 export async function sendNotification(message: string): Promise<ActionResult> {
@@ -168,23 +307,22 @@ export async function sendNotification(message: string): Promise<ActionResult> {
 
   const userId = session.user.id;
 
-  const now = Date.now();
-  let rateLimit = rateLimitsByUser.get(userId);
-  if (rateLimit && now > rateLimit.reset) {
-    rateLimit = undefined;
-  }
-  if (!rateLimit) {
-    rateLimit = { count: 0, reset: now + RATE_LIMIT_WINDOW };
-    rateLimitsByUser.set(userId, rateLimit);
-    cleanupExpiredRateLimits(userId, now);
-  }
-  rateLimit.count++;
-  if (rateLimit.count > RATE_LIMIT_MAX) {
+  if (checkRateLimit(userId)) {
     return { success: false, error: "Rate limit exceeded" };
   }
 
-  const subscription = subscriptionsByUser.get(userId);
-  if (!subscription) {
+  let subscriptions: SubscriptionRow[];
+  try {
+    subscriptions = await fetchUserSubscriptions(userId);
+  } catch (error: unknown) {
+    console.error("Failed to fetch push subscriptions:", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { success: false, error: "Failed to send notification" };
+  }
+
+  if (subscriptions.length === 0) {
     return { success: false, error: "No subscription available" };
   }
 
@@ -200,22 +338,16 @@ export async function sendNotification(message: string): Promise<ActionResult> {
     icon: "/icon-192x192.png",
   });
 
-  try {
-    await webpush.sendNotification(
-      {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
-        },
-      },
-      payload
-    );
-  } catch (error: unknown) {
-    if (isWebPushError(error) && error.statusCode === 410) {
-      subscriptionsByUser.delete(userId);
-    }
-    console.error("Failed to send push notification:", error);
+  const { anySuccess, goneEndpoints } = await deliverToSubscriptions(
+    subscriptions,
+    payload
+  );
+
+  if (goneEndpoints.length > 0) {
+    await cleanupGoneSubscriptions(goneEndpoints, userId);
+  }
+
+  if (!anySuccess) {
     return { success: false, error: "Failed to send notification" };
   }
 
