@@ -17,7 +17,8 @@
     "signIn": "Entrar",
     "signOut": "Sair",
     "goToDashboard": "Ir para o painel",
-    "toggleTheme": "Alternar tema"
+    "toggleTheme": "Alternar tema",
+    "skipToContent": "Saltar para o conteúdo"
   },
   "nav": {
     "dashboard": "Painel",

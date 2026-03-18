@@ -17,7 +17,8 @@
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
     "goToDashboard": "Accéder au tableau de bord",
-    "toggleTheme": "Changer le thème"
+    "toggleTheme": "Changer le thème",
+    "skipToContent": "Aller au contenu"
   },
   "nav": {
     "dashboard": "Tableau de bord",

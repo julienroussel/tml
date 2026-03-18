@@ -52,7 +52,12 @@ const BASE_DIRECTIVES: CspDirectives = {
   // next-themes injects an inline <script> in <head> before React hydrates,
   // so we cannot replace this with a nonce or hash without patching the library.
   // TODO: migrate to nonce-based CSP once next-themes supports it, removing 'unsafe-inline'
-  "script-src": ["'self'", "'unsafe-inline'", "https://va.vercel-scripts.com"],
+  "script-src": [
+    "'self'",
+    "'unsafe-inline'",
+    "'wasm-unsafe-eval'",
+    "https://va.vercel-scripts.com",
+  ],
   "style-src": ["'self'", "'unsafe-inline'"],
   "img-src": ["'self'", "data:", "blob:"],
   "font-src": ["'self'"],
@@ -77,6 +82,7 @@ const BASE_DIRECTIVES: CspDirectives = {
 };
 
 const DEV_EXTENSIONS: Partial<CspDirectives> = {
+  "script-src": ["'unsafe-eval'"],
   "connect-src": ["ws://localhost:*"],
   "frame-src": ["https://local.drizzle.studio"],
 };
