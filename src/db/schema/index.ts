@@ -1,6 +1,5 @@
 // biome-ignore lint/performance/noBarrelFile: schema barrel file is intentional for Drizzle config
 export { goals } from "./goals";
-// TODO: Add Neon RLS policies to enforce user_id = auth.uid() on all user-owned tables
 export { items, itemTricks } from "./items";
 export { performances } from "./performances";
 export {
