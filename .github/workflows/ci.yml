@@ -63,6 +63,13 @@ jobs:
       - name: i18n completeness check
         run: pnpm i18n:check
 
+      - name: Check migration drift
+        run: |
+          pnpm db:generate
+          git diff --exit-code src/db/migrations/
+        env:
+          DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+
       - name: Check generated docs staleness
         run: |
           pnpm docs:generate
