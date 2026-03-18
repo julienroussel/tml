@@ -21,12 +21,12 @@ function getHmacSecret(): Buffer {
   if (cachedHmacSecret) {
     return cachedHmacSecret;
   }
-  const secret =
-    process.env.EMAIL_HMAC_SECRET ?? process.env.NEON_AUTH_COOKIE_SECRET;
+  const secret = process.env.EMAIL_HMAC_SECRET;
   if (!secret) {
-    throw new Error(
-      "EMAIL_HMAC_SECRET or NEON_AUTH_COOKIE_SECRET environment variable is required"
-    );
+    throw new Error("EMAIL_HMAC_SECRET environment variable is required");
+  }
+  if (secret.length < 32) {
+    throw new Error("EMAIL_HMAC_SECRET must be at least 32 characters");
   }
   cachedHmacSecret = Buffer.from(
     crypto.hkdfSync("sha256", secret, "", "unsubscribe-token", 32)

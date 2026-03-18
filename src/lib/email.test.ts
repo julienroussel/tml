@@ -28,7 +28,7 @@ describe("email", () => {
 
   describe("createUnsubscribeToken", () => {
     it("produces a token in userId.timestamp.hmac format", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { createUnsubscribeToken } = await import("@/lib/email");
       const token = createUnsubscribeToken(TEST_USER_ID);
@@ -42,7 +42,7 @@ describe("email", () => {
     });
 
     it("produces identical tokens when called at the same second", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.useFakeTimers({ now: new Date("2026-01-01T00:00:00Z") });
 
       try {
@@ -57,7 +57,7 @@ describe("email", () => {
     });
 
     it("produces different tokens for different users", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { createUnsubscribeToken } = await import("@/lib/email");
       const token1 = createUnsubscribeToken(TEST_USER_ID);
@@ -66,19 +66,28 @@ describe("email", () => {
       expect(token1).not.toBe(token2);
     });
 
-    it("throws when NEON_AUTH_COOKIE_SECRET is missing", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "");
+    it("throws when EMAIL_HMAC_SECRET is missing", async () => {
+      vi.stubEnv("EMAIL_HMAC_SECRET", "");
 
       const { createUnsubscribeToken } = await import("@/lib/email");
       expect(() => createUnsubscribeToken(TEST_USER_ID)).toThrow(
-        "NEON_AUTH_COOKIE_SECRET environment variable is required"
+        "EMAIL_HMAC_SECRET environment variable is required"
+      );
+    });
+
+    it("throws when EMAIL_HMAC_SECRET is too short", async () => {
+      vi.stubEnv("EMAIL_HMAC_SECRET", "short");
+
+      const { createUnsubscribeToken } = await import("@/lib/email");
+      expect(() => createUnsubscribeToken(TEST_USER_ID)).toThrow(
+        "EMAIL_HMAC_SECRET must be at least 32 characters"
       );
     });
   });
 
   describe("verifyUnsubscribeToken", () => {
     it("accepts a valid token and returns the userId", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { createUnsubscribeToken, verifyUnsubscribeToken } = await import(
         "@/lib/email"
@@ -90,7 +99,7 @@ describe("email", () => {
     });
 
     it("rejects a tampered token", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       const timestamp = Math.floor(Date.now() / 1000);
@@ -102,35 +111,35 @@ describe("email", () => {
     });
 
     it("rejects a token without a dot separator", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       expect(verifyUnsubscribeToken("notokenhere")).toBeNull();
     });
 
     it("rejects an empty string", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       expect(verifyUnsubscribeToken("")).toBeNull();
     });
 
     it("rejects a token with empty userId", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       expect(verifyUnsubscribeToken(".somehash")).toBeNull();
     });
 
     it("rejects a token with empty hmac", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       expect(verifyUnsubscribeToken("user-abc.12345.")).toBeNull();
     });
 
     it("rejects token with non-hex HMAC", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       const result = verifyUnsubscribeToken(
@@ -140,7 +149,7 @@ describe("email", () => {
     });
 
     it("rejects a token with non-UUID userId", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
 
       const { verifyUnsubscribeToken } = await import("@/lib/email");
       const result = verifyUnsubscribeToken(
@@ -151,7 +160,7 @@ describe("email", () => {
     });
 
     it("rejects an expired token", async () => {
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.useFakeTimers({ now: new Date("2025-01-01T00:00:00Z") });
 
       try {
@@ -192,7 +201,7 @@ describe("email", () => {
   describe("getAppUrl", () => {
     it("throws for non-HTTPS URL in production", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://example.com");
       vi.stubEnv("NODE_ENV", "production");
       vi.stubEnv("VERCEL_ENV", "production");
@@ -217,7 +226,7 @@ describe("email", () => {
   describe("sendWelcomeEmail", () => {
     it("includes personalized greeting when name is provided", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
       vi.stubEnv("VERCEL_ENV", "production");
 
@@ -239,7 +248,7 @@ describe("email", () => {
 
     it("uses generic greeting when name is omitted", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
       vi.stubEnv("VERCEL_ENV", "production");
 
@@ -261,7 +270,7 @@ describe("email", () => {
 
     it("calls sendEmail with correct subject", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
       vi.stubEnv("VERCEL_ENV", "production");
 
@@ -285,7 +294,7 @@ describe("email", () => {
   describe("sendEmail", () => {
     it("calls Resend API with correct parameters", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
       vi.stubEnv("VERCEL_ENV", "production");
 
@@ -313,7 +322,7 @@ describe("email", () => {
 
     it("includes unsubscribe headers when userId is provided", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
       vi.stubEnv("VERCEL_ENV", "production");
 
@@ -374,7 +383,7 @@ describe("email", () => {
 
     it("redirects to delivered@resend.dev in non-production environments", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
-      vi.stubEnv("NEON_AUTH_COOKIE_SECRET", "test-secret-123");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
       vi.stubEnv("VERCEL_ENV", "preview");
 
