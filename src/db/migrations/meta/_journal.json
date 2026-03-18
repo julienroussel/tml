@@ -43,6 +43,13 @@
       "when": 1774070400000,
       "tag": "0005_enable_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773872305136,
+      "tag": "0006_wakeful_nemesis",
+      "breakpoints": true
     }
   ]
 }

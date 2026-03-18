@@ -37,6 +37,7 @@ const routines = new Table({
 });
 
 const routine_tricks = new Table({
+  user_id: column.text,
   routine_id: column.text,
   trick_id: column.text,
   position: column.integer,
@@ -58,6 +59,7 @@ const practice_sessions = new Table({
 });
 
 const practice_session_tricks = new Table({
+  user_id: column.text,
   practice_session_id: column.text,
   trick_id: column.text,
   repetitions: column.integer,
@@ -103,6 +105,7 @@ const items = new Table({
 });
 
 const item_tricks = new Table({
+  user_id: column.text,
   item_id: column.text,
   trick_id: column.text,
   created_at: column.text,

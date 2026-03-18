@@ -48,6 +48,9 @@ export const routineTricks = pgTable(
   "routine_tricks",
   {
     id: uuid().primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     // CASCADE is safe here because parent entities use soft-delete (setting
     // deleted_at), which does not trigger ON DELETE CASCADE. Hard-deletes only
     // occur during full user account removal.
@@ -69,6 +72,9 @@ export const routineTricks = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    index("routine_tricks_user_id_idx")
+      .on(table.userId)
+      .where(sql`deleted_at IS NULL`),
     index("routine_tricks_routine_id_idx")
       .on(table.routineId)
       .where(sql`deleted_at IS NULL`),

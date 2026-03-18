@@ -189,6 +189,8 @@ Type safety is a first-class concern. All code must be rigorously typed.
 5. Update PowerSync client schema: `src/sync/schema.ts`
 6. Run `pnpm docs:generate` to update documentation
 
+**IMPORTANT — Single migration file rule**: The `@neondatabase/serverless` driver uses stateless HTTP requests. Each migration file runs as an independent HTTP call, so DDL changes from one migration (e.g., `ADD COLUMN`) are **not visible** to the next migration within the same `drizzle-kit migrate` run. **Never split dependent SQL across multiple migration files.** If a later statement references a column or object created earlier, it must be in the **same** migration file. Hand-written migrations (e.g., RLS policy updates) that depend on a generated migration must be appended to that migration file, not created as a separate file.
+
 ## UI/Design Conventions
 
 - **Mobile-first**: Design for <768px first, then tablet (768-1024px), then desktop (>1024px)
