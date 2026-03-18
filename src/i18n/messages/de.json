@@ -17,7 +17,8 @@
     "signIn": "Anmelden",
     "signOut": "Abmelden",
     "goToDashboard": "Zum Dashboard",
-    "toggleTheme": "Thema wechseln"
+    "toggleTheme": "Thema wechseln",
+    "skipToContent": "Zum Inhalt springen"
   },
   "nav": {
     "dashboard": "Dashboard",

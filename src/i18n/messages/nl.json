@@ -17,7 +17,8 @@
     "signIn": "Inloggen",
     "signOut": "Uitloggen",
     "goToDashboard": "Naar dashboard",
-    "toggleTheme": "Thema wisselen"
+    "toggleTheme": "Thema wisselen",
+    "skipToContent": "Ga naar inhoud"
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -17,7 +17,8 @@
     "signIn": "Iniciar sesión",
     "signOut": "Cerrar sesión",
     "goToDashboard": "Ir al panel",
-    "toggleTheme": "Cambiar tema"
+    "toggleTheme": "Cambiar tema",
+    "skipToContent": "Saltar al contenido"
   },
   "nav": {
     "dashboard": "Panel",
