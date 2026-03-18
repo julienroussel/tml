@@ -73,6 +73,7 @@ jobs:
         env:
           NEON_AUTH_BASE_URL: http://localhost:4000
           NEON_AUTH_COOKIE_SECRET: ci-dummy-secret-that-is-at-least-32-characters-long
+          EMAIL_HMAC_SECRET: ci-dummy-hmac-secret-at-least-32-characters-long
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
 
   e2e:
@@ -90,9 +91,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Generate E2E cookie secret
+      - name: Generate E2E secrets
         id: e2e-secret
-        run: echo "value=$(openssl rand -base64 32)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "cookie=$(openssl rand -base64 32)" >> "$GITHUB_OUTPUT"
+          echo "hmac=$(openssl rand -base64 32)" >> "$GITHUB_OUTPUT"
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -128,7 +131,8 @@ jobs:
       - name: Run E2E tests
         run: pnpm test:e2e
         env:
-          NEON_AUTH_COOKIE_SECRET: ${{ steps.e2e-secret.outputs.value }}
+          NEON_AUTH_COOKIE_SECRET: ${{ steps.e2e-secret.outputs.cookie }}
+          EMAIL_HMAC_SECRET: ${{ steps.e2e-secret.outputs.hmac }}
 
       - name: Upload test report
         if: '!cancelled()'
