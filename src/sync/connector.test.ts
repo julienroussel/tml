@@ -258,20 +258,23 @@ describe("buildQuery with userId scoping", () => {
     expect(result.params).toContain("user-1");
   });
 
-  it("omits user_id clause for junction tables without user_id column", () => {
+  it("includes user_id clause for junction tables", () => {
     const result = buildQuery(
       UpdateType.PUT,
       "routine_tricks",
       "abc",
       {
         id: "abc",
+        user_id: "user-1",
         routine_id: "r1",
         trick_id: "t1",
+        position: 1,
       },
       "user-1"
     );
-    // Junction tables don't have user_id in SYNCED_COLUMNS, so no WHERE clause
-    expect(result.params).not.toContain("user-1");
+    // Junction tables now have user_id in SYNCED_COLUMNS
+    expect(result.params).toContain("user-1");
+    expect(result.query).toContain('"user_id"');
   });
 });
 
@@ -808,28 +811,13 @@ describe("createNeonConnector", () => {
       ).rejects.toThrow("Unauthorized: userId is required for mutations");
     });
 
-    it("allows PUT on junction table when parent ownership check succeeds", async () => {
+    it("injects authenticated userId into junction table PUT", async () => {
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
-        // First call: ownership check for routines — returns the owned row
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({ rows: [{ id: "routine-1" }] }), {
-            status: 200,
-          })
-        )
-        // Second call: ownership check for tricks — returns the owned row
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({ rows: [{ id: "trick-1" }] }), {
-            status: 200,
-          })
-        )
-        // Third call: the actual INSERT
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({}), { status: 200 })
-        );
+        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
+        getUserId: async () => "server-user-id",
       });
       const db = createMockDatabase([
         {
@@ -840,6 +828,7 @@ describe("createNeonConnector", () => {
             routine_id: "routine-1",
             trick_id: "trick-1",
             position: 1,
+            user_id: "forged-user-id",
           },
         },
       ]);
@@ -848,49 +837,87 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      // Ownership checks + actual mutation = 3 calls
-      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      // No ownership check round-trips — just the mutation itself
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse((init as RequestInit).body as string) as {
+        query: string;
+        params: unknown[];
+      };
+      // Authenticated userId must be used, not the forged one
+      expect(body.params).toContain("server-user-id");
+      expect(body.params).not.toContain("forged-user-id");
+      expect(body.query).toContain('"user_id"');
       const transaction = await db.getNextCrudTransaction.mock.results[0].value;
       expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
-    it("rejects PUT on junction table when parent ownership check fails", async () => {
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      vi.spyOn(globalThis, "fetch")
-        // First call: ownership check for routines — returns empty (not owned)
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({ rows: [] }), { status: 200 })
-        )
-        // Second call: ownership check for tricks — returns the owned row
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({ rows: [{ id: "trick-1" }] }), {
-            status: 200,
-          })
-        );
+    it("scopes junction table PATCH by authenticated userId", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
+        getUserId: async () => "server-user-id",
       });
       const db = createMockDatabase([
         {
           id: "rt-1",
-          op: "PUT",
+          op: "PATCH",
           table: "routine_tricks",
           opData: {
-            routine_id: "routine-1",
-            trick_id: "trick-1",
-            position: 1,
+            position: 2,
+            user_id: "forged-user-id",
           },
         },
       ]);
 
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow(
-        "Unauthorized: routines routine-1 does not belong to user"
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
       );
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse((init as RequestInit).body as string) as {
+        query: string;
+        params: unknown[];
+      };
+      expect(body.query).toContain("UPDATE");
+      expect(body.query).toContain('"user_id"');
+      expect(body.params).toContain("server-user-id");
+      expect(body.params).not.toContain("forged-user-id");
+    });
+
+    it("scopes junction table DELETE by authenticated userId", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "server-user-id",
+      });
+      const db = createMockDatabase([
+        {
+          id: "rt-1",
+          op: "DELETE",
+          table: "routine_tricks",
+          opData: {},
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse((init as RequestInit).body as string) as {
+        query: string;
+        params: unknown[];
+      };
+      expect(body.query).toContain('"deleted_at"');
+      expect(body.query).toContain('"user_id"');
+      expect(body.params).toContain("server-user-id");
     });
 
     it("throws when fetch rejects with a network error", async () => {

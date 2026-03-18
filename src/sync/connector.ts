@@ -45,6 +45,7 @@ const SYNCED_COLUMNS = {
   ]),
   item_tricks: new Set([
     "id",
+    "user_id",
     "item_id",
     "trick_id",
     "created_at",
@@ -85,6 +86,7 @@ const SYNCED_COLUMNS = {
   ]),
   practice_session_tricks: new Set([
     "id",
+    "user_id",
     "practice_session_id",
     "trick_id",
     "repetitions",
@@ -107,6 +109,7 @@ const SYNCED_COLUMNS = {
   ]),
   routine_tricks: new Set([
     "id",
+    "user_id",
     "routine_id",
     "trick_id",
     "position",
@@ -147,70 +150,16 @@ const SYNCED_COLUMNS = {
   ]),
 } satisfies Record<SyncedTableName, Set<string>>;
 
-/** Junction tables and their parent FK relationships for ownership validation. */
-const JUNCTION_PARENTS: Partial<
-  Record<SyncedTableName, { column: string; parentTable: string }[]>
-> = {
-  routine_tricks: [
-    { column: "routine_id", parentTable: "routines" },
-    { column: "trick_id", parentTable: "tricks" },
-  ],
-  practice_session_tricks: [
-    { column: "practice_session_id", parentTable: "practice_sessions" },
-    { column: "trick_id", parentTable: "tricks" },
-  ],
-  item_tricks: [
-    { column: "item_id", parentTable: "items" },
-    { column: "trick_id", parentTable: "tricks" },
-  ],
-};
-
 function isSyncedTable(table: string): table is SyncedTableName {
   return (SYNCED_TABLES as ReadonlySet<string>).has(table);
 }
 
 const quoteId = (id: string): string => `"${id.replaceAll('"', '""')}"`;
 
-/** Known parent table names from JUNCTION_PARENTS for allowlist validation. */
-const KNOWN_PARENT_TABLES = new Set(
-  Object.values(JUNCTION_PARENTS)
-    .flat()
-    .map(({ parentTable }) => parentTable)
-);
-
 /** HTTP status codes for permanent client errors — retrying won't help. */
 const PERMANENT_CLIENT_ERRORS = new Set([400, 404, 409, 422]);
 
 type SqlParam = string | number | boolean | null;
-
-interface NeonApiResponse {
-  rows: Record<string, SqlParam>[];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isNeonApiResponse(data: unknown): data is NeonApiResponse {
-  if (!(isRecord(data) && "rows" in data)) {
-    return false;
-  }
-  const { rows } = data;
-  if (!Array.isArray(rows)) {
-    return false;
-  }
-  for (const row of rows) {
-    if (!isRecord(row)) {
-      return false;
-    }
-    for (const value of Object.values(row)) {
-      if (!isSqlParam(value)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
 
 function isSqlParam(value: unknown): value is SqlParam {
   return (
@@ -236,114 +185,6 @@ function validateRecord(
       throw new Error(`Disallowed column "${col}" on table "${table}"`);
     }
   }
-}
-
-/**
- * For junction tables (no user_id column), validates that referenced parent
- * rows belong to the authenticated user. Throws if any parent row is missing
- * or belongs to a different user.
- */
-async function validateJunctionOwnership(
-  table: SyncedTableName,
-  record: Record<string, SqlParam>,
-  userId: string,
-  apiUrl: string,
-  token: string
-): Promise<void> {
-  const parents = JUNCTION_PARENTS[table];
-  if (!parents) {
-    return;
-  }
-
-  // Collect all FK checks that need validation
-  const checks: { fkColumn: string; fkValue: string; parentTable: string }[] =
-    [];
-  for (const { column: fkColumn, parentTable } of parents) {
-    const fkValue = record[fkColumn];
-    if (!fkValue || typeof fkValue !== "string") {
-      continue;
-    }
-    checks.push({ fkColumn, fkValue, parentTable });
-  }
-
-  if (checks.length === 0) {
-    return;
-  }
-
-  // Group checks by parent table so we can batch with WHERE id IN (...)
-  const byParent = new Map<string, string[]>();
-  for (const { fkValue, parentTable } of checks) {
-    const existing = byParent.get(parentTable);
-    if (existing) {
-      existing.push(fkValue);
-    } else {
-      byParent.set(parentTable, [fkValue]);
-    }
-  }
-
-  // Issue one batched ownership query per parent table
-  await Promise.all(
-    [...byParent.entries()].map(async ([parentTable, fkValues]) => {
-      // Defense-in-depth: validate parentTable against known allowlist
-      if (!KNOWN_PARENT_TABLES.has(parentTable)) {
-        throw new Error(`Unknown parent table: ${parentTable}`);
-      }
-      const placeholders = fkValues.map((_, i) => `$${i + 1}`);
-      const params: SqlParam[] = [...fkValues, userId];
-      const userIdPlaceholder = `$${params.length}`;
-
-      let checkResponse: Response;
-      try {
-        checkResponse = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            query: `SELECT "id" FROM ${quoteId(parentTable)} WHERE "id" IN (${placeholders.join(", ")}) AND "user_id" = ${userIdPlaceholder}`,
-            params,
-          }),
-          signal: AbortSignal.timeout(30_000),
-        });
-      } catch (error: unknown) {
-        throw new Error(
-          `Failed to validate ownership of ${parentTable} records [${fkValues.join(", ")}]`,
-          { cause: error }
-        );
-      }
-      if (!checkResponse.ok) {
-        throw new Error(
-          `Ownership check failed for ${parentTable}: ${checkResponse.status}`
-        );
-      }
-      const checkData: unknown = await checkResponse.json();
-      if (!isNeonApiResponse(checkData)) {
-        throw new Error(
-          `Unexpected response from ownership check for ${parentTable}`
-        );
-      }
-
-      const ownedIds = new Set(
-        checkData.rows.map((row) => {
-          const id = row.id;
-          if (typeof id !== "string") {
-            throw new Error(
-              `Expected string id from ownership check, got ${typeof id}`
-            );
-          }
-          return id;
-        })
-      );
-      for (const fkValue of fkValues) {
-        if (!ownedIds.has(fkValue)) {
-          throw new Error(
-            `Unauthorized: ${parentTable} ${fkValue} does not belong to user`
-          );
-        }
-      }
-    })
-  );
 }
 
 function buildQuery(
@@ -511,82 +352,6 @@ interface ConnectorOptions {
   onUploadError?: UploadErrorHandler;
 }
 
-/**
- * For DELETE on junction tables, fetch the FK columns needed for ownership
- * validation (not SELECT *) since opData may be empty.
- *
- * TOCTOU caveat: There is a small window between the ownership SELECT
- * and the subsequent soft-delete UPDATE where a concurrent mutation could
- * reassign the junction row's FK to a different parent. This is acceptable
- * because (1) UUIDs make accidental collision negligible, (2) the
- * ownership check prevents the common case of unauthorized access, and
- * (3) true atomic row-level locking would require SELECT ... FOR UPDATE
- * inside a serializable transaction, which the Neon Data API does not
- * currently support in a single round-trip.
- */
-async function validateJunctionDeleteOwnership(
-  table: SyncedTableName,
-  rowId: string,
-  userId: string,
-  neonDataApiUrl: string,
-  token: string
-): Promise<void> {
-  const parents = JUNCTION_PARENTS[table];
-  if (!parents) {
-    return;
-  }
-
-  const fkColumns = parents.map(({ column }) => quoteId(column)).join(", ");
-  let fetchResponse: Response;
-  try {
-    fetchResponse = await fetch(neonDataApiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        query: `SELECT ${fkColumns} FROM ${quoteId(table)} WHERE "id" = $1 AND "deleted_at" IS NULL`,
-        params: [rowId],
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
-  } catch (error: unknown) {
-    throw new Error(
-      `Failed to fetch ${table} record ${rowId} for ownership validation`,
-      { cause: error }
-    );
-  }
-  if (!fetchResponse.ok) {
-    throw new Error(
-      `Failed to fetch junction row for ownership check: ${fetchResponse.status}`
-    );
-  }
-  const fetchData: unknown = await fetchResponse.json();
-  if (!isNeonApiResponse(fetchData) || fetchData.rows.length === 0) {
-    throw new Error(
-      `Junction row ${rowId} not found in ${table} for ownership check`
-    );
-  }
-  const existingRow = fetchData.rows[0];
-  // Verify all expected FK columns are present and non-null before
-  // ownership validation — a missing FK would silently skip the check.
-  for (const { column: fkColumn } of parents) {
-    if (!(fkColumn in existingRow) || existingRow[fkColumn] === null) {
-      throw new Error(
-        `Junction row ${rowId} in ${table} is missing FK column "${fkColumn}" — cannot verify ownership`
-      );
-    }
-  }
-  await validateJunctionOwnership(
-    table,
-    existingRow,
-    userId,
-    neonDataApiUrl,
-    token
-  );
-}
-
 async function processOperation(
   op: CrudOp,
   userId: string,
@@ -608,26 +373,6 @@ async function processOperation(
   const hasUserId = SYNCED_COLUMNS[table].has("user_id");
   if (hasUserId) {
     record.user_id = userId;
-  }
-
-  // For junction tables (no user_id column), validate that referenced
-  // parent rows belong to the authenticated user before allowing mutations.
-  if (op.op === UpdateType.PUT || op.op === UpdateType.PATCH) {
-    await validateJunctionOwnership(
-      table,
-      record,
-      userId,
-      neonDataApiUrl,
-      token
-    );
-  } else if (op.op === UpdateType.DELETE && JUNCTION_PARENTS[table]) {
-    await validateJunctionDeleteOwnership(
-      table,
-      op.id,
-      userId,
-      neonDataApiUrl,
-      token
-    );
   }
 
   const { query, params } = buildQuery(op.op, table, op.id, record, userId);
@@ -701,9 +446,6 @@ function createNeonConnector(
     // TODO: Batch CRUD operations into fewer HTTP requests when the Neon Data API
     // supports multi-statement transactions. Currently each mutation is a separate
     // request, which adds latency proportional to the number of pending changes.
-    // Junction table ownership validation (validateJunctionOwnership) adds
-    // additional round-trips per mutation — batching should combine these into a
-    // single multi-statement request alongside the mutation itself.
     //
     // Idempotency on retry (PowerSync replays the entire transaction on failure):
     // - PUT: Uses INSERT ... ON CONFLICT (upsert) — fully idempotent.
@@ -746,6 +488,5 @@ export {
   defaultUploadErrorHandler,
   isSqlParam,
   isSyncedTable,
-  JUNCTION_PARENTS,
   validateRecord,
 };
