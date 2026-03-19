@@ -21,8 +21,7 @@ export const performances = pgTable(
     date: date().notNull(),
     venue: text(),
     eventName: text("event_name"),
-    // IMPORTANT: When implementing updated_at triggers (#61), ensure SET NULL
-    // cascades on this FK also bump updated_at so PowerSync detects the change.
+    // FK cascade SET NULL bumps updated_at via DB trigger (migration 0007).
     routineId: uuid("routine_id").references(() => routines.id, {
       onDelete: "set null",
     }),

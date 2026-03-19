@@ -521,7 +521,7 @@ A logged performance or show.
 | date | date | NOT NULL |
 | venue | text | |
 | event_name | text | Show/event name |
-| routine_id | UUID (FK -> routines) | Optional, set null on routine delete |
+| routine_id | UUID (FK -> routines) | Optional, set null on routine delete (trigger bumps `updated_at`) |
 | audience_size | integer | |
 | audience_type | text | `"birthday"`, `"corporate"`, `"other"`, `"private"`, `"street"`, `"theater"`, `"wedding"` |
 | duration_minutes | integer | |
@@ -582,7 +582,7 @@ Practice goals and training objectives.
 | current_value | integer | Default 0 |
 | deadline | date | |
 | completed_at | timestamptz | |
-| trick_id | UUID (FK -> tricks) | Optional, set null on trick delete |
+| trick_id | UUID (FK -> tricks) | Optional, set null on trick delete (trigger bumps `updated_at`) |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
@@ -2072,6 +2072,16 @@ The sync engine uses **Last-Write-Wins (LWW)** with `updated_at` timestamps:
 - When two clients modify the same row, the write with the later `updated_at` wins
 - PowerSync Cloud handles conflict detection and resolution automatically
 - The LWW strategy is simple and predictable -- suitable for a single-user workspace
+
+## FK Cascade and Sync
+
+When the hard-delete cleanup job permanently removes parent rows (routines, tricks), Postgres `ON DELETE SET NULL` cascades null out the FK columns on child rows (`performances.routine_id`, `goals.trick_id`). These cascades:
+
+1. **Are detected by PowerSync** via the Postgres WAL replication stream
+2. **Bump `updated_at`** via database triggers (`bump_updated_at_on_fk_null`) to ensure correct LWW conflict resolution
+3. **Require no client schema changes** -- PowerSync `column.text` is nullable by default
+
+Without the `updated_at` trigger, a concurrent client write could win the LWW comparison with a stale timestamp, causing the cascade to be silently overwritten.
 
 ## Deletion Strategy
 
