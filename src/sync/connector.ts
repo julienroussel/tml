@@ -443,9 +443,7 @@ function createNeonConnector(
       throw new Error("Unauthorized: userId is required for mutations");
     }
 
-    // TODO: Batch CRUD operations into fewer HTTP requests when the Neon Data API
-    // supports multi-statement transactions. Currently each mutation is a separate
-    // request, which adds latency proportional to the number of pending changes.
+    // Each mutation is a separate HTTP request — see #59 for batching plan.
     //
     // Idempotency on retry (PowerSync replays the entire transaction on failure):
     // - PUT: Uses INSERT ... ON CONFLICT (upsert) — fully idempotent.

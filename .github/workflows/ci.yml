@@ -88,7 +88,7 @@ jobs:
     needs: [ci]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # TODO: Remove continue-on-error after E2E stability is confirmed
+    # Remove continue-on-error once E2E tests are stable — see #78
     continue-on-error: true
     # Dummy values — only needed so the dev server starts; not used for real auth
     env:
