@@ -16,6 +16,10 @@ const unauthenticatedSession: MockSession = {
 };
 
 vi.mock("server-only", () => ({}));
+const mockCheckRateLimit = vi.fn().mockResolvedValue(false);
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: mockCheckRateLimit,
+}));
 vi.mock("web-push", () => ({
   default: {
     setVapidDetails: vi.fn(),
@@ -91,6 +95,7 @@ describe("server actions", () => {
     vi.resetModules();
     vi.unstubAllEnvs();
     mockReturning.mockResolvedValue([{ id: "test-uuid" }]);
+    mockCheckRateLimit.mockResolvedValue(false);
     mockSelectWhere.mockResolvedValue([]);
   });
 
@@ -525,92 +530,21 @@ describe("server actions", () => {
       });
     });
 
-    // NOTE: vi.resetModules() in afterEach ensures fresh module state between tests.
-    // Rate limit tests use vi.useFakeTimers() BEFORE dynamic import so Date.now()
-    // is controlled from the start. Do not remove resetModules or reorder tests.
-
     it("returns error when rate limit is exceeded", async () => {
-      // Fake timers must be active before module import so that
-      // rateLimitReset = Date.now() + RATE_LIMIT_WINDOW uses the faked clock.
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
-      try {
-        stubVapidEnv();
-        mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
-
-        const { subscribeUser, sendNotification } = await import("./actions");
-        await subscribeUser(validSubscription);
-
-        for (let i = 0; i < 10; i++) {
-          const result = await sendNotification(`Message ${i}`);
-          expect(result).toEqual({ success: true });
-        }
-
-        const result = await sendNotification("One too many");
-        expect(result).toEqual({
-          success: false,
-          error: "Rate limit exceeded",
-        });
-      } finally {
-        vi.useRealTimers();
-      }
+      mockCheckRateLimit.mockResolvedValueOnce(true);
+      const { sendNotification } = await setupSubscribedUser();
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({
+        success: false,
+        error: "Rate limit exceeded",
+      });
+      expect(mockCheckRateLimit).toHaveBeenCalledWith("test-user");
     });
 
-    it("invalid messages do not consume rate limit tokens", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
-      try {
-        stubVapidEnv();
-        mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
-
-        const { subscribeUser, sendNotification } = await import("./actions");
-        await subscribeUser(validSubscription);
-
-        // Send 10 invalid (empty) messages — validation rejects before rate limit
-        for (let i = 0; i < 10; i++) {
-          const result = await sendNotification("   ");
-          expect(result).toEqual({ success: false, error: "Invalid message" });
-        }
-
-        // Valid message should still succeed — empty messages didn't count
-        const result = await sendNotification("Valid message");
-        expect(result).toEqual({ success: true });
-      } finally {
-        vi.useRealTimers();
-      }
-    });
-
-    it("resets rate limit after 60 seconds", async () => {
-      // Fake timers must be active before module import so that
-      // rateLimitReset = Date.now() + RATE_LIMIT_WINDOW uses the faked clock.
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
-      try {
-        stubVapidEnv();
-        mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
-
-        const { subscribeUser, sendNotification } = await import("./actions");
-        await subscribeUser(validSubscription);
-
-        for (let i = 0; i < 10; i++) {
-          const result = await sendNotification(`Message ${i}`);
-          expect(result).toEqual({ success: true });
-        }
-
-        const rateLimitedResult = await sendNotification("One too many");
-        expect(rateLimitedResult).toEqual({
-          success: false,
-          error: "Rate limit exceeded",
-        });
-
-        // Advance past the reset window (strict > check in source requires +1ms).
-        vi.advanceTimersByTime(60_001);
-
-        const afterResetResult = await sendNotification("After reset");
-        expect(afterResetResult).toEqual({ success: true });
-      } finally {
-        vi.useRealTimers();
-      }
+    it("does not check rate limit for invalid messages", async () => {
+      const { sendNotification } = await import("./actions");
+      await sendNotification("   ");
+      expect(mockCheckRateLimit).not.toHaveBeenCalled();
     });
   });
 

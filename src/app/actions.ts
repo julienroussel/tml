@@ -6,6 +6,7 @@ import webpush from "web-push";
 import { auth } from "@/auth/server";
 import { getDb } from "@/db";
 import { pushSubscriptions } from "@/db/schema/push-subscriptions";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type ActionResult =
   | { success: true }
@@ -66,35 +67,6 @@ function ensureVapidInitialized(): void {
     privateKey
   );
   vapidReady = true;
-}
-
-// NOTE: In-memory rate limiting resets on serverless cold starts. For production
-// hardening, replace with Redis/Upstash-based rate limiting. This provides
-// basic protection against rapid repeated submissions within a single instance.
-// TODO: Move to a shared store (e.g. Vercel KV, Upstash Redis) with per-user
-// keys for reliable enforcement.
-const RATE_LIMIT_WINDOW = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 10;
-
-interface RateLimitEntry {
-  count: number;
-  reset: number;
-}
-
-const rateLimitsByUser = new Map<string, RateLimitEntry>();
-
-function cleanupExpiredRateLimits(currentUserId: string, now: number): void {
-  // Only clean up when the map grows beyond 100 entries to avoid
-  // unnecessary iteration on every request. Serverless cold starts
-  // naturally bound map size, so this is a soft safety net.
-  if (rateLimitsByUser.size <= 100) {
-    return;
-  }
-  for (const [key, entry] of rateLimitsByUser) {
-    if (key !== currentUserId && now > entry.reset) {
-      rateLimitsByUser.delete(key);
-    }
-  }
 }
 
 export async function subscribeUser(
@@ -207,21 +179,6 @@ export async function unsubscribeUser(endpoint: string): Promise<ActionResult> {
   return { success: true };
 }
 
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  let rateLimit = rateLimitsByUser.get(userId);
-  if (rateLimit && now > rateLimit.reset) {
-    rateLimit = undefined;
-  }
-  if (!rateLimit) {
-    rateLimit = { count: 0, reset: now + RATE_LIMIT_WINDOW };
-    rateLimitsByUser.set(userId, rateLimit);
-    cleanupExpiredRateLimits(userId, now);
-  }
-  rateLimit.count++;
-  return rateLimit.count > RATE_LIMIT_MAX;
-}
-
 function fetchUserSubscriptions(userId: string) {
   const db = getDb();
   return db
@@ -307,7 +264,7 @@ export async function sendNotification(message: string): Promise<ActionResult> {
 
   const userId = session.user.id;
 
-  if (checkRateLimit(userId)) {
+  if (await checkRateLimit(userId)) {
     return { success: false, error: "Rate limit exceeded" };
   }
 
