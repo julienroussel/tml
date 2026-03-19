@@ -220,7 +220,10 @@ async function deliverToSubscriptions(
     } else {
       const error: unknown = result.reason;
       if (isWebPushError(error) && error.statusCode === 410) {
-        goneEndpoints.push(subscriptions[i].endpoint);
+        const sub = subscriptions[i];
+        if (sub) {
+          goneEndpoints.push(sub.endpoint);
+        }
       }
       console.error("Failed to send push notification:", error);
     }

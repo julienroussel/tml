@@ -242,7 +242,8 @@ describe("email", () => {
         name: "Houdini",
       });
 
-      const callArgs = mockSend.mock.calls[0][0];
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
       expect(callArgs.html).toContain("Hi Houdini");
     });
 
@@ -263,7 +264,8 @@ describe("email", () => {
         userId: TEST_USER_ID,
       });
 
-      const callArgs = mockSend.mock.calls[0][0];
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
       expect(callArgs.html).toContain("Hi, welcome to The Magic Lab!");
       expect(callArgs.html).not.toMatch(PERSONALIZED_GREETING_PATTERN);
     });
@@ -286,7 +288,8 @@ describe("email", () => {
         name: "Houdini",
       });
 
-      const callArgs = mockSend.mock.calls[0][0];
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
       expect(callArgs.subject).toBe("Welcome to The Magic Lab");
     });
   });
@@ -339,7 +342,8 @@ describe("email", () => {
         userId: TEST_USER_ID,
       });
 
-      const callArgs = mockSend.mock.calls[0][0];
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
       expect(callArgs.headers["List-Unsubscribe"]).toMatch(
         UNSUBSCRIBE_URL_PATTERN
       );
@@ -399,7 +403,8 @@ describe("email", () => {
         html: "<p>Hi</p>",
       });
 
-      const callArgs = mockSend.mock.calls[0][0];
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
       expect(callArgs.to).toBe("delivered@resend.dev");
     });
 

@@ -423,7 +423,7 @@ describe("createNeonConnector", () => {
       );
 
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [url, init] = fetchSpy.mock.calls[0];
+      const [url, init] = fetchSpy.mock.calls[0]!;
       expect(url).toBe("https://neon.example.com");
       const body = JSON.parse((init as RequestInit).body as string) as {
         query: string;
@@ -436,7 +436,8 @@ describe("createNeonConnector", () => {
       expect((init as RequestInit).headers).toEqual(
         expect.objectContaining({ Authorization: "Bearer my-token" })
       );
-      const transaction = await db.getNextCrudTransaction.mock.results[0].value;
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction).toEqual(
         expect.objectContaining({
           complete: expect.any(Function),
@@ -466,7 +467,7 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      const [, init] = fetchSpy.mock.calls[0];
+      const [, init] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((init as RequestInit).body as string) as {
         query: string;
         params: unknown[];
@@ -499,7 +500,7 @@ describe("createNeonConnector", () => {
       );
 
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, patchInit] = fetchSpy.mock.calls[0];
+      const [, patchInit] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((patchInit as RequestInit).body as string) as {
         query: string;
         params: unknown[];
@@ -534,7 +535,7 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      const [, init] = fetchSpy.mock.calls[0];
+      const [, init] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((init as RequestInit).body as string) as {
         query: string;
         params: unknown[];
@@ -568,7 +569,7 @@ describe("createNeonConnector", () => {
       );
 
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, deleteInit] = fetchSpy.mock.calls[0];
+      const [, deleteInit] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((deleteInit as RequestInit).body as string) as {
         query: string;
         params: unknown[];
@@ -602,7 +603,8 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      const transaction = await db.getNextCrudTransaction.mock.results[0].value;
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
@@ -633,7 +635,8 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      const transaction = await db.getNextCrudTransaction.mock.results[0].value;
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("mutation dropped"),
@@ -667,7 +670,8 @@ describe("createNeonConnector", () => {
         )
       ).rejects.toThrow("Neon Data API error: 500");
 
-      const transaction = await db.getNextCrudTransaction.mock.results[0].value;
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).not.toHaveBeenCalled();
     });
 
@@ -786,7 +790,8 @@ describe("createNeonConnector", () => {
         expect.stringContaining("mutation dropped"),
         expect.stringContaining("409")
       );
-      const transaction = await db.getNextCrudTransaction.mock.results[0].value;
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
@@ -839,7 +844,7 @@ describe("createNeonConnector", () => {
 
       // No ownership check round-trips — just the mutation itself
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, init] = fetchSpy.mock.calls[0];
+      const [, init] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((init as RequestInit).body as string) as {
         query: string;
         params: unknown[];
@@ -848,7 +853,8 @@ describe("createNeonConnector", () => {
       expect(body.params).toContain("server-user-id");
       expect(body.params).not.toContain("forged-user-id");
       expect(body.query).toContain('"user_id"');
-      const transaction = await db.getNextCrudTransaction.mock.results[0].value;
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
@@ -877,7 +883,7 @@ describe("createNeonConnector", () => {
       );
 
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, init] = fetchSpy.mock.calls[0];
+      const [, init] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((init as RequestInit).body as string) as {
         query: string;
         params: unknown[];
@@ -910,7 +916,7 @@ describe("createNeonConnector", () => {
       );
 
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, init] = fetchSpy.mock.calls[0];
+      const [, init] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse((init as RequestInit).body as string) as {
         query: string;
         params: unknown[];
