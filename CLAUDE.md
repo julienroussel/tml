@@ -71,6 +71,7 @@ Requires Node 24.x and pnpm >= 10.
 - Declared with `"use server"` directive at file top.
 - Always pair with `import "server-only"` to prevent client bundling.
 - Auth check via `await auth.getSession()` at the start of every action.
+- For non-blocking post-response work (e.g., emails), use `after()` from `next/server`. Never `setTimeout` or fire-and-forget promises in serverless.
 
 ### Module Registry
 
@@ -84,6 +85,7 @@ Requires Node 24.x and pnpm >= 10.
 
 - **Prefer Vercel-native features** over third-party alternatives when Vercel offers an equivalent that meets the need and is available on the current subscription plan (e.g., Vercel WAF rate limiting over Upstash, Vercel KV over external Redis, Vercel Cron Jobs over external schedulers).
 - Only suggest a third-party service if Vercel's offering is insufficient or unavailable on the current plan — explain why.
+- **Environment detection**: Use `VERCEL_ENV` (not `NODE_ENV`) to distinguish production from preview/development. `NODE_ENV` is `"production"` in both production and preview deployments.
 
 ---
 
@@ -178,6 +180,9 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Read path**: Neon → PowerSync Cloud → client SQLite → `useQuery()` → React component
 - **Conflict resolution**: Last-write-wins with `updated_at` timestamps
 - **Deletion**: Soft-delete with `deleted_at` tombstone, 30-day hard-delete cleanup
+- **Connector allowlists**: New synced tables MUST be added to `SYNCED_TABLE_NAMES` and `SYNCED_COLUMNS` in `src/sync/connector.ts` — unlisted tables/columns are silently rejected
+- **Mutation scoping**: The connector forces the authenticated `user_id` on all writes server-side — never trusted from the client
+- **Error semantics**: 4xx responses are permanent (mutation dropped); 5xx/network errors trigger PowerSync retry
 
 ## CSP Rules
 
@@ -212,16 +217,14 @@ Type safety is a first-class concern. All code must be rigorously typed.
 
 ## LLM Discovery
 
-- **llms.txt**: `public/llms.txt` generated from `docs/` content
-- **Full docs**: `public/llms-full.txt` for complete documentation
-- **Generation**: `pnpm docs:generate` regenerates both files
+- **llms.txt**: `public/llms.txt` and `public/llms-full.txt` — generated from `docs/` via `pnpm docs:generate`
 - **CI check**: Staleness check ensures generated files match source docs
 - **Robots.txt**: Allows crawling of llms.txt files
 
 ## When Adding a New Feature
 
 Checklist:
-1. Feature dir in `src/features/<name>/`
+1. Feature dir in `src/features/<name>/` (shared `components/` and `hooks/`)
 2. Server schema in `src/db/schema/<name>.ts`
 3. Generate + apply migration (`pnpm db:generate && pnpm db:migrate`)
 4. Update PowerSync client schema (`src/sync/schema.ts`)

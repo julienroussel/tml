@@ -1,6 +1,6 @@
 # Code Quality Standards
 
-This project uses **Ultracite** (Biome) for automated linting and formatting. Most style issues are caught and fixed automatically — the rules below cover what Biome **cannot** enforce.
+> These heuristics complement the project-specific rules in the root `CLAUDE.md` — they cover what Biome **cannot** enforce.
 
 ## What to Focus On
 
@@ -19,11 +19,9 @@ This project uses **Ultracite** (Biome) for automated linting and formatting. Mo
 - Throw `Error` objects with descriptive messages, not strings
 - Don't catch errors just to rethrow them unchanged
 - Group related code together and separate concerns
-- Keep functions focused and under reasonable cognitive complexity
 
 ## Testing
 
 - Write assertions inside `it()` or `test()` blocks
-- Use `async/await` in async tests — never `done` callbacks
 - Don't commit `.only` or `.skip`
 - Keep test suites reasonably flat — avoid excessive `describe` nesting
