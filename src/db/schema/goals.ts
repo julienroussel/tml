@@ -27,9 +27,8 @@ export const goals = pgTable(
     currentValue: integer("current_value").default(0),
     deadline: date(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
-    // TODO: When implementing database-level updated_at triggers (see GitHub
-    // issue #61), ensure SET NULL cascades also bump updated_at so PowerSync
-    // detects the change.
+    // IMPORTANT: When implementing updated_at triggers (#61), ensure SET NULL
+    // cascades on this FK also bump updated_at so PowerSync detects the change.
     trickId: uuid("trick_id").references(() => tricks.id, {
       onDelete: "set null",
     }),

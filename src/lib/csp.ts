@@ -51,7 +51,7 @@ const BASE_DIRECTIVES: CspDirectives = {
   // script that prevents a flash of unstyled content (FOUC) on page load.
   // next-themes injects an inline <script> in <head> before React hydrates,
   // so we cannot replace this with a nonce or hash without patching the library.
-  // TODO: migrate to nonce-based CSP once next-themes supports it, removing 'unsafe-inline'
+  // Migrate to nonce-based CSP — next-themes v0.4.6+ supports the nonce prop. See #44.
   "script-src": [
     "'self'",
     "'unsafe-inline'",
