@@ -73,7 +73,7 @@ export async function ensureUserExists(): Promise<void> {
   // New-user detection via Postgres xmax system column:
   // xmax = "0" means the row was just INSERTed (new user).
   // xmax != "0" means the row was UPDATEd via the ON CONFLICT branch (existing user).
-  const isNewUser = result.length > 0 && result[0].xmax === "0";
+  const isNewUser = result.length > 0 && result[0]?.xmax === "0";
 
   if (isNewUser) {
     after(() =>

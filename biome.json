@@ -48,5 +48,21 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": [
+        "**/ensure-user.test.ts",
+        "**/email.test.ts",
+        "**/connector.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ],
   "extends": ["ultracite/biome/core", "ultracite/biome/next"]
 }

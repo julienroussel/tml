@@ -168,7 +168,7 @@ describe("ensureUserExists", () => {
     // Invoke the callback captured by after() directly instead of
     // relying on microtask timing
     expect(mockAfter).toHaveBeenCalled();
-    const afterCallback = mockAfter.mock.calls[0][0] as () => Promise<void>;
+    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
     await afterCallback();
 
     expect(mockSendWelcomeEmail).toHaveBeenCalledWith({
