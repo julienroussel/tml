@@ -65,6 +65,16 @@ The sync engine uses **Last-Write-Wins (LWW)** with `updated_at` timestamps:
 - PowerSync Cloud handles conflict detection and resolution automatically
 - The LWW strategy is simple and predictable -- suitable for a single-user workspace
 
+## FK Cascade and Sync
+
+When the hard-delete cleanup job permanently removes parent rows (routines, tricks), Postgres `ON DELETE SET NULL` cascades null out the FK columns on child rows (`performances.routine_id`, `goals.trick_id`). These cascades:
+
+1. **Are detected by PowerSync** via the Postgres WAL replication stream
+2. **Bump `updated_at`** via database triggers (`bump_updated_at_on_fk_null`) to ensure correct LWW conflict resolution
+3. **Require no client schema changes** -- PowerSync `column.text` is nullable by default
+
+Without the `updated_at` trigger, a concurrent client write could win the LWW comparison with a stale timestamp, causing the cascade to be silently overwritten.
+
 ## Deletion Strategy
 
 The app uses **soft-delete with tombstones** to ensure reliable sync:

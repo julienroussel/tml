@@ -140,7 +140,7 @@ A logged performance or show.
 | date | date | NOT NULL |
 | venue | text | |
 | event_name | text | Show/event name |
-| routine_id | UUID (FK -> routines) | Optional, set null on routine delete |
+| routine_id | UUID (FK -> routines) | Optional, set null on routine delete (trigger bumps `updated_at`) |
 | audience_size | integer | |
 | audience_type | text | `"birthday"`, `"corporate"`, `"other"`, `"private"`, `"street"`, `"theater"`, `"wedding"` |
 | duration_minutes | integer | |
@@ -201,7 +201,7 @@ Practice goals and training objectives.
 | current_value | integer | Default 0 |
 | deadline | date | |
 | completed_at | timestamptz | |
-| trick_id | UUID (FK -> tricks) | Optional, set null on trick delete |
+| trick_id | UUID (FK -> tricks) | Optional, set null on trick delete (trigger bumps `updated_at`) |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
