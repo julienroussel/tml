@@ -80,6 +80,13 @@ Requires Node 24.x and pnpm >= 10.
 
 ---
 
+## Platform Preferences
+
+- **Prefer Vercel-native features** over third-party alternatives when Vercel offers an equivalent that meets the need and is available on the current subscription plan (e.g., Vercel WAF rate limiting over Upstash, Vercel KV over external Redis, Vercel Cron Jobs over external schedulers).
+- Only suggest a third-party service if Vercel's offering is insufficient or unavailable on the current plan — explain why.
+
+---
+
 ## Version-Specific Rules
 
 Many patterns from older tutorials are outdated. **Never suggest or use deprecated patterns for any of these tools.**
