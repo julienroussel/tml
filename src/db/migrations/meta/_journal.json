@@ -57,6 +57,13 @@
       "when": 1774243200000,
       "tag": "0007_fk_cascade_updated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774037051824,
+      "tag": "0008_crazy_roulette",
+      "breakpoints": true
     }
   ]
 }
