@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 interface MockSession {
@@ -17,11 +17,30 @@ const nullUserSession: MockSession = {
 
 const mockMiddleware = vi.fn();
 
+vi.mock("next/headers", () => ({
+  headers: () =>
+    Promise.resolve(
+      new Headers({
+        "x-nonce": "test-nonce",
+      })
+    ),
+  cookies: () =>
+    Promise.resolve({
+      get: () => undefined,
+      getAll: () => [],
+      has: () => false,
+    }),
+}));
+
 vi.mock("@/auth/server", () => ({
   auth: {
     getSession: vi.fn(),
     middleware: vi.fn(() => mockMiddleware),
   },
+}));
+
+vi.mock("@/lib/csp", () => ({
+  buildCsp: vi.fn(() => "default-src 'self'; script-src 'self' 'nonce-test'"),
 }));
 
 const SESSION_COOKIE_NAME = "__Secure-neon-auth.session_token";
@@ -33,6 +52,17 @@ function createRequest(pathname: string, withCookie = false): NextRequest {
     request.cookies.set(SESSION_COOKIE_NAME, "fake-session-token");
   }
   return request;
+}
+
+/** Creates a mock auth middleware response with cookies support */
+function createAuthResponse(
+  status: number,
+  headers?: Record<string, string>
+): NextResponse {
+  return NextResponse.next({
+    status,
+    headers: new Headers(headers),
+  });
 }
 
 describe("proxy", () => {
@@ -68,7 +98,7 @@ describe("proxy", () => {
 
   it("does not redirect when session cookie is missing", async () => {
     const { proxy } = await import("./proxy");
-    mockMiddleware.mockReturnValueOnce(new Response(null, { status: 200 }));
+    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
 
     await proxy(createRequest("/auth/sign-in", false));
 
@@ -81,7 +111,7 @@ describe("proxy", () => {
     const { auth } = await import("@/auth/server");
     vi.mocked(auth.getSession).mockResolvedValueOnce(nullUserSession);
 
-    mockMiddleware.mockReturnValueOnce(new Response(null, { status: 200 }));
+    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
 
     const { proxy } = await import("./proxy");
     const response = await proxy(createRequest("/auth/sign-in", true));
@@ -96,7 +126,7 @@ describe("proxy", () => {
       new Error("network error")
     );
 
-    mockMiddleware.mockReturnValueOnce(new Response(null, { status: 200 }));
+    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
 
     const { proxy } = await import("./proxy");
     const response = await proxy(createRequest("/auth/sign-in", true));
@@ -107,61 +137,187 @@ describe("proxy", () => {
 
   it("passes through to auth middleware for protected routes", async () => {
     const { proxy } = await import("./proxy");
-    mockMiddleware.mockReturnValueOnce(new Response(null, { status: 200 }));
+    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
 
     await proxy(createRequest("/dashboard", false));
 
     expect(mockMiddleware).toHaveBeenCalled();
   });
 
-  describe("public routes (outside matcher)", () => {
-    it("does not match the root marketing page", async () => {
-      const { config } = await import("./proxy");
-      for (const pattern of config.matcher) {
-        expect("/").not.toMatch(
-          new RegExp(`^${pattern.replace(":path*", ".*")}$`)
-        );
-      }
+  it("sets Content-Security-Policy header on all responses", async () => {
+    const { proxy } = await import("./proxy");
+
+    // Public route
+    const publicResponse = await proxy(createRequest("/", false));
+    expect(publicResponse.headers.get("Content-Security-Policy")).toBeTruthy();
+
+    // Protected route
+    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
+    const protectedResponse = await proxy(createRequest("/dashboard", false));
+    expect(
+      protectedResponse.headers.get("Content-Security-Policy")
+    ).toBeTruthy();
+  });
+
+  it("does not call auth middleware for public routes", async () => {
+    const { proxy } = await import("./proxy");
+
+    await proxy(createRequest("/", false));
+
+    expect(mockMiddleware).not.toHaveBeenCalled();
+  });
+
+  it("calls buildCsp with a nonce argument", async () => {
+    const { buildCsp } = await import("@/lib/csp");
+    const { proxy } = await import("./proxy");
+
+    await proxy(createRequest("/faq", false));
+
+    expect(buildCsp).toHaveBeenCalledWith(
+      expect.objectContaining({ nonce: expect.any(String) })
+    );
+    const { nonce } = vi.mocked(buildCsp).mock.calls[0]?.[0] ?? {};
+    expect(nonce).toBeTruthy();
+    expect(typeof nonce).toBe("string");
+  });
+
+  it("sets CSP header on auth redirect response", async () => {
+    const { auth } = await import("@/auth/server");
+    vi.mocked(auth.getSession).mockResolvedValueOnce(authenticatedSession);
+
+    const { proxy } = await import("./proxy");
+    const response = await proxy(createRequest("/auth/sign-in", true));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("Content-Security-Policy")).toBeTruthy();
+  });
+
+  it("carries over cookies from auth middleware response", async () => {
+    const { proxy } = await import("./proxy");
+
+    const authResponse = createAuthResponse(200);
+    authResponse.cookies.set("auth-token", "abc123", { path: "/" });
+    authResponse.cookies.set("refresh-token", "xyz789", { path: "/" });
+    mockMiddleware.mockReturnValueOnce(authResponse);
+
+    const response = await proxy(createRequest("/dashboard", false));
+
+    expect(response.cookies.get("auth-token")?.value).toBe("abc123");
+    expect(response.cookies.get("refresh-token")?.value).toBe("xyz789");
+  });
+
+  it("forwards x-nonce in request headers for server components", async () => {
+    const { proxy } = await import("./proxy");
+    const request = createRequest("/", false);
+    await proxy(request);
+    // The nonce should be present in request headers passed to NextResponse.next()
+    // We verify via the buildCsp mock which receives the nonce
+    const { buildCsp } = await import("@/lib/csp");
+    const { nonce } = vi.mocked(buildCsp).mock.calls[0]?.[0] ?? {};
+    expect(nonce).toBeTruthy();
+    // Also verify the response has CSP with that nonce
+    const response = await proxy(createRequest("/", false));
+    expect(response.headers.get("Content-Security-Policy")).toContain("nonce");
+  });
+
+  it("applies CSP header to auth middleware redirect", async () => {
+    const { proxy } = await import("./proxy");
+
+    // Auth middleware returns a redirect (user not authenticated)
+    const redirectResponse = NextResponse.redirect(
+      new URL("/auth/sign-in", "https://themagiclab.app"),
+      { status: 302 }
+    );
+    mockMiddleware.mockReturnValueOnce(redirectResponse);
+
+    const response = await proxy(createRequest("/dashboard", false));
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toContain("/auth/sign-in");
+    expect(response.headers.get("Content-Security-Policy")).toBeTruthy();
+  });
+
+  it("redirects to sign-in with CSP when auth middleware throws", async () => {
+    const { proxy } = await import("./proxy");
+    mockMiddleware.mockRejectedValueOnce(new Error("auth SDK crash"));
+
+    const response = await proxy(createRequest("/dashboard", false));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toContain("/auth/sign-in");
+    expect(response.headers.get("Content-Security-Policy")).toBeTruthy();
+  });
+
+  it("forwards auth middleware error responses with CSP", async () => {
+    const { proxy } = await import("./proxy");
+
+    const errorResponse = new NextResponse(null, { status: 403 });
+    mockMiddleware.mockReturnValueOnce(errorResponse);
+
+    const response = await proxy(createRequest("/dashboard", false));
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get("Content-Security-Policy")).toBeTruthy();
+  });
+
+  describe("needsAuth", () => {
+    it("returns true for exact prefix match", async () => {
+      const { proxy } = await import("./proxy");
+      mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
+
+      await proxy(createRequest("/admin", false));
+
+      expect(mockMiddleware).toHaveBeenCalled();
     });
 
-    it("does not match marketing routes like /faq or /privacy", async () => {
-      const { config } = await import("./proxy");
-      const marketingRoutes = ["/faq", "/privacy", "/terms", "/about"];
-      for (const route of marketingRoutes) {
-        const matched = config.matcher.some((pattern) =>
-          new RegExp(`^${pattern.replace(":path*", ".*")}$`).test(route)
-        );
-        expect(matched, `${route} should not be matched by proxy`).toBe(false);
-      }
+    it("returns true for sub-path of protected prefix", async () => {
+      const { proxy } = await import("./proxy");
+      mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
+
+      await proxy(createRequest("/admin/users", false));
+
+      expect(mockMiddleware).toHaveBeenCalled();
     });
 
-    it("does not match API routes", async () => {
-      const { config } = await import("./proxy");
-      const apiRoutes = ["/api/health", "/api/powersync/upload"];
-      for (const route of apiRoutes) {
-        const matched = config.matcher.some((pattern) =>
-          new RegExp(`^${pattern.replace(":path*", ".*")}$`).test(route)
-        );
-        expect(matched, `${route} should not be matched by proxy`).toBe(false);
-      }
+    it("returns false for partial prefix match like /administrators", async () => {
+      const { proxy } = await import("./proxy");
+
+      await proxy(createRequest("/administrators", false));
+
+      expect(mockMiddleware).not.toHaveBeenCalled();
+    });
+
+    it("returns false for paths not in protected list", async () => {
+      const { proxy } = await import("./proxy");
+
+      await proxy(createRequest("/about", false));
+
+      expect(mockMiddleware).not.toHaveBeenCalled();
     });
   });
 
-  describe("config", () => {
-    it("includes all protected route patterns", async () => {
+  describe("matcher", () => {
+    it("uses a catch-all regex that excludes static assets", async () => {
       const { config } = await import("./proxy");
 
-      expect(config.matcher).toContain("/auth/:path*");
-      expect(config.matcher).toContain("/dashboard/:path*");
-      expect(config.matcher).toContain("/improve/:path*");
-      expect(config.matcher).toContain("/train/:path*");
-      expect(config.matcher).toContain("/plan/:path*");
-      expect(config.matcher).toContain("/perform/:path*");
-      expect(config.matcher).toContain("/enhance/:path*");
-      expect(config.matcher).toContain("/collect/:path*");
-      expect(config.matcher).toContain("/settings/:path*");
-      expect(config.matcher).toContain("/admin/:path*");
-      expect(config.matcher).toContain("/account/:path*");
+      expect(config.matcher).toHaveLength(1);
+      const pattern = config.matcher[0];
+
+      // Should be a negative lookahead regex
+      expect(pattern).toContain("_next/static");
+      expect(pattern).toContain("_next/image");
+      expect(pattern).toContain("favicon\\.ico");
+      expect(pattern).toContain("sw\\.js");
+    });
+
+    it("excludes static file extensions", async () => {
+      const { config } = await import("./proxy");
+      const pattern = config.matcher[0];
+
+      expect(pattern).toContain("svg");
+      expect(pattern).toContain("png");
+      expect(pattern).toContain("jpg");
+      expect(pattern).toContain("woff2");
     });
   });
 });

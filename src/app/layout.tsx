@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
@@ -58,14 +59,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>): Promise<ReactElement> {
-  const locale = await getLocale();
-  const messages = await getMessages();
-  const t = await getTranslations("common");
+  const [locale, messages, t, headersList] = await Promise.all([
+    getLocale(),
+    getMessages(),
+    getTranslations("common"),
+    headers(),
+  ]);
+  const nonce = headersList.get("x-nonce") ?? undefined;
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          nonce={nonce}
+        >
           <NeonAuthUIProvider
             authClient={authClient}
             emailOTP
