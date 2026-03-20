@@ -44,15 +44,9 @@ describe("next.config headers", () => {
     expect(value).toContain("preload");
   });
 
-  it("sets Content-Security-Policy with required directives", async () => {
+  it("does not set static Content-Security-Policy (CSP is dynamic per-request in proxy.ts)", async () => {
     const csp = await getHeaderValue("Content-Security-Policy");
-    expect(csp).toBeDefined();
-    expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("object-src 'none'");
-    expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).toContain("base-uri 'self'");
-    expect(csp).toContain("form-action 'self'");
-    expect(csp).toContain("worker-src 'self'");
+    expect(csp).toBeUndefined();
   });
 
   it("does not include deprecated X-XSS-Protection header", async () => {

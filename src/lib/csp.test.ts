@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyNonce,
   BASE_DIRECTIVES,
   buildCsp,
   DEV_EXTENSIONS,
@@ -36,6 +37,12 @@ describe("BASE_DIRECTIVES", () => {
   it("includes Neon Data API in connect-src pinned to region c-2", () => {
     expect(BASE_DIRECTIVES["connect-src"]).toContain(
       "https://*.apirest.c-2.eu-central-1.aws.neon.tech"
+    );
+  });
+
+  it("includes Google profile avatars in img-src", () => {
+    expect(BASE_DIRECTIVES["img-src"]).toContain(
+      "https://lh3.googleusercontent.com"
     );
   });
 
@@ -96,25 +103,73 @@ describe("directivesToString", () => {
   });
 });
 
+describe("applyNonce", () => {
+  it("adds nonce to script-src", () => {
+    const result = applyNonce(BASE_DIRECTIVES, "abc123");
+    expect(result["script-src"]).toContain("'nonce-abc123'");
+  });
+
+  it("preserves existing script-src values", () => {
+    const result = applyNonce(BASE_DIRECTIVES, "abc123");
+    expect(result["script-src"]).toContain("'self'");
+    expect(result["script-src"]).toContain("'unsafe-inline'");
+    expect(result["script-src"]).toContain("https://va.vercel-scripts.com");
+  });
+
+  it("does not mutate the input directives", () => {
+    const original = [...BASE_DIRECTIVES["script-src"]];
+    applyNonce(BASE_DIRECTIVES, "test");
+    expect(BASE_DIRECTIVES["script-src"]).toEqual(original);
+  });
+
+  it("does not add nonce to style-src", () => {
+    const result = applyNonce(BASE_DIRECTIVES, "abc123");
+    expect(result["style-src"]).toEqual(BASE_DIRECTIVES["style-src"]);
+  });
+});
+
 describe("buildCsp", () => {
   it("returns production CSP without dev sources", () => {
-    const csp = buildCsp(false);
+    const csp = buildCsp({ isDev: false });
     expect(csp).not.toContain("ws://localhost");
     expect(csp).not.toContain("drizzle.studio");
   });
 
   it("returns dev CSP with HMR and Drizzle Studio sources", () => {
-    const csp = buildCsp(true);
+    const csp = buildCsp({ isDev: true });
     expect(csp).toContain("ws://localhost:*");
     expect(csp).toContain("https://local.drizzle.studio");
   });
 
   it("always includes core security directives", () => {
     for (const isDev of [true, false]) {
-      const csp = buildCsp(isDev);
+      const csp = buildCsp({ isDev });
       expect(csp).toContain("default-src 'self'");
       expect(csp).toContain("object-src 'none'");
       expect(csp).toContain("frame-ancestors 'none'");
     }
+  });
+
+  it("includes nonce in script-src when provided", () => {
+    const csp = buildCsp({ isDev: false, nonce: "test-nonce-123" });
+    expect(csp).toContain("'nonce-test-nonce-123'");
+  });
+
+  it("keeps unsafe-inline alongside nonce for CSP Level 1 fallback", () => {
+    const csp = buildCsp({ isDev: false, nonce: "test-nonce" });
+    expect(csp).toContain("'unsafe-inline'");
+    expect(csp).toContain("'nonce-test-nonce'");
+  });
+
+  it("does not include nonce when omitted", () => {
+    const csp = buildCsp({ isDev: false });
+    expect(csp).not.toContain("nonce-");
+  });
+
+  it("does not add nonce to style-src", () => {
+    const csp = buildCsp({ isDev: false, nonce: "test-nonce" });
+    const styleSrc = csp.split("; ").find((d) => d.startsWith("style-src"));
+    expect(styleSrc).toBeDefined();
+    expect(styleSrc).not.toContain("nonce");
   });
 });

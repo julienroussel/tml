@@ -47,11 +47,10 @@ function cspDirectiveNames(
 
 const BASE_DIRECTIVES: CspDirectives = {
   "default-src": ["'self'"],
-  // 'unsafe-inline' is required for next-themes to inject the theme-setting
-  // script that prevents a flash of unstyled content (FOUC) on page load.
-  // next-themes injects an inline <script> in <head> before React hydrates,
-  // so we cannot replace this with a nonce or hash without patching the library.
-  // Migrate to nonce-based CSP — next-themes v0.4.6+ supports the nonce prop. See #44.
+  // 'unsafe-inline' is kept alongside the nonce for CSP Level 1 fallback.
+  // CSP Level 2+ browsers automatically ignore 'unsafe-inline' when a nonce
+  // is present. The nonce is generated per-request in proxy.ts and passed to
+  // next-themes via the ThemeProvider nonce prop.
   "script-src": [
     "'self'",
     "'unsafe-inline'",
@@ -59,7 +58,7 @@ const BASE_DIRECTIVES: CspDirectives = {
     "https://va.vercel-scripts.com",
   ],
   "style-src": ["'self'", "'unsafe-inline'"],
-  "img-src": ["'self'", "data:", "blob:"],
+  "img-src": ["'self'", "data:", "blob:", "https://lh3.googleusercontent.com"],
   "font-src": ["'self'"],
   "connect-src": [
     "'self'",
@@ -122,16 +121,38 @@ function directivesToString(directives: CspDirectives): string {
   return parts.join("; ");
 }
 
-function buildCsp(isDev: boolean): string {
-  const directives = isDev
+interface BuildCspOptions {
+  isDev: boolean;
+  nonce?: string;
+}
+
+/**
+ * Appends a nonce source to `script-src`. The existing `'unsafe-inline'` is
+ * kept for CSP Level 1 fallback — CSP Level 2+ browsers automatically ignore
+ * `'unsafe-inline'` when a nonce or hash source is present.
+ */
+function applyNonce(directives: CspDirectives, nonce: string): CspDirectives {
+  return {
+    ...directives,
+    "script-src": [...directives["script-src"], `'nonce-${nonce}'`],
+  };
+}
+
+function buildCsp(options: BuildCspOptions): string {
+  let directives = options.isDev
     ? mergeDirectives(BASE_DIRECTIVES, DEV_EXTENSIONS)
     : BASE_DIRECTIVES;
+
+  if (options.nonce !== undefined) {
+    directives = applyNonce(directives, options.nonce);
+  }
 
   return directivesToString(directives);
 }
 
-export type { CspDirectiveName, CspDirectives };
+export type { BuildCspOptions, CspDirectiveName, CspDirectives };
 export {
+  applyNonce,
   BASE_DIRECTIVES,
   buildCsp,
   DEV_EXTENSIONS,
