@@ -51,15 +51,18 @@ export const routineTricks = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    // CASCADE is safe here because parent entities use soft-delete (setting
-    // deleted_at), which does not trigger ON DELETE CASCADE. Hard-deletes only
-    // occur during full user account removal.
+    // NO ACTION prevents the hard-delete cleanup job (#55) from physically
+    // removing a parent while junction rows still reference it. Unlike
+    // RESTRICT, NO ACTION defers the check to statement end, which allows
+    // user account deletion to cascade correctly through both user_id and
+    // entity FK paths. The cleanup job must soft-delete junctions first
+    // (creating sync tombstones), then hard-delete in the correct order.
     routineId: uuid("routine_id")
       .notNull()
-      .references(() => routines.id, { onDelete: "cascade" }),
+      .references(() => routines.id, { onDelete: "no action" }),
     trickId: uuid("trick_id")
       .notNull()
-      .references(() => tricks.id, { onDelete: "cascade" }),
+      .references(() => tricks.id, { onDelete: "no action" }),
     position: integer().notNull(),
     transitionNotes: text("transition_notes"),
     createdAt: timestamp("created_at", { withTimezone: true })
