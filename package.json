@@ -82,7 +82,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "17.3.1",
     "drizzle-kit": "0.31.10",
-    "jsdom": "29.0.0",
+    "jsdom": "29.0.1",
     "lefthook": "2.1.4",
     "shadcn": "4.1.0",
     "tailwindcss": "4.2.2",
