@@ -131,7 +131,9 @@
     "offline": "Offline",
     "syncing": "Synchroniseren",
     "pendingChanges": "Openstaande wijzigingen",
-    "error": "Synchronisatiefout"
+    "error": "Synchronisatiefout",
+    "mutationDropped": "{count, plural, one {# wijziging kon niet worden opgeslagen} other {# wijzigingen konden niet worden opgeslagen}}",
+    "mutationDroppedDescription": "De server heeft de wijziging geweigerd. Je lokale gegevens zijn mogelijk niet gesynchroniseerd."
   },
   "pushNotifications": {
     "notSupported": "Pushmeldingen worden niet ondersteund in deze browser.",

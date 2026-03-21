@@ -4,6 +4,10 @@ vi.mock("@powersync/web", () => ({
   UpdateType: { PUT: "PUT", PATCH: "PATCH", DELETE: "DELETE" },
 }));
 
+vi.mock("./events", () => ({
+  dispatchSyncError: vi.fn(),
+}));
+
 import { UpdateType } from "@powersync/web";
 import {
   buildQuery,
@@ -11,6 +15,7 @@ import {
   isSyncedTable,
   validateRecord,
 } from "./connector";
+import { dispatchSyncError } from "./events";
 
 describe("isSqlParam", () => {
   it("returns true for null", () => {
@@ -924,6 +929,77 @@ describe("createNeonConnector", () => {
       expect(body.query).toContain('"deleted_at"');
       expect(body.query).toContain('"user_id"');
       expect(body.params).toContain("server-user-id");
+    });
+
+    it("dispatches sync error event on 4xx with default handler", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Bad Request", {
+          status: 400,
+          statusText: "Bad Request",
+        })
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(dispatchSyncError).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          table: "tricks",
+          operation: "PUT",
+          status: 400,
+          message: expect.stringContaining("400"),
+        })
+      );
+      expect(consoleSpy).toHaveBeenCalledOnce();
+    });
+
+    it("does not dispatch sync error event when custom onUploadError is provided", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Bad Request", {
+          status: 400,
+          statusText: "Bad Request",
+        })
+      );
+      const customHandler = vi.fn();
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+        onUploadError: customHandler,
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(customHandler).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).not.toHaveBeenCalled();
     });
 
     it("throws when fetch rejects with a network error", async () => {

@@ -131,7 +131,9 @@
     "offline": "Hors ligne",
     "syncing": "Synchronisation en cours",
     "pendingChanges": "Modifications en attente",
-    "error": "Erreur de synchronisation"
+    "error": "Erreur de synchronisation",
+    "mutationDropped": "{count, plural, one {# modification n'a pas pu être enregistrée} other {# modifications n'ont pas pu être enregistrées}}",
+    "mutationDroppedDescription": "Le serveur a rejeté la modification. Vos données locales peuvent être désynchronisées."
   },
   "pushNotifications": {
     "notSupported": "Les notifications push ne sont pas prises en charge dans ce navigateur.",

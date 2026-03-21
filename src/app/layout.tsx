@@ -9,6 +9,7 @@ import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
 import { authClient } from "@/auth/client";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -89,6 +90,7 @@ export default async function RootLayout({
                 {t("skipToContent")}
               </a>
               {children}
+              <Toaster />
             </NextIntlClientProvider>
           </NeonAuthUIProvider>
         </ThemeProvider>

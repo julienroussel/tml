@@ -131,7 +131,9 @@
     "offline": "Sin conexión",
     "syncing": "Sincronizando",
     "pendingChanges": "Cambios pendientes",
-    "error": "Error de sincronización"
+    "error": "Error de sincronización",
+    "mutationDropped": "{count, plural, one {# cambio no se pudo guardar} other {# cambios no se pudieron guardar}}",
+    "mutationDroppedDescription": "El servidor rechazó el cambio. Tus datos locales pueden estar desincronizados."
   },
   "pushNotifications": {
     "notSupported": "Las notificaciones push no son compatibles con este navegador.",
