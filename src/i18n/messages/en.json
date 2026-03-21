@@ -131,7 +131,9 @@
     "offline": "Offline",
     "syncing": "Syncing",
     "pendingChanges": "Pending changes",
-    "error": "Sync error"
+    "error": "Sync error",
+    "mutationDropped": "{count, plural, one {# change could not be saved} other {# changes could not be saved}}",
+    "mutationDroppedDescription": "The server rejected the change. Your local data may be out of sync."
   },
   "pushNotifications": {
     "notSupported": "Push notifications are not supported in this browser.",

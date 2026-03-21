@@ -4,6 +4,7 @@ import type {
   PowerSyncCredentials,
 } from "@powersync/web";
 import { UpdateType } from "@powersync/web";
+import { dispatchSyncError } from "./events";
 
 const POWERSYNC_URL = process.env.NEXT_PUBLIC_POWERSYNC_URL;
 const NEON_DATA_API_URL = process.env.NEXT_PUBLIC_NEON_DATA_API_URL;
@@ -317,12 +318,20 @@ type UploadErrorHandler = (error: {
   status: number;
 }) => void;
 
-/** Default handler that only logs — consumers can override via createNeonConnector options. */
+/** Default handler that logs and dispatches a UI event — consumers can override via createNeonConnector options. */
 const defaultUploadErrorHandler: UploadErrorHandler = (error) => {
   console.error(
     `Permanent upload error — mutation dropped: table=${error.op.table} id=${error.op.id} op=${UpdateType[error.op.op]}`,
     error.message
   );
+
+  dispatchSyncError({
+    message: error.message,
+    table: error.op.table,
+    operation: UpdateType[error.op.op],
+    status: error.status,
+    timestamp: Date.now(),
+  });
 };
 
 async function handleUploadError(

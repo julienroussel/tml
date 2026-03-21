@@ -131,7 +131,9 @@
     "offline": "Offline",
     "syncing": "Wird synchronisiert",
     "pendingChanges": "Ausstehende Änderungen",
-    "error": "Synchronisierungsfehler"
+    "error": "Synchronisierungsfehler",
+    "mutationDropped": "{count, plural, one {# Änderung konnte nicht gespeichert werden} other {# Änderungen konnten nicht gespeichert werden}}",
+    "mutationDroppedDescription": "Der Server hat die Änderung abgelehnt. Deine lokalen Daten sind möglicherweise nicht synchron."
   },
   "pushNotifications": {
     "notSupported": "Push-Benachrichtigungen werden in diesem Browser nicht unterstützt.",

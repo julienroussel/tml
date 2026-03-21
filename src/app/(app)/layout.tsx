@@ -12,6 +12,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { PowerSyncProvider } from "@/sync/provider";
+import { SyncErrorToaster } from "@/sync/sync-error-toaster";
 
 export default async function AppLayout({
   children,
@@ -29,6 +30,7 @@ export default async function AppLayout({
 
   return (
     <PowerSyncProvider>
+      <SyncErrorToaster />
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset id="main-content">
