@@ -618,6 +618,7 @@ describe("PushNotifications", () => {
 
 const PUSH_NOT_SUPPORTED = /pushNotifications\.notSupported/;
 const INSTALL_THIS_APP = /pushNotifications\.iosInstallPrompt/;
+const INSTALL_PROMPT = /pushNotifications\.installPrompt/;
 
 describe("InstallPrompt (via PushNotifications)", () => {
   const originalUserAgent = navigator.userAgent;
@@ -648,6 +649,7 @@ describe("InstallPrompt (via PushNotifications)", () => {
   };
 
   afterEach(() => {
+    vi.restoreAllMocks();
     if (Object.getOwnPropertyDescriptor(window, "matchMedia")) {
       Reflect.deleteProperty(window, "matchMedia");
     }
@@ -678,12 +680,137 @@ describe("InstallPrompt (via PushNotifications)", () => {
     expect(screen.getByText(INSTALL_THIS_APP)).toBeInTheDocument();
   });
 
-  it("returns null on non-iOS, non-standalone browsers", () => {
+  it("returns null on non-iOS, non-standalone browsers without beforeinstallprompt", () => {
     stubMatchMedia(false);
     stubUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
 
     render(<PushNotifications />);
 
     expect(screen.queryByText(INSTALL_THIS_APP)).not.toBeInTheDocument();
+  });
+
+  it("shows install button when beforeinstallprompt fires", async () => {
+    stubMatchMedia(false);
+    stubUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+
+    render(<PushNotifications />);
+
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    Object.assign(event, {
+      prompt: vi.fn().mockResolvedValue({ outcome: "accepted" as const }),
+    });
+    window.dispatchEvent(event);
+
+    expect(await screen.findByText(INSTALL_PROMPT)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "pushNotifications.installApp" })
+    ).toBeInTheDocument();
+  });
+
+  it("calls prompt and hides button when install button is clicked", async () => {
+    stubMatchMedia(false);
+    stubUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    const user = userEvent.setup();
+
+    render(<PushNotifications />);
+
+    const mockPrompt = vi
+      .fn()
+      .mockResolvedValue({ outcome: "accepted" as const });
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    Object.assign(event, { prompt: mockPrompt });
+    window.dispatchEvent(event);
+
+    const installButton = await screen.findByRole("button", {
+      name: "pushNotifications.installApp",
+    });
+    await user.click(installButton);
+
+    expect(mockPrompt).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "pushNotifications.installApp" })
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("keeps install button visible when prompt is dismissed", async () => {
+    stubMatchMedia(false);
+    stubUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    const user = userEvent.setup();
+
+    render(<PushNotifications />);
+
+    const mockPrompt = vi
+      .fn()
+      .mockResolvedValue({ outcome: "dismissed" as const });
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    Object.assign(event, { prompt: mockPrompt });
+    window.dispatchEvent(event);
+
+    const installButton = await screen.findByRole("button", {
+      name: "pushNotifications.installApp",
+    });
+    await user.click(installButton);
+
+    expect(mockPrompt).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "pushNotifications.installApp" })
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("prefers beforeinstallprompt over iOS install instructions", async () => {
+    stubMatchMedia(false);
+    stubUserAgent(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+    );
+
+    render(<PushNotifications />);
+
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    Object.assign(event, {
+      prompt: vi.fn().mockResolvedValue({ outcome: "dismissed" as const }),
+    });
+    window.dispatchEvent(event);
+
+    // Should show install prompt, not iOS instructions
+    expect(await screen.findByText(INSTALL_PROMPT)).toBeInTheDocument();
+    expect(screen.queryByText(INSTALL_THIS_APP)).not.toBeInTheDocument();
+  });
+
+  it("handles prompt() rejection gracefully", async () => {
+    stubMatchMedia(false);
+    stubUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    const user = userEvent.setup();
+    const consoleError = vi
+      .spyOn(console, "error")
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: suppress console.error output during test
+      .mockImplementation(() => {});
+
+    render(<PushNotifications />);
+
+    const promptError = new Error("User dismissed the prompt");
+    const mockPrompt = vi.fn().mockRejectedValue(promptError);
+    const event = new Event("beforeinstallprompt", { cancelable: true });
+    Object.assign(event, { prompt: mockPrompt });
+    window.dispatchEvent(event);
+
+    const installButton = await screen.findByRole("button", {
+      name: "pushNotifications.installApp",
+    });
+    await user.click(installButton);
+
+    expect(mockPrompt).toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      "Install prompt failed:",
+      promptError
+    );
+    // After rejection, the .catch() handler only logs — it does NOT clear
+    // the install prompt event, so the button should remain visible.
+    expect(
+      screen.getByRole("button", { name: "pushNotifications.installApp" })
+    ).toBeInTheDocument();
   });
 });

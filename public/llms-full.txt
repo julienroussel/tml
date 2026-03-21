@@ -2031,7 +2031,7 @@ The Magic Lab uses PowerSync Cloud for offline-first data synchronization betwee
 
 ## Architecture Overview
 
-PowerSync provides bidirectional sync with a local-first approach: the app reads and writes to a WASM-based SQLite database in the browser, and PowerSync Cloud handles replication to/from Neon Postgres in the background.
+PowerSync provides bidirectional sync with an offline-first approach: the app reads and writes to a WASM-based SQLite database in the browser, and PowerSync Cloud handles replication to/from Neon Postgres in the background. Neon Postgres remains the source of truth, with last-write-wins conflict resolution.
 
 ```
 Browser                    Cloud                    Database

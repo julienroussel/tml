@@ -143,7 +143,9 @@
     "messageAriaLabel": "Mensagem de notificação",
     "disable": "Desativar notificações",
     "enable": "Ativar notificações",
-    "iosInstallTip": "Para instalar esta aplicação, toque no botão de partilha e depois em \"Adicionar ao ecrã inicial\"."
+    "iosInstallPrompt": "Para instalar esta aplicação, toque no botão de partilha e depois em \"Adicionar ao ecrã inicial\".",
+    "installApp": "Instalar aplicação",
+    "installPrompt": "Instale The Magic Lab para a melhor experiência offline."
   },
   "marketing": {
     "tagline": "Treinar. Planear. Apresentar. Eleve a sua magia.",

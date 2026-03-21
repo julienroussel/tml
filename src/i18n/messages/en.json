@@ -143,7 +143,9 @@
     "messageAriaLabel": "Notification message",
     "disable": "Disable Notifications",
     "enable": "Enable Notifications",
-    "iosInstallTip": "To install this app, tap the share button and then \"Add to Home Screen\"."
+    "iosInstallPrompt": "To install this app, tap the share button and then \"Add to Home Screen\".",
+    "installApp": "Install App",
+    "installPrompt": "Install The Magic Lab for the best offline experience."
   },
   "marketing": {
     "tagline": "Train. Plan. Perform. Elevate your magic.",
