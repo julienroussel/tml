@@ -198,20 +198,81 @@ function PushNotificationManager(): ReactElement {
   );
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 const IOS_REGEX = /iPad|iPhone|iPod/;
+
+function isBeforeInstallPromptEvent(e: Event): e is BeforeInstallPromptEvent {
+  return (
+    "prompt" in e && typeof (e as Record<string, unknown>).prompt === "function"
+  );
+}
 
 function InstallPrompt(): ReactElement | null {
   const t = useTranslations("pushNotifications");
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [installPromptEvent, setInstallPromptEvent] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [isPrompting, setIsPrompting] = useState(false);
 
   useEffect(() => {
     setIsIOS(IOS_REGEX.test(navigator.userAgent) && !("MSStream" in window));
     setIsStandalone(window.matchMedia("(display-mode: standalone)").matches);
+
+    // The browser may fire beforeinstallprompt before React hydration
+    // completes and this listener is attached. This is a progressive
+    // enhancement — missing the event just means the custom install
+    // button won't appear; the browser's default mini-infobar still works.
+    const onBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      if (isBeforeInstallPromptEvent(e)) {
+        setInstallPromptEvent(e);
+      }
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    };
   }, []);
 
   if (isStandalone) {
     return null;
+  }
+
+  if (installPromptEvent) {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <p className="max-w-sm text-center text-muted-foreground text-sm">
+          {t("installPrompt")}
+        </p>
+        <Button
+          className="min-h-11 min-w-11"
+          disabled={isPrompting}
+          onClick={async () => {
+            setIsPrompting(true);
+            try {
+              const { outcome } = await installPromptEvent.prompt();
+              if (outcome === "accepted") {
+                setInstallPromptEvent(null);
+              }
+            } catch (error: unknown) {
+              console.error("Install prompt failed:", error);
+            } finally {
+              setIsPrompting(false);
+            }
+          }}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {t("installApp")}
+        </Button>
+      </div>
+    );
   }
 
   if (isIOS) {

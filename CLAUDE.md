@@ -173,6 +173,7 @@ Type safety is a first-class concern. All code must be rigorously typed.
 
 ## Sync Engine Reference
 
+- **CRITICAL — Offline-first is a core requirement**: The app must work fully offline after initial load. PowerSync's local SQLite database is the primary data source for all reads — network is optional. Never introduce changes that break offline functionality. In particular, the service worker (`public/sw.js`) must cache all assets required for offline boot, including PowerSync WASM binaries and web workers under `/@powersync/`. The `shouldBypass()` function must only skip live API traffic (remote sync, auth, analytics), never static assets needed for offline access.
 - **Server schema**: `src/db/schema/` (Drizzle — server-side, Neon Postgres)
 - **Client schema**: `src/sync/schema.ts` (PowerSync — client-side, local SQLite)
 - **IMPORTANT**: When modifying the database schema, ALWAYS update both schemas

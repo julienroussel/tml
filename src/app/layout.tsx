@@ -34,6 +34,14 @@ export const metadata: Metadata = {
     "performance",
     "training",
   ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "The Magic Lab",
+  },
+  icons: {
+    apple: "/icon-192x192.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

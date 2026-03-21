@@ -143,7 +143,9 @@
     "messageAriaLabel": "Meldingsbericht",
     "disable": "Meldingen uitschakelen",
     "enable": "Meldingen inschakelen",
-    "iosInstallTip": "Om deze app te installeren, tik op de deelknop en vervolgens op \"Zet op beginscherm\"."
+    "iosInstallPrompt": "Om deze app te installeren, tik op de deelknop en vervolgens op \"Zet op beginscherm\".",
+    "installApp": "App installeren",
+    "installPrompt": "Installeer The Magic Lab voor de beste offline ervaring."
   },
   "marketing": {
     "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",

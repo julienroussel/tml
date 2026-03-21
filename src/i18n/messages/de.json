@@ -143,7 +143,9 @@
     "messageAriaLabel": "Benachrichtigungstext",
     "disable": "Benachrichtigungen deaktivieren",
     "enable": "Benachrichtigungen aktivieren",
-    "iosInstallTip": "Um diese App zu installieren, tippe auf die Teilen-Schaltfläche und dann auf \u201EZum Home-Bildschirm\u201C."
+    "iosInstallPrompt": "Um diese App zu installieren, tippe auf die Teilen-Schaltfläche und dann auf \u201EZum Home-Bildschirm\u201C.",
+    "installApp": "App installieren",
+    "installPrompt": "Installiere The Magic Lab für das beste Offline-Erlebnis."
   },
   "marketing": {
     "tagline": "Trainieren. Planen. Auftreten. Hebe deine Magie auf ein neues Level.",
