@@ -82,3 +82,39 @@ jobs:
           NEON_AUTH_COOKIE_SECRET: ci-dummy-secret-that-is-at-least-32-characters-long
           EMAIL_HMAC_SECRET: ci-dummy-hmac-secret-at-least-32-characters-long
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+
+      - name: Get Playwright version
+        id: pw-version
+        run: echo "version=$(pnpm exec playwright --version)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run PWA E2E tests
+        run: pnpm exec playwright test --project=pwa
+        env:
+          PLAYWRIGHT_SKIP_BUILD: "1"
+          NEON_AUTH_BASE_URL: http://localhost:4000
+          NEON_AUTH_COOKIE_SECRET: ci-dummy-secret-that-is-at-least-32-characters-long
+          EMAIL_HMAC_SECRET: ci-dummy-hmac-secret-at-least-32-characters-long
+          DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+
+      - name: Upload PWA test report
+        if: '!cancelled()'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: pwa-playwright-report-${{ github.sha }}
+          path: playwright-report/
+          retention-days: 30
