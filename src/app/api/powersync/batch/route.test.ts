@@ -121,6 +121,28 @@ describe("POST /api/powersync/batch", () => {
   });
 
   describe("request validation", () => {
+    it("returns 415 when Content-Type is not application/json", async () => {
+      authenticatedSession();
+      const { POST } = await import("./route");
+
+      const request = new NextRequest(
+        "https://themagiclab.app/api/powersync/batch",
+        {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ operations: [] }),
+        }
+      );
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(415);
+      const body = await response.json();
+      expect(body).toEqual({
+        error: "Content-Type must be application/json",
+      });
+    });
+
     it("returns 400 for invalid JSON body", async () => {
       authenticatedSession();
       const { POST } = await import("./route");

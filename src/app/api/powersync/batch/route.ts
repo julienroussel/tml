@@ -341,6 +341,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const contentType = request.headers.get("content-type");
+  if (!contentType?.startsWith("application/json")) {
+    return NextResponse.json(
+      { error: "Content-Type must be application/json" },
+      { status: 415 }
+    );
+  }
+
   let raw: unknown;
   try {
     raw = await request.json();

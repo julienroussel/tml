@@ -15,16 +15,11 @@ describe("createNeonConnector", () => {
       "NEXT_PUBLIC_POWERSYNC_URL",
       env.NEXT_PUBLIC_POWERSYNC_URL ?? ""
     );
-    vi.stubEnv(
-      "NEXT_PUBLIC_NEON_DATA_API_URL",
-      env.NEXT_PUBLIC_NEON_DATA_API_URL ?? ""
-    );
     return import("./connector");
   }
 
   const VALID_ENV = {
     NEXT_PUBLIC_POWERSYNC_URL: "https://ps.example.com",
-    NEXT_PUBLIC_NEON_DATA_API_URL: "https://neon.example.com",
   };
 
   afterEach(() => {
@@ -34,20 +29,9 @@ describe("createNeonConnector", () => {
   it("throws when NEXT_PUBLIC_POWERSYNC_URL is missing", async () => {
     const mod = await importWithEnv({
       NEXT_PUBLIC_POWERSYNC_URL: "",
-      NEXT_PUBLIC_NEON_DATA_API_URL: "https://neon.example.com",
     });
     expect(() => mod.createNeonConnector(async () => "token")).toThrow(
       "NEXT_PUBLIC_POWERSYNC_URL"
-    );
-  });
-
-  it("throws when NEXT_PUBLIC_NEON_DATA_API_URL is missing", async () => {
-    const mod = await importWithEnv({
-      NEXT_PUBLIC_POWERSYNC_URL: "https://ps.example.com",
-      NEXT_PUBLIC_NEON_DATA_API_URL: "",
-    });
-    expect(() => mod.createNeonConnector(async () => "token")).toThrow(
-      "NEXT_PUBLIC_NEON_DATA_API_URL"
     );
   });
 
@@ -96,6 +80,19 @@ describe("createNeonConnector", () => {
       };
     }
 
+    function batchResponse(
+      results: Array<{
+        index: number;
+        status: number;
+        error?: string;
+      }>
+    ): Response {
+      return new Response(JSON.stringify({ results }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     it("does nothing when there is no pending transaction", async () => {
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => "token");
@@ -110,113 +107,24 @@ describe("createNeonConnector", () => {
       expect(db.getNextCrudTransaction).toHaveBeenCalledOnce();
     });
 
-    it("throws when not authenticated", async () => {
+    it("sends all operations in a single batch request", async () => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([
+          { index: 0, status: 200 },
+          { index: 1, status: 200 },
+        ])
+      );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => null);
-      const db = createMockDatabase([
-        {
-          id: "1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Not authenticated");
-    });
-
-    it("sends PUT operations as upsert queries", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
           op: "PUT",
           table: "tricks",
-          opData: { name: "Ambitious Card", user_id: "user-1" },
+          opData: { name: "Ambitious Card" },
         },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      expect(fetchSpy).toHaveBeenCalledOnce();
-      const [url, init] = fetchSpy.mock.calls[0]!;
-      expect(url).toBe("https://neon.example.com");
-      const body = JSON.parse((init as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
-      };
-      expect(body.query).toContain("INSERT INTO");
-      expect(body.query).toContain("ON CONFLICT");
-      expect(body.params).toContain("trick-1");
-      expect(body.params).toContain("Ambitious Card");
-      expect((init as RequestInit).headers).toEqual(
-        expect.objectContaining({ Authorization: "Bearer my-token" })
-      );
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction).toEqual(
-        expect.objectContaining({
-          complete: expect.any(Function),
-        })
-      );
-      expect(transaction.complete).toHaveBeenCalledOnce();
-    });
-
-    it("injects authenticated userId into PUT params, overriding client-sent user_id", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "server-user-id",
-      });
-      const db = createMockDatabase([
         {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test", user_id: "forged-user-id" },
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      const [, init] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((init as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
-      };
-      // The authenticated userId must appear in params (for both the INSERT
-      // values and the WHERE user_id scope), not the forged client value
-      expect(body.params).toContain("server-user-id");
-      expect(body.params).not.toContain("forged-user-id");
-    });
-
-    it("sends PATCH operations as update queries", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
+          id: "trick-2",
           op: "PATCH",
           table: "tricks",
           opData: { name: "Updated Card" },
@@ -228,67 +136,77 @@ describe("createNeonConnector", () => {
       );
 
       expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, patchInit] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((patchInit as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
+      const [url, init] = fetchSpy.mock.calls[0]!;
+      expect(url).toBe("/api/powersync/batch");
+      expect((init as RequestInit).method).toBe("POST");
+      expect((init as RequestInit).credentials).toBe("same-origin");
+      const body = JSON.parse((init as RequestInit).body as string) as {
+        operations: unknown[];
       };
-      expect(body.query).toContain("UPDATE");
-      expect(body.query).toContain("SET");
-      expect(body.query).toContain('"updated_at" = NOW()');
-      expect(body.params).toContain("Updated Card");
-      expect((patchInit as RequestInit).headers).toEqual(
-        expect.objectContaining({ Authorization: "Bearer my-token" })
-      );
+      expect(body.operations).toHaveLength(2);
     });
 
-    it("injects authenticated userId into PATCH WHERE clause", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    it("maps UpdateType enum values to OpType strings in batch payload", async () => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([
+          { index: 0, status: 200 },
+          { index: 1, status: 200 },
+          { index: 2, status: 200 },
+        ])
+      );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "server-user-id",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+        {
+          id: "trick-2",
           op: "PATCH",
           table: "tricks",
-          opData: { name: "Updated", user_id: "forged-user-id" },
+          opData: { name: "Updated" },
         },
+        { id: "trick-3", op: "DELETE", table: "tricks" },
       ]);
 
       await connector.uploadData(
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      const [, init] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((init as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
+      const body = JSON.parse(
+        (fetchSpy.mock.calls[0]![1] as RequestInit).body as string
+      ) as {
+        operations: Array<{ op: string }>;
       };
-      // The authenticated userId must be used in the WHERE clause,
-      // not the forged client-sent user_id
-      expect(body.params).toContain("server-user-id");
-      expect(body.params).not.toContain("forged-user-id");
-      expect(body.query).toContain('"user_id"');
+      expect(body.operations[0]!.op).toBe("PUT");
+      expect(body.operations[1]!.op).toBe("PATCH");
+      expect(body.operations[2]!.op).toBe("DELETE");
     });
 
-    it("sends DELETE operations as soft-delete queries", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    it("passes opData through for PUT and PATCH operations", async () => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([
+          { index: 0, status: 200 },
+          { index: 1, status: 200 },
+        ])
+      );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
-          op: "DELETE",
+          op: "PUT",
           table: "tricks",
-          opData: {},
+          opData: { name: "Ambitious Card", difficulty: 3 },
+        },
+        {
+          id: "trick-2",
+          op: "PATCH",
+          table: "tricks",
+          opData: { name: "Updated Card" },
         },
       ]);
 
@@ -296,58 +214,46 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, deleteInit] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((deleteInit as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
+      const body = JSON.parse(
+        (fetchSpy.mock.calls[0]![1] as RequestInit).body as string
+      ) as {
+        operations: Array<{ opData?: Record<string, unknown> }>;
       };
-      expect(body.query).toContain('"deleted_at"');
-      expect(body.query).toContain('"updated_at"');
-      expect(body.params).toContain("trick-1");
-      expect((deleteInit as RequestInit).headers).toEqual(
-        expect.objectContaining({ Authorization: "Bearer my-token" })
-      );
+      expect(body.operations[0]!.opData).toEqual({
+        name: "Ambitious Card",
+        difficulty: 3,
+      });
+      expect(body.operations[1]!.opData).toEqual({ name: "Updated Card" });
     });
 
-    it("handles DELETE with undefined opData without crashing", async () => {
+    it("omits opData for DELETE operations", async () => {
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+        .mockResolvedValue(batchResponse([{ index: 0, status: 200 }]));
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "DELETE",
-          table: "tricks",
-        },
+        { id: "trick-1", op: "DELETE", table: "tricks" },
       ]);
 
       await connector.uploadData(
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, deleteInit] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((deleteInit as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
+      const body = JSON.parse(
+        (fetchSpy.mock.calls[0]![1] as RequestInit).body as string
+      ) as {
+        operations: Array<{ opData?: Record<string, unknown> }>;
       };
-      expect(body.query).toContain('"deleted_at"');
-      expect(body.params).toContain("trick-1");
+      expect(body.operations[0]!.opData).toBeUndefined();
     });
 
-    it("completes the transaction after all operations succeed", async () => {
+    it("completes transaction when batch returns 200 with all operations succeeded", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(JSON.stringify({}), { status: 200 })
+        batchResponse([{ index: 0, status: 200 }])
       );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
@@ -366,19 +272,17 @@ describe("createNeonConnector", () => {
       expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
-    it("skips 4xx errors and completes transaction", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => undefined);
+    it("reports per-operation 422 as permanent error and still completes transaction", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
       vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Bad Request", {
-          status: 400,
-          statusText: "Bad Request",
-        })
+        batchResponse([
+          { index: 0, status: 422, error: "Constraint violation" },
+        ])
       );
+      const customHandler = vi.fn();
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
+        onUploadError: customHandler,
       });
       const db = createMockDatabase([
         {
@@ -393,130 +297,31 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
+      expect(customHandler).toHaveBeenCalledOnce();
+      expect(customHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Constraint violation",
+          status: 422,
+        })
+      );
       const transaction =
         await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Upload error:",
-        expect.stringContaining("400")
-      );
     });
 
-    it("throws and does not complete transaction on fetch failure", async () => {
+    it("mixed 200 and 422 results — permanent errors reported, transaction completes", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
       vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Internal Server Error", {
-          status: 500,
-          statusText: "Internal Server Error",
-        })
+        batchResponse([
+          { index: 0, status: 200 },
+          { index: 1, status: 422, error: "Constraint violation" },
+          { index: 2, status: 200 },
+        ])
       );
+      const customHandler = vi.fn();
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Sync upload failed — will retry");
-
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).not.toHaveBeenCalled();
-    });
-
-    it("throws for non-primitive value in opData", async () => {
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: { nested: "object" } },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow('Non-primitive value for column "name"');
-    });
-
-    it("throws for disallowed table in uploadData", async () => {
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "user-1",
-          op: "PUT",
-          table: "users",
-          opData: { name: "Hacker" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Disallowed table: users");
-    });
-
-    it("throws for disallowed column in uploadData", async () => {
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test", evil_column: "bad" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow('Disallowed column "evil_column" on table "tricks"');
-    });
-
-    it("skips 4xx mutation but executes others and completes transaction", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => undefined);
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({}), { status: 200 })
-        )
-        .mockResolvedValueOnce(
-          new Response("Constraint violation", {
-            status: 409,
-            statusText: "Conflict",
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({}), { status: 200 })
-        );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
+        onUploadError: customHandler,
       });
       const db = createMockDatabase([
         {
@@ -543,21 +348,26 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      expect(fetchSpy).toHaveBeenCalledTimes(3);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Upload error:",
-        expect.stringContaining("409")
+      expect(customHandler).toHaveBeenCalledOnce();
+      expect(customHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          op: expect.objectContaining({ id: "trick-2" }),
+        })
       );
       const transaction =
         await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
-    it("throws when getToken returns a valid token but getUserId returns null", async () => {
+    it("throws on 401 response (transient — will retry after re-auth)", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+        })
+      );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "valid-token", {
-        getUserId: async () => null,
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
@@ -571,176 +381,21 @@ describe("createNeonConnector", () => {
         connector.uploadData(
           db as unknown as Parameters<typeof connector.uploadData>[0]
         )
-      ).rejects.toThrow("Unauthorized: userId is required for mutations");
-    });
+      ).rejects.toThrow("Unauthorized");
 
-    it("injects authenticated userId into junction table PUT", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "server-user-id",
-      });
-      const db = createMockDatabase([
-        {
-          id: "rt-1",
-          op: "PUT",
-          table: "routine_tricks",
-          opData: {
-            routine_id: "routine-1",
-            trick_id: "trick-1",
-            position: 1,
-            user_id: "forged-user-id",
-          },
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      // No ownership check round-trips — just the mutation itself
-      expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, init] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((init as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
-      };
-      // Authenticated userId must be used, not the forged one
-      expect(body.params).toContain("server-user-id");
-      expect(body.params).not.toContain("forged-user-id");
-      expect(body.query).toContain('"user_id"');
       const transaction =
         await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).toHaveBeenCalledOnce();
+      expect(transaction.complete).not.toHaveBeenCalled();
     });
 
-    it("scopes junction table PATCH by authenticated userId", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "server-user-id",
-      });
-      const db = createMockDatabase([
-        {
-          id: "rt-1",
-          op: "PATCH",
-          table: "routine_tricks",
-          opData: {
-            position: 2,
-            user_id: "forged-user-id",
-          },
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, init] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((init as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
-      };
-      expect(body.query).toContain("UPDATE");
-      expect(body.query).toContain('"user_id"');
-      expect(body.params).toContain("server-user-id");
-      expect(body.params).not.toContain("forged-user-id");
-    });
-
-    it("scopes junction table DELETE by authenticated userId", async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "server-user-id",
-      });
-      const db = createMockDatabase([
-        {
-          id: "rt-1",
-          op: "DELETE",
-          table: "routine_tricks",
-          opData: {},
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      expect(fetchSpy).toHaveBeenCalledOnce();
-      const [, init] = fetchSpy.mock.calls[0]!;
-      const body = JSON.parse((init as RequestInit).body as string) as {
-        query: string;
-        params: unknown[];
-      };
-      expect(body.query).toContain('"deleted_at"');
-      expect(body.query).toContain('"user_id"');
-      expect(body.params).toContain("server-user-id");
-    });
-
-    it("dispatches sync error event on 4xx with default handler", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => undefined);
+    it("treats non-401 4xx as permanent — reports all ops and completes transaction", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
       vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Bad Request", {
-          status: 400,
-          statusText: "Bad Request",
-        })
-      );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      expect(dispatchSyncError).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          table: "tricks",
-          operation: "PUT",
-          status: 400,
-          message: "Sync failed",
-        })
-      );
-      // Two console.error calls: one from handleUploadError (detailed), one from defaultUploadErrorHandler
-      expect(consoleSpy).toHaveBeenCalledTimes(2);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Upload error:",
-        expect.stringContaining("400")
-      );
-    });
-
-    it("does not dispatch sync error event when custom onUploadError is provided", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Bad Request", {
-          status: 400,
-          statusText: "Bad Request",
-        })
+        new Response("Bad Request", { status: 400 })
       );
       const customHandler = vi.fn();
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
         onUploadError: customHandler,
       });
       const db = createMockDatabase([
@@ -748,7 +403,13 @@ describe("createNeonConnector", () => {
           id: "trick-1",
           op: "PUT",
           table: "tricks",
-          opData: { name: "Test" },
+          opData: { name: "First" },
+        },
+        {
+          id: "trick-2",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Second" },
         },
       ]);
 
@@ -756,18 +417,59 @@ describe("createNeonConnector", () => {
         db as unknown as Parameters<typeof connector.uploadData>[0]
       );
 
-      expect(customHandler).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).not.toHaveBeenCalled();
+      expect(customHandler).toHaveBeenCalledTimes(2);
+      expect(customHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Server rejected batch (400)",
+          status: 400,
+        })
+      );
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
     });
 
-    it("throws when fetch rejects with a network error", async () => {
+    it("throws on 500 response (transient — batch rolled back)", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: "Batch execution failed",
+            failedIndex: 0,
+            results: [],
+          }),
+          { status: 500 }
+        )
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token");
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("Batch upload failed — will retry");
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+    });
+
+    it("throws on network error", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
       vi.spyOn(globalThis, "fetch").mockRejectedValue(
         new TypeError("Failed to fetch")
       );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
@@ -788,261 +490,13 @@ describe("createNeonConnector", () => {
       expect(transaction.complete).not.toHaveBeenCalled();
     });
 
-    it("treats 401 as transient — throws and does not complete transaction", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Unauthorized", {
-          status: 401,
-          statusText: "Unauthorized",
-        })
-      );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Sync upload failed — will retry");
-
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).not.toHaveBeenCalled();
-      expect(dispatchSyncError).not.toHaveBeenCalled();
-    });
-
-    it("treats 403 as transient — throws and does not complete transaction", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Forbidden", {
-          status: 403,
-          statusText: "Forbidden",
-        })
-      );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Sync upload failed — will retry");
-
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).not.toHaveBeenCalled();
-      expect(dispatchSyncError).not.toHaveBeenCalled();
-    });
-
-    it("treats 404 as permanent — skips mutation and completes transaction", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Not Found", {
-          status: 404,
-          statusText: "Not Found",
-        })
-      );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 404 })
-      );
-    });
-
-    it("treats 422 as permanent — skips mutation and completes transaction", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response("Unprocessable Entity", {
-          status: 422,
-          statusText: "Unprocessable Entity",
-        })
-      );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Test" },
-        },
-      ]);
-
-      await connector.uploadData(
-        db as unknown as Parameters<typeof connector.uploadData>[0]
-      );
-
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 422 })
-      );
-    });
-
-    it("5xx error halts mutation loop — remaining operations are not executed", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({}), { status: 200 })
-        )
-        .mockResolvedValueOnce(
-          new Response("Internal Server Error", {
-            status: 500,
-            statusText: "Internal Server Error",
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({}), { status: 200 })
-        );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "First" },
-        },
-        {
-          id: "trick-2",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Second" },
-        },
-        {
-          id: "trick-3",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Third" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Sync upload failed — will retry");
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).not.toHaveBeenCalled();
-      expect(dispatchSyncError).not.toHaveBeenCalled();
-    });
-
-    it("4xx then 5xx — skips permanent error, throws on transient, does not complete", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
-      vi.spyOn(console, "error").mockImplementation(() => undefined);
-      const fetchSpy = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValueOnce(
-          new Response("Conflict", {
-            status: 409,
-            statusText: "Conflict",
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response("Internal Server Error", {
-            status: 500,
-            statusText: "Internal Server Error",
-          })
-        );
-      const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
-      const db = createMockDatabase([
-        {
-          id: "trick-1",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "First" },
-        },
-        {
-          id: "trick-2",
-          op: "PUT",
-          table: "tricks",
-          opData: { name: "Second" },
-        },
-      ]);
-
-      await expect(
-        connector.uploadData(
-          db as unknown as Parameters<typeof connector.uploadData>[0]
-        )
-      ).rejects.toThrow("Sync upload failed — will retry");
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      const transaction =
-        await db.getNextCrudTransaction.mock.results[0]!.value;
-      expect(transaction.complete).not.toHaveBeenCalled();
-      expect(dispatchSyncError).toHaveBeenCalledOnce();
-      expect(dispatchSyncError).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 409 })
-      );
-    });
-
-    it("AbortSignal timeout rejects and does not complete transaction", async () => {
-      vi.mocked(dispatchSyncError).mockClear();
+    it("throws on AbortSignal timeout", async () => {
       vi.spyOn(console, "error").mockImplementation(() => undefined);
       vi.spyOn(globalThis, "fetch").mockRejectedValue(
         new DOMException("The operation was aborted", "AbortError")
       );
       const mod = await importWithEnv(VALID_ENV);
-      const connector = mod.createNeonConnector(async () => "my-token", {
-        getUserId: async () => "user-1",
-      });
+      const connector = mod.createNeonConnector(async () => "my-token");
       const db = createMockDatabase([
         {
           id: "trick-1",
@@ -1061,7 +515,368 @@ describe("createNeonConnector", () => {
       const transaction =
         await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).not.toHaveBeenCalled();
+    });
+
+    it("filters disallowed table operations and reports them as permanent errors", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(batchResponse([{ index: 0, status: 200 }]));
+      const customHandler = vi.fn();
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        onUploadError: customHandler,
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Valid" },
+        },
+        {
+          id: "user-1",
+          op: "PUT",
+          table: "users",
+          opData: { name: "Hacker" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      // Only the valid operation is sent in the batch
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const body = JSON.parse(
+        (fetchSpy.mock.calls[0]![1] as RequestInit).body as string
+      ) as {
+        operations: unknown[];
+      };
+      expect(body.operations).toHaveLength(1);
+
+      // Disallowed table reported as permanent error
+      expect(customHandler).toHaveBeenCalledOnce();
+      expect(customHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Disallowed table: users",
+          op: expect.objectContaining({ table: "users" }),
+          status: 422,
+        })
+      );
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+    });
+
+    it("completes immediately when all operations target disallowed tables", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      const customHandler = vi.fn();
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        onUploadError: customHandler,
+      });
+      const db = createMockDatabase([
+        {
+          id: "user-1",
+          op: "PUT",
+          table: "users",
+          opData: { name: "A" },
+        },
+        {
+          id: "user-2",
+          op: "PUT",
+          table: "users",
+          opData: { name: "B" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(customHandler).toHaveBeenCalledTimes(2);
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+    });
+
+    it("chunks large transactions into batches of 1000", async () => {
+      const ops = Array.from({ length: 2500 }, (_, i) => ({
+        id: `trick-${i}`,
+        op: "PUT" as const,
+        table: "tricks",
+        opData: { name: `Trick ${i}` },
+      }));
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async () =>
+          batchResponse(
+            Array.from({ length: 1000 }, (_, i) => ({
+              index: i,
+              status: 200,
+            }))
+          )
+        );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token");
+      const db = createMockDatabase(ops);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+      // Verify chunk sizes
+      const chunk1 = JSON.parse(
+        (fetchSpy.mock.calls[0]![1] as RequestInit).body as string
+      ) as { operations: unknown[] };
+      const chunk2 = JSON.parse(
+        (fetchSpy.mock.calls[1]![1] as RequestInit).body as string
+      ) as { operations: unknown[] };
+      const chunk3 = JSON.parse(
+        (fetchSpy.mock.calls[2]![1] as RequestInit).body as string
+      ) as { operations: unknown[] };
+      expect(chunk1.operations).toHaveLength(1000);
+      expect(chunk2.operations).toHaveLength(1000);
+      expect(chunk3.operations).toHaveLength(500);
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+    });
+
+    it("stops processing chunks when a chunk returns 500", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const ops = Array.from({ length: 2000 }, (_, i) => ({
+        id: `trick-${i}`,
+        op: "PUT" as const,
+        table: "tricks",
+        opData: { name: `Trick ${i}` },
+      }));
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          batchResponse(
+            Array.from({ length: 1000 }, (_, i) => ({
+              index: i,
+              status: 200,
+            }))
+          )
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              error: "Batch execution failed",
+              failedIndex: 5,
+              results: [],
+            }),
+            { status: 500 }
+          )
+        );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token");
+      const db = createMockDatabase(ops);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("Batch upload failed — will retry");
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+    });
+
+    it("dispatches sync error event on permanent error with default handler", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([
+          { index: 0, status: 422, error: "Constraint violation" },
+        ])
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token");
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(dispatchSyncError).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          table: "tricks",
+          operation: "PUT",
+          status: 422,
+          message: "Constraint violation",
+        })
+      );
+    });
+
+    it("does not dispatch sync error event when custom onUploadError is provided", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([
+          { index: 0, status: 422, error: "Constraint violation" },
+        ])
+      );
+      const customHandler = vi.fn();
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        onUploadError: customHandler,
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(customHandler).toHaveBeenCalledOnce();
       expect(dispatchSyncError).not.toHaveBeenCalled();
+    });
+
+    it("completes transaction when response has no results field", async () => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token");
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+    });
+
+    it("sends exactly BATCH_SIZE operations as a single chunk", async () => {
+      const ops = Array.from({ length: 1000 }, (_, i) => ({
+        id: `trick-${i}`,
+        op: "PUT" as const,
+        table: "tricks",
+        opData: { name: `Trick ${i}` },
+      }));
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async () =>
+          batchResponse(
+            Array.from({ length: 1000 }, (_, i) => ({
+              index: i,
+              status: 200,
+            }))
+          )
+        );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token");
+      const db = createMockDatabase(ops);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+    });
+
+    it("uses fallback message when 422 result has no error field", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([{ index: 0, status: 422 }])
+      );
+      const customHandler = vi.fn();
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        onUploadError: customHandler,
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(customHandler).toHaveBeenCalledOnce();
+      expect(customHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Permanent error",
+          status: 422,
+        })
+      );
+    });
+
+    it("ignores 422 result with out-of-bounds index", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        batchResponse([
+          { index: 0, status: 200 },
+          { index: 999, status: 422, error: "Bad" },
+        ])
+      );
+      const customHandler = vi.fn();
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        onUploadError: customHandler,
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(customHandler).not.toHaveBeenCalled();
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
     });
   });
 });
