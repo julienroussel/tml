@@ -34,10 +34,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  maxFailures: process.env.CI ? 5 : undefined,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "html" : "list",
   use: {
     baseURL,
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
     trace: "on-first-retry",
     // Load Vercel bypass cookie if available (set by global-setup.ts)
     ...(hasVercelBypass && { storageState: BYPASS_STATE_PATH }),
