@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import "server-only";
+import { render } from "@react-email/render";
+import { createElement } from "react";
 import { Resend } from "resend";
+import WelcomeEmail from "@/emails/welcome";
 
 let cachedClient: Resend | null = null;
 
@@ -179,28 +182,21 @@ interface SendWelcomeEmailOptions {
   userId: string;
 }
 
-function sendWelcomeEmail(
+async function sendWelcomeEmail(
   options: SendWelcomeEmailOptions
 ): Promise<SendEmailResult> {
-  const greeting = options.name ? `Hi ${escapeHtml(options.name)}` : "Hi";
+  const html = await render(
+    createElement(WelcomeEmail, {
+      name: options.name,
+      appUrl: getAppUrl(),
+    })
+  );
 
   return sendEmail({
     to: options.to,
     userId: options.userId,
     subject: "Welcome to The Magic Lab",
-    html: `
-      <h1>${greeting}, welcome to The Magic Lab!</h1>
-      <p>Your workspace is ready. Here's what you can do:</p>
-      <ul>
-        <li><strong>Improve</strong> — Log practice sessions and track progress</li>
-        <li><strong>Plan</strong> — Build and organize routines</li>
-        <li><strong>Perform</strong> — Record and review performances</li>
-      </ul>
-      <p>
-        <a href="${escapeHtml(getAppUrl())}/dashboard">Go to your dashboard</a>
-      </p>
-      <p>— The Magic Lab</p>
-    `,
+    html,
   });
 }
 

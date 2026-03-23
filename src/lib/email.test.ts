@@ -266,8 +266,31 @@ describe("email", () => {
 
       expect(mockSend).toHaveBeenCalledOnce();
       const callArgs = mockSend.mock.calls[0]![0];
-      expect(callArgs.html).toContain("Hi, welcome to The Magic Lab!");
+      expect(callArgs.html).toContain("welcome to The Magic Lab!");
       expect(callArgs.html).not.toMatch(PERSONALIZED_GREETING_PATTERN);
+    });
+
+    it("escapes HTML in name to prevent injection", async () => {
+      vi.stubEnv("RESEND_API_KEY", "re_test_key");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
+      vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
+      vi.stubEnv("VERCEL_ENV", "production");
+
+      mockSend.mockResolvedValue({
+        data: { id: "welcome-xss" },
+        error: null,
+      });
+
+      const { sendWelcomeEmail } = await import("@/lib/email");
+      await sendWelcomeEmail({
+        to: "magician@example.com",
+        userId: TEST_USER_ID,
+        name: '<script>alert("xss")</script>',
+      });
+
+      const callArgs = mockSend.mock.calls[0]![0];
+      expect(callArgs.html).not.toContain("<script>");
+      expect(callArgs.html).toContain("&lt;script&gt;");
     });
 
     it("calls sendEmail with correct subject", async () => {
