@@ -1059,6 +1059,286 @@ describe("createNeonConnector", () => {
           db as unknown as Parameters<typeof connector.uploadData>[0]
         )
       ).rejects.toThrow("Failed to fetch");
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+    });
+
+    it("treats 401 as transient — throws and does not complete transaction", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Unauthorized", {
+          status: 401,
+          statusText: "Unauthorized",
+        })
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("Sync upload failed — will retry");
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+      expect(dispatchSyncError).not.toHaveBeenCalled();
+    });
+
+    it("treats 403 as transient — throws and does not complete transaction", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Forbidden", {
+          status: 403,
+          statusText: "Forbidden",
+        })
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("Sync upload failed — will retry");
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+      expect(dispatchSyncError).not.toHaveBeenCalled();
+    });
+
+    it("treats 404 as permanent — skips mutation and completes transaction", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Not Found", {
+          status: 404,
+          statusText: "Not Found",
+        })
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 404 })
+      );
+    });
+
+    it("treats 422 as permanent — skips mutation and completes transaction", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("Unprocessable Entity", {
+          status: 422,
+          statusText: "Unprocessable Entity",
+        })
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 422 })
+      );
+    });
+
+    it("5xx error halts mutation loop — remaining operations are not executed", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({}), { status: 200 })
+        )
+        .mockResolvedValueOnce(
+          new Response("Internal Server Error", {
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({}), { status: 200 })
+        );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "First" },
+        },
+        {
+          id: "trick-2",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Second" },
+        },
+        {
+          id: "trick-3",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Third" },
+        },
+      ]);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("Sync upload failed — will retry");
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+      expect(dispatchSyncError).not.toHaveBeenCalled();
+    });
+
+    it("4xx then 5xx — skips permanent error, throws on transient, does not complete", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response("Conflict", {
+            status: 409,
+            statusText: "Conflict",
+          })
+        )
+        .mockResolvedValueOnce(
+          new Response("Internal Server Error", {
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+        );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "First" },
+        },
+        {
+          id: "trick-2",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Second" },
+        },
+      ]);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("Sync upload failed — will retry");
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+      expect(dispatchSyncError).toHaveBeenCalledOnce();
+      expect(dispatchSyncError).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 409 })
+      );
+    });
+
+    it("AbortSignal timeout rejects and does not complete transaction", async () => {
+      vi.mocked(dispatchSyncError).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      vi.spyOn(globalThis, "fetch").mockRejectedValue(
+        new DOMException("The operation was aborted", "AbortError")
+      );
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "PUT",
+          table: "tricks",
+          opData: { name: "Test" },
+        },
+      ]);
+
+      await expect(
+        connector.uploadData(
+          db as unknown as Parameters<typeof connector.uploadData>[0]
+        )
+      ).rejects.toThrow("The operation was aborted");
+
+      const transaction =
+        await db.getNextCrudTransaction.mock.results[0]!.value;
+      expect(transaction.complete).not.toHaveBeenCalled();
+      expect(dispatchSyncError).not.toHaveBeenCalled();
     });
   });
 });
