@@ -34,7 +34,12 @@ function verifySecret(header: string | null, secret: string): boolean {
   return timingSafeEqual(Buffer.from(header), Buffer.from(expected));
 }
 
-/** Tables in deletion order — junctions first, then parents. */
+/** Tables in deletion order — junctions first, then parents.
+ *  Users are handled separately (see user cleanup below).
+ *
+ *  Note: user_preferences and push_subscriptions are intentionally omitted —
+ *  they lack deleted_at columns and are cleaned up via CASCADE when the
+ *  owning user row is hard-deleted. */
 const TABLES_IN_ORDER = [
   "item_tricks",
   "routine_tricks",
@@ -47,7 +52,120 @@ const TABLES_IN_ORDER = [
   "tricks",
 ] as const satisfies readonly SyncedTableName[];
 
+/** User-owned tables whose rows need tombstones before a user is
+ *  hard-deleted. When a user is soft-deleted, their children may not
+ *  have been individually soft-deleted. The pre-pass sets deleted_at on
+ *  non-tombstoned children so PowerSync can sync the deletions to
+ *  offline clients. These children will be hard-deleted on a future
+ *  cron run after their own retention period expires. */
+const USER_OWNED_TABLES = [
+  "goals",
+  "item_tricks",
+  "items",
+  "performances",
+  "practice_session_tricks",
+  "practice_sessions",
+  "routine_tricks",
+  "routines",
+  "tricks",
+] as const satisfies readonly SyncedTableName[];
+
 const RETENTION_DAYS = 30;
+
+interface CleanupClient {
+  query(sql: string, params?: unknown[]): Promise<{ rowCount: number | null }>;
+}
+
+/**
+ * Pre-pass: soft-delete children of users who are past the retention
+ * window but whose children were never individually soft-deleted.
+ * Without this, hard-deleting the user row would CASCADE-delete
+ * children without creating tombstones, leaving orphaned rows in
+ * PowerSync offline clients.
+ */
+async function tombstoneOrphanedChildren(client: CleanupClient): Promise<void> {
+  for (const table of USER_OWNED_TABLES) {
+    try {
+      const quotedTable = quoteId(table);
+      await client.query(
+        `UPDATE ${quotedTable} SET deleted_at = NOW(), updated_at = NOW() WHERE user_id IN (SELECT id FROM "users" WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1) AND deleted_at IS NULL`,
+        [RETENTION_DAYS]
+      );
+    } catch (prePassError: unknown) {
+      const message =
+        prePassError instanceof Error
+          ? prePassError.message
+          : String(prePassError);
+      console.error(
+        `Pre-pass soft-delete failed for table "${table}":`,
+        message
+      );
+    }
+  }
+}
+
+/**
+ * Main cleanup: hard-delete rows from synced tables that have been
+ * soft-deleted for longer than the retention period.
+ */
+async function cleanupSyncedTables(
+  client: CleanupClient,
+  results: Record<string, number>,
+  errors: Record<string, string>
+): Promise<void> {
+  for (const table of TABLES_IN_ORDER) {
+    try {
+      // SAFETY: `table` is from TABLES_IN_ORDER (compile-time constant).
+      // RETENTION_DAYS is parameterized via $1. LIMIT prevents long queries.
+      const quotedTable = quoteId(table);
+      const result = await client.query(
+        `WITH to_delete AS (SELECT id FROM ${quotedTable} WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1 LIMIT 10000) DELETE FROM ${quotedTable} WHERE id IN (SELECT id FROM to_delete)`,
+        [RETENTION_DAYS]
+      );
+      results[table] = result.rowCount ?? 0;
+    } catch (tableError: unknown) {
+      // FK violations are expected when junction rows survive due to LIMIT.
+      // Log and continue — these parents will be cleaned next run.
+      const message =
+        tableError instanceof Error ? tableError.message : String(tableError);
+      console.error(`Cleanup failed for table "${table}":`, message);
+      errors[table] = "cleanup_failed";
+      results[table] = 0;
+    }
+  }
+}
+
+/**
+ * Hard-delete user rows only when ALL their tombstoned children have
+ * already been hard-deleted. Checks for surviving tombstoned rows
+ * (deleted_at IS NOT NULL) rather than all rows, so the NOT EXISTS
+ * subqueries can leverage the idx_*_deleted_at partial indexes instead
+ * of falling back to sequential scans on the partial user_id indexes
+ * (which exclude soft-deleted rows).
+ */
+async function cleanupUsers(
+  client: CleanupClient,
+  results: Record<string, number>,
+  errors: Record<string, string>
+): Promise<void> {
+  try {
+    const childChecks = USER_OWNED_TABLES.map(
+      (t) =>
+        `NOT EXISTS (SELECT 1 FROM ${quoteId(t)} WHERE user_id = "users".id AND deleted_at IS NOT NULL)`
+    ).join(" AND ");
+    const result = await client.query(
+      `WITH to_delete AS (SELECT id FROM "users" WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1 AND ${childChecks} LIMIT 10000) DELETE FROM "users" WHERE id IN (SELECT id FROM to_delete)`,
+      [RETENTION_DAYS]
+    );
+    results.users = result.rowCount ?? 0;
+  } catch (userError: unknown) {
+    const message =
+      userError instanceof Error ? userError.message : String(userError);
+    console.error('Cleanup failed for table "users":', message);
+    errors.users = "cleanup_failed";
+    results.users = 0;
+  }
+}
 
 // Vercel Cron Jobs invoke route handlers via GET requests.
 // This route performs DELETE mutations despite being a GET handler.
@@ -78,33 +196,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const client = await pool.connect();
     try {
-      // Each table DELETE runs independently — no wrapping transaction.
-      // With LIMIT 10000 and NO ACTION FKs, a single transaction would
-      // ROLLBACK entirely if surviving junction rows block a parent DELETE.
-      // Independent deletes let junction rows drain first; parents whose
-      // children are still present survive until the next cron run.
-      for (const table of TABLES_IN_ORDER) {
-        try {
-          // SAFETY: `table` is from TABLES_IN_ORDER (compile-time constant).
-          // RETENTION_DAYS is parameterized via $1. LIMIT prevents long queries.
-          const quotedTable = quoteId(table);
-          const result = await client.query(
-            `WITH to_delete AS (SELECT id FROM ${quotedTable} WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1 LIMIT 10000) DELETE FROM ${quotedTable} WHERE id IN (SELECT id FROM to_delete)`,
-            [RETENTION_DAYS]
-          );
-          results[table] = result.rowCount ?? 0;
-        } catch (tableError: unknown) {
-          // FK violations are expected when junction rows survive due to LIMIT.
-          // Log and continue — these parents will be cleaned next run.
-          const message =
-            tableError instanceof Error
-              ? tableError.message
-              : String(tableError);
-          console.error(`Cleanup failed for table "${table}":`, message);
-          errors[table] = "cleanup_failed";
-          results[table] = 0;
-        }
-      }
+      await tombstoneOrphanedChildren(client);
+      await cleanupSyncedTables(client, results, errors);
+      await cleanupUsers(client, results, errors);
 
       const totalDeleted = Object.values(results).reduce((a, b) => a + b, 0);
 
@@ -115,9 +209,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       });
 
       const errorsCount = Object.keys(errors).length;
+      const resultCount = Object.keys(results).length;
+      const allFailed = resultCount > 0 && errorsCount === resultCount;
 
       return NextResponse.json({
-        success: true,
+        success: !allFailed,
         totalDeleted,
         errorsCount,
       });

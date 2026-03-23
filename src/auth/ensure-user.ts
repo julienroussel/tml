@@ -84,11 +84,18 @@ export async function ensureUserExists(
         set: {
           email,
           displayName,
+          // Clear soft-delete on re-login so a user who deleted their
+          // account can seamlessly re-activate by signing in again.
+          // TODO: This unconditionally reactivates ANY soft-deleted user.
+          // When implementing admin bans or moderation, add a check
+          // (e.g., deactivation_reason or banned_at) to prevent banned
+          // users from self-reactivating via login.
+          deletedAt: null,
           // users.email.name / users.displayName.name are Drizzle's public
           // Column.name property, returning the raw SQL column identifier
           // (e.g., "email", "display_name"). Safe for sql.raw() because
           // column names are simple ASCII identifiers defined in our schema.
-          updatedAt: sql`CASE WHEN ${users.email} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.email.name}"`)} OR ${users.displayName} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.displayName.name}"`)} THEN NOW() ELSE ${users.updatedAt} END`,
+          updatedAt: sql`CASE WHEN ${users.email} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.email.name}"`)} OR ${users.displayName} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.displayName.name}"`)} OR ${users.deletedAt} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.deletedAt.name}"`)} THEN NOW() ELSE ${users.updatedAt} END`,
         },
       })
       .returning({

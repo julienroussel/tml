@@ -125,7 +125,7 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // 9 DELETE queries (no transaction wrapping)
+      // 9 pre-pass UPDATEs + 9 main DELETEs + 1 user DELETE = 19 queries
       mockQuery.mockResolvedValue({ rowCount: 2 });
 
       const response = await GET(createRequest("Bearer test-cron-secret"));
@@ -133,15 +133,16 @@ describe("GET /api/cron/cleanup", () => {
       expect(response.status).toBe(200);
       const body = await response.json();
       expect(body.success).toBe(true);
-      expect(body.totalDeleted).toBe(18); // 9 tables x 2 rows each
+      // 9 main tables + 1 user delete = 10 results, each with rowCount 2
+      expect(body.totalDeleted).toBe(20);
 
       expect(body.errorsCount).toBe(0);
       // No internal table names should be exposed
       expect(body.deleted).toBeUndefined();
       expect(body.errors).toBeUndefined();
 
-      // 9 DELETEs (no BEGIN/COMMIT — independent per-table deletes)
-      expect(mockQuery).toHaveBeenCalledTimes(9);
+      // 9 pre-pass UPDATEs + 9 main DELETEs + 1 user DELETE
+      expect(mockQuery).toHaveBeenCalledTimes(19);
     });
 
     it("handles tables with zero deleted rows", async () => {
@@ -186,8 +187,14 @@ describe("GET /api/cron/cleanup", () => {
       await GET(createRequest("Bearer test-cron-secret"));
 
       const calls = mockQuery.mock.calls.map((call) => call[0] as string);
-      const junctionIndex = calls.findIndex((q) => q.includes("item_tricks"));
-      const parentIndex = calls.findIndex((q) => q.includes('"tricks"'));
+      // Skip pre-pass UPDATEs (first 9), find DELETEs in the main loop
+      const deleteQueries = calls.filter((q) => q.includes("DELETE"));
+      const junctionIndex = deleteQueries.findIndex((q) =>
+        q.includes("item_tricks")
+      );
+      const parentIndex = deleteQueries.findIndex((q) =>
+        q.includes('"tricks"')
+      );
       expect(junctionIndex).toBeLessThan(parentIndex);
     });
 
@@ -208,6 +215,42 @@ describe("GET /api/cron/cleanup", () => {
       // Verify retention days is passed as a parameter
       const firstDeleteParams = mockQuery.mock.calls[0]?.[1] as unknown[];
       expect(firstDeleteParams).toContain(30);
+    });
+
+    it("issues UPDATE tombstone queries for user-owned tables before DELETEs", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await GET(createRequest("Bearer test-cron-secret"));
+
+      const calls = mockQuery.mock.calls.map((call) => call[0] as string);
+      const updateCalls = calls.filter((q) => q.startsWith("UPDATE"));
+      expect(updateCalls).toHaveLength(9);
+      for (const sql of updateCalls) {
+        expect(sql).toContain("SET deleted_at = NOW()");
+        expect(sql).toContain("INTERVAL '1 day' * $1");
+      }
+    });
+
+    it("continues main cleanup when a pre-pass UPDATE fails", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      // First pre-pass UPDATE fails, rest succeed
+      mockQuery
+        .mockRejectedValueOnce(new Error("pre-pass failure"))
+        .mockResolvedValue({ rowCount: 0 });
+
+      const response = await GET(createRequest("Bearer test-cron-secret"));
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.success).toBe(true);
     });
 
     it("releases the client and ends the pool after success", async () => {
@@ -232,7 +275,10 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // First DELETE fails, remaining 8 succeed
+      // 9 pre-pass UPDATEs succeed, first main DELETE fails, rest succeed
+      for (let i = 0; i < 9; i++) {
+        mockQuery.mockResolvedValueOnce({ rowCount: 0 }); // pre-pass
+      }
       mockQuery
         .mockRejectedValueOnce(new Error("DB connection lost"))
         .mockResolvedValue({ rowCount: 1 });
@@ -242,8 +288,8 @@ describe("GET /api/cron/cleanup", () => {
       expect(response.status).toBe(200);
       const body = await response.json();
       expect(body.success).toBe(true);
-      // First table failed, 8 succeeded with 1 row each
-      expect(body.totalDeleted).toBe(8);
+      // First main table failed, 8 main + 1 user succeeded with 1 row each
+      expect(body.totalDeleted).toBe(9);
       expect(body.errorsCount).toBe(1);
       // No internal table names should be exposed
       expect(body.deleted).toBeUndefined();
@@ -256,6 +302,10 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
+      // 9 pre-pass UPDATEs succeed, then first main DELETE throws a string
+      for (let i = 0; i < 9; i++) {
+        mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+      }
       mockQuery
         .mockRejectedValueOnce("string error")
         .mockResolvedValue({ rowCount: 0 });
@@ -290,6 +340,10 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
+      // 9 pre-pass UPDATEs succeed, then first main DELETE fails
+      for (let i = 0; i < 9; i++) {
+        mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+      }
       mockQuery
         .mockRejectedValueOnce(new Error("Disk full"))
         .mockResolvedValue({ rowCount: 0 });
@@ -300,23 +354,93 @@ describe("GET /api/cron/cleanup", () => {
       expect(mockEnd).toHaveBeenCalledTimes(1);
     });
 
+    it("includes NOT EXISTS child checks in the user cleanup query", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await GET(createRequest("Bearer test-cron-secret"));
+
+      const calls = mockQuery.mock.calls.map((call) => call[0] as string);
+      // Last query is the user cleanup DELETE
+      const userDeleteQuery = calls.at(-1);
+      expect(userDeleteQuery).toContain('DELETE FROM "users"');
+      expect(userDeleteQuery).toContain("NOT EXISTS");
+      for (const table of [
+        "goals",
+        "item_tricks",
+        "items",
+        "performances",
+        "practice_session_tricks",
+        "practice_sessions",
+        "routine_tricks",
+        "routines",
+        "tricks",
+      ]) {
+        expect(userDeleteQuery).toContain(`"${table}"`);
+      }
+    });
+
+    it("reports error when user cleanup fails without crashing", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      // All pre-pass (9) + main DELETEs (9) succeed, user DELETE fails
+      for (let i = 0; i < 18; i++) {
+        mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+      }
+      mockQuery.mockRejectedValueOnce(new Error("FK violation"));
+
+      const response = await GET(createRequest("Bearer test-cron-secret"));
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.errorsCount).toBe(1);
+    });
+
+    it("returns success false when all cleanup operations fail", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      // All queries fail
+      mockQuery.mockRejectedValue(new Error("DB down"));
+
+      const response = await GET(createRequest("Bearer test-cron-secret"));
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.totalDeleted).toBe(0);
+      expect(body.errorsCount).toBeGreaterThan(0);
+    });
+
     it("processes all tables even when errors occur mid-batch", async () => {
       vi.stubEnv("CRON_SECRET", "test-cron-secret");
       vi.stubEnv("DATABASE_URL", "postgres://test");
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // First DELETE succeeds, second fails, rest succeed
+      // 9 pre-pass UPDATEs succeed, first main DELETE succeeds,
+      // second fails, rest succeed
+      for (let i = 0; i < 9; i++) {
+        mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+      }
       mockQuery
-        .mockResolvedValueOnce({ rowCount: 1 }) // first DELETE
-        .mockRejectedValueOnce(new Error("Disk full")) // second DELETE
-        .mockResolvedValue({ rowCount: 0 }); // remaining DELETEs
+        .mockResolvedValueOnce({ rowCount: 1 }) // first main DELETE
+        .mockRejectedValueOnce(new Error("Disk full")) // second main DELETE
+        .mockResolvedValue({ rowCount: 0 }); // remaining DELETEs + user
 
       const response = await GET(createRequest("Bearer test-cron-secret"));
 
       expect(response.status).toBe(200);
-      // All 9 tables are attempted despite the mid-batch error
-      expect(mockQuery).toHaveBeenCalledTimes(9);
+      // 9 pre-pass + 9 main DELETEs + 1 user DELETE = 19 total queries
+      expect(mockQuery).toHaveBeenCalledTimes(19);
     });
   });
 });

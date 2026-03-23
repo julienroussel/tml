@@ -51,6 +51,7 @@ vi.mock("@/db/schema/users", () => ({
     id: "id",
     email: { name: "email" },
     displayName: { name: "display_name" },
+    deletedAt: { name: "deleted_at" },
     locale: "locale",
     theme: "theme",
     updatedAt: "updated_at",

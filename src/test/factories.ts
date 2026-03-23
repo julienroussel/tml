@@ -32,6 +32,7 @@ function createTestUser(overrides?: Partial<NewUser>): User {
     theme: "system",
     createdAt: new Date(),
     updatedAt: new Date(),
+    deletedAt: null,
     ...overrides,
   };
 }
