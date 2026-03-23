@@ -1,7 +1,7 @@
 "use server";
 
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { auth } from "@/auth/server";
 import { USER_SYNCED_COOKIE } from "@/auth/sync-cookie";
@@ -36,7 +36,7 @@ export async function updateLocale(locale: string): Promise<ActionResult> {
     const rows = await db
       .update(users)
       .set({ locale })
-      .where(eq(users.id, session.user.id))
+      .where(and(eq(users.id, session.user.id), isNull(users.deletedAt)))
       .returning({ id: users.id });
 
     if (rows.length === 0) {
@@ -76,7 +76,7 @@ export async function updateTheme(theme: string): Promise<ActionResult> {
     const rows = await db
       .update(users)
       .set({ theme })
-      .where(eq(users.id, session.user.id))
+      .where(and(eq(users.id, session.user.id), isNull(users.deletedAt)))
       .returning({ id: users.id });
 
     if (rows.length === 0) {
@@ -114,7 +114,7 @@ export async function getUserSettings(): Promise<{
     const [row] = await db
       .select({ locale: users.locale, theme: users.theme })
       .from(users)
-      .where(eq(users.id, session.user.id))
+      .where(and(eq(users.id, session.user.id), isNull(users.deletedAt)))
       .limit(1);
 
     if (!row) {

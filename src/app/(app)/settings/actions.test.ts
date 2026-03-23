@@ -29,7 +29,12 @@ vi.mock("@/auth/server", () => ({
 }));
 
 vi.mock("@/db/schema/users", () => ({
-  users: { id: "id", locale: "locale", theme: "theme" },
+  users: {
+    id: "id",
+    locale: "locale",
+    theme: "theme",
+    deletedAt: "deleted_at",
+  },
 }));
 
 const mockUpdateReturning = vi.fn().mockResolvedValue([{ id: "test-user" }]);
@@ -144,6 +149,14 @@ describe("settings server actions", () => {
 
       expect(mockCookieDelete).not.toHaveBeenCalled();
     });
+
+    it("returns error when user is soft-deleted", async () => {
+      mockUpdateReturning.mockResolvedValueOnce([]);
+
+      const { updateLocale } = await import("./actions");
+      const result = await updateLocale("fr");
+      expect(result).toEqual({ success: false, error: "User not found" });
+    });
   });
 
   describe("updateTheme", () => {
@@ -231,6 +244,14 @@ describe("settings server actions", () => {
 
       expect(mockCookieDelete).not.toHaveBeenCalled();
     });
+
+    it("returns error when user is soft-deleted", async () => {
+      mockUpdateReturning.mockResolvedValueOnce([]);
+
+      const { updateTheme } = await import("./actions");
+      const result = await updateTheme("dark");
+      expect(result).toEqual({ success: false, error: "User not found" });
+    });
   });
 
   describe("getUserSettings", () => {
@@ -295,6 +316,14 @@ describe("settings server actions", () => {
       const { getUserSettings } = await import("./actions");
       await getUserSettings();
       expect(mockSelect).not.toHaveBeenCalled();
+    });
+
+    it("returns null when user is soft-deleted", async () => {
+      mockSelectLimit.mockResolvedValueOnce([]);
+
+      const { getUserSettings } = await import("./actions");
+      const result = await getUserSettings();
+      expect(result).toBeNull();
     });
   });
 });
