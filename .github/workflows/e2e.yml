@@ -1,0 +1,93 @@
+name: E2E
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.event.deployment.sha || github.event.deployment.id }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E Tests
+    permissions:
+      contents: read
+      statuses: write
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Preview' &&
+      contains(github.event.deployment_status.target_url, 'jaro-labs')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.deployment.sha }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Get Playwright version
+        id: pw-version
+        run: echo "version=$(pnpm exec playwright --version)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        env:
+          BASE_URL: ${{ github.event.deployment_status.target_url }}
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+
+      - name: Upload test report
+        if: '!cancelled()'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: playwright-report-${{ github.event.deployment.sha }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Report commit status
+        if: '!cancelled()'
+        run: |
+          case "$JOB_STATUS" in
+            success) STATE="success" ;;
+            *)       STATE="failure" ;;
+          esac
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${DEPLOY_SHA}" \
+            -f state="$STATE" \
+            -f target_url="$TARGET_URL" \
+            -f context="E2E Tests" \
+            -f description="Playwright E2E against Vercel preview"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_STATUS: ${{ job.status }}
+          DEPLOY_SHA: ${{ github.event.deployment.sha }}
+          TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -1,4 +1,7 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { expect, test as setup } from "@playwright/test";
+import { AUTH_STATE_PATH } from "./helpers";
 
 /**
  * Playwright auth setup — creates an authenticated session via Better Auth's
@@ -13,13 +16,25 @@ import { expect, test as setup } from "@playwright/test";
  * saved to .playwright/.auth/user.json and reused across tests.
  */
 
-const AUTH_STATE_PATH = ".playwright/.auth/user.json";
-
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL;
 const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD;
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
 
 setup("authenticate", async ({ page }) => {
+  if (!(TEST_EMAIL && TEST_PASSWORD)) {
+    if (process.env.CI) {
+      throw new Error("E2E_TEST_EMAIL and E2E_TEST_PASSWORD must be set in CI");
+    }
+    // Write a valid-but-empty storage state so Playwright can parse it
+    // without crashing. Authenticated tests detect empty cookies and skip.
+    mkdirSync(dirname(AUTH_STATE_PATH), { recursive: true });
+    writeFileSync(
+      AUTH_STATE_PATH,
+      JSON.stringify({ cookies: [], origins: [] }),
+      "utf-8"
+    );
+  }
+
   setup.skip(
     !(TEST_EMAIL && TEST_PASSWORD),
     "E2E_TEST_EMAIL and E2E_TEST_PASSWORD must be set"

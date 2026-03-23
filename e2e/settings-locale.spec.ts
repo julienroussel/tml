@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { hasAuthSession } from "./helpers";
 
 /**
  * Settings locale E2E tests.
@@ -16,6 +17,10 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("Settings — Language change", () => {
+  test.beforeEach(() => {
+    test.skip(!hasAuthSession(), "No authenticated session available");
+  });
+
   test.afterEach(async ({ page }) => {
     // Reset locale to English for test isolation
     await page.context().clearCookies({ name: "NEXT_LOCALE" });

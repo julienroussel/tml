@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-// Skipped until a proper HTTPS test environment is available — see #94.
-// Service workers require: (1) a production build (not dev server),
-// (2) HTTPS or localhost, and (3) Chromium to not be in headless mode
-// for some SW APIs. The current CI setup uses a production build but
-// headless Chromium still fails to register the SW reliably.
+// These tests require a production build served over HTTPS — the service worker
+// caches /_next/static/* assets which are unstable in dev mode. In CI they run
+// against Vercel preview deployments (production build + HTTPS). Locally, skip
+// unless BASE_URL points to a deployed target.
 
 test.describe("PWA offline resilience", () => {
-  test.skip(true, "Requires HTTPS test environment — tracked in #94");
+  test.skip(!process.env.BASE_URL, "Requires a deployed target (set BASE_URL)");
 
   test("service worker registers on first visit", async ({ page }) => {
     await page.goto("/");
