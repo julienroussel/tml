@@ -1,80 +1,56 @@
 import { expect, test } from "@playwright/test";
 
-// Skipped until a proper HTTPS test environment is available — see #94.
-// Service workers require: (1) a production build (not dev server),
-// (2) HTTPS or localhost, and (3) Chromium to not be in headless mode
-// for some SW APIs. The current CI setup uses a production build but
-// headless Chromium still fails to register the SW reliably.
+// These tests require a production build served over HTTPS — the service worker
+// caches /_next/static/* assets which are unstable in dev mode. In CI they run
+// against Vercel preview deployments (production build + HTTPS). Locally, skip
+// unless BASE_URL points to a deployed target.
+//
+// NOTE: Full offline-navigation tests (verifying SW serves cached pages when
+// offline) are not feasible in Playwright because:
+// 1. Chromium's Network.emulateNetworkConditions bypasses SW fetch events
+// 2. Vercel Deployment Protection's bypass header interferes with clients.claim()
+// These are tested by verifying the SW activates and correct caches exist.
 
 test.describe("PWA offline resilience", () => {
-  test.skip(true, "Requires HTTPS test environment — tracked in #94");
+  // SW activation fails on Vercel preview deployments — deployment protection
+  // interferes with the SW script fetch and/or clients.claim(). Tracked in #94.
+  test.skip(
+    true,
+    "SW activation blocked by Vercel deployment protection — see #94"
+  );
 
-  test("service worker registers on first visit", async ({ page }) => {
+  test("service worker registers and activates", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Service worker should be registered
-    const swRegistered = await page.evaluate(async () => {
-      if (!("serviceWorker" in navigator)) {
-        return false;
-      }
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      return registrations.length > 0;
-    });
-    expect(swRegistered).toBe(true);
+    // Wait for the SW to reach the "activated" state
+    const swState = await page.waitForFunction(
+      async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        return reg?.active ? "activated" : null;
+      },
+      { timeout: 15_000 }
+    );
+
+    expect(await swState.jsonValue()).toBe("activated");
   });
 
-  test("landing page loads from cache when offline", async ({ page }) => {
-    // First visit — populate service worker cache
+  test("expected caches are created", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for service worker to install and activate
+    // Wait for SW to activate
     await page.waitForFunction(
       async () => {
         const reg = await navigator.serviceWorker.getRegistration();
-        return reg?.active !== undefined;
+        return reg?.active != null;
       },
-      { timeout: 10_000 }
+      { timeout: 15_000 }
     );
 
-    // Go offline
-    await page.context().setOffline(true);
-
-    // Reload — service worker should serve cached page
-    await page.reload();
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    // Restore online
-    await page.context().setOffline(false);
-  });
-
-  test("static assets served from cache when offline", async ({ page }) => {
-    // Visit app to populate caches
-    await page.goto("/");
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    // Wait for service worker
-    await page.waitForFunction(
-      async () => {
-        const reg = await navigator.serviceWorker.getRegistration();
-        return reg?.active !== undefined;
-      },
-      { timeout: 10_000 }
-    );
-
-    // Go offline and check that CSS/JS still loads
-    await page.context().setOffline(true);
-    await page.reload();
-
-    // Page should render with styles (not broken HTML)
-    const hasStyles = await page.evaluate(() => {
-      const body = document.body;
-      const computedStyle = getComputedStyle(body);
-      return computedStyle.fontFamily.length > 0;
-    });
-    expect(hasStyles).toBe(true);
-
-    await page.context().setOffline(false);
+    // SW's activate handler creates the expected caches
+    const cacheNames = await page.evaluate(() => caches.keys());
+    expect(cacheNames).toContain("static-v1");
+    expect(cacheNames).toContain("pages-v1");
   });
 });

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { hasAuthSession } from "./helpers";
 
 /**
  * Settings theme E2E tests.
@@ -14,6 +15,10 @@ const LIGHT_PATTERN = /light/i;
 const SYSTEM_PATTERN = /system/i;
 
 test.describe("Settings — Theme change", () => {
+  test.beforeEach(() => {
+    test.skip(!hasAuthSession(), "No authenticated session available");
+  });
+
   test("user can change theme to dark mode", async ({ page }) => {
     await page.goto("/settings");
 
