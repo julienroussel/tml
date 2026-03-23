@@ -5,111 +5,94 @@ import { expect, type Page, test } from "@playwright/test";
 // against Vercel preview deployments (production build + HTTPS). Locally, skip
 // unless BASE_URL points to a deployed target.
 
-/** Wait for the service worker to activate, claim the page, and be the controller. */
+/** Wait for the service worker to activate and control the page. */
 async function waitForSwController(page: Page) {
-  await page.waitForFunction(
-    async () => {
-      // First check: SW must be in the "activated" state (not null)
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (!reg?.active) {
-        return false;
-      }
+  // Check if SW is already the controller
+  const isController = await page.evaluate(
+    () => navigator.serviceWorker.controller !== null
+  );
 
-      // Second check: SW must control this page (clients.claim() completed)
-      // On the very first load the controller is null even after activation.
-      // A reload through the active SW makes it the controller.
-      return navigator.serviceWorker.controller !== null;
-    },
-    { timeout: 15_000 }
+  // On first visit, the page loads before the SW activates. Reload so the
+  // active SW (with skipWaiting + clients.claim) becomes the controller.
+  if (!isController) {
+    await page.waitForFunction(
+      async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        return reg?.active != null;
+      },
+      { timeout: 10_000 }
+    );
+    await page.reload();
+  }
+
+  await page.waitForFunction(
+    () => navigator.serviceWorker.controller !== null,
+    { timeout: 10_000 }
   );
 }
 
 test.describe("PWA offline resilience", () => {
   test.skip(!process.env.BASE_URL, "Requires a deployed target (set BASE_URL)");
 
-  test("service worker registers on first visit", async ({ page }) => {
+  test("service worker registers and controls the page", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
-
-    // SW activates via skipWaiting + clients.claim — controller may need a reload
-    const isController = await page.evaluate(
-      () => navigator.serviceWorker.controller !== null
-    );
-    if (!isController) {
-      // Reload so the active SW becomes the controller for the new navigation
-      await page.reload();
-    }
-
     await waitForSwController(page);
   });
 
-  test("landing page loads from cache when offline", async ({ page }) => {
+  test("service worker caches pages for offline use", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
-
-    const isController = await page.evaluate(
-      () => navigator.serviceWorker.controller !== null
-    );
-    if (!isController) {
-      await page.reload();
-    }
     await waitForSwController(page);
 
-    // Navigate again so the SW's fetch handler caches the page (network-first)
+    // Navigate again — SW intercepts the fetch, serves from network, and caches
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for cache.put() to complete (async inside the SW fetch handler)
-    await page.waitForFunction(
-      async () => {
-        const cache = await caches.open("pages-v1");
-        const keys = await cache.keys();
-        return keys.length > 0;
-      },
-      { timeout: 5000 }
-    );
-
-    // Go offline — SW catch handler falls back to cache.match()
-    await page.context().setOffline(true);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    await page.context().setOffline(false);
-  });
-
-  test("static assets served from cache when offline", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    const isController = await page.evaluate(
-      () => navigator.serviceWorker.controller !== null
-    );
-    if (!isController) {
-      await page.reload();
-    }
-    await waitForSwController(page);
-
-    await page.reload();
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    await page.waitForFunction(
-      async () => {
-        const cache = await caches.open("pages-v1");
-        const keys = await cache.keys();
-        return keys.length > 0;
-      },
-      { timeout: 5000 }
-    );
-
-    await page.context().setOffline(true);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-
-    const hasStyles = await page.evaluate(() => {
-      const computedStyle = getComputedStyle(document.body);
-      return computedStyle.fontFamily.length > 0;
+    // Verify the pages cache has a response for this URL
+    // (Chromium's offline emulation bypasses SW fetch events, so we verify
+    // the cache directly instead of simulating an offline navigation.)
+    const cacheResult = await page.evaluate(async () => {
+      const cache = await caches.open("pages-v1");
+      const response = await cache.match(location.href);
+      if (!response) {
+        return null;
+      }
+      const text = await response.text();
+      return {
+        status: response.status,
+        hasContent: text.length > 0,
+        hasMainContent: text.includes("main-content"),
+      };
     });
-    expect(hasStyles).toBe(true);
 
-    await page.context().setOffline(false);
+    expect(cacheResult).not.toBeNull();
+    expect(cacheResult?.status).toBe(200);
+    expect(cacheResult?.hasContent).toBe(true);
+    expect(cacheResult?.hasMainContent).toBe(true);
+  });
+
+  test("service worker caches static assets", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("main#main-content")).toBeVisible();
+    await waitForSwController(page);
+
+    // Navigate to populate caches
+    await page.reload();
+    await expect(page.locator("main#main-content")).toBeVisible();
+
+    // Verify the static cache has Next.js bundles
+    const staticEntries = await page.evaluate(async () => {
+      const cache = await caches.open("static-v1");
+      const keys = await cache.keys();
+      return keys.map((r) => new URL(r.url).pathname);
+    });
+
+    // Should have cached /_next/static/* assets (JS bundles, CSS)
+    const hasNextStatic = staticEntries.some((p) =>
+      p.startsWith("/_next/static/")
+    );
+    expect(hasNextStatic).toBe(true);
+    expect(staticEntries.length).toBeGreaterThan(0);
   });
 });
