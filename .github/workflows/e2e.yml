@@ -3,6 +3,9 @@ name: E2E
 on:
   deployment_status:
 
+env:
+  STATUS_CONTEXT: E2E Tests
+
 permissions:
   contents: read
 
@@ -21,7 +24,7 @@ jobs:
       github.event.deployment.environment == 'Preview' &&
       contains(github.event.deployment_status.target_url, 'jaro-labs')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -85,10 +88,33 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/statuses/${DEPLOY_SHA}" \
             -f state="$STATE" \
             -f target_url="$TARGET_URL" \
-            -f context="E2E Tests" \
+            -f context="$STATUS_CONTEXT" \
             -f description="Playwright E2E against Vercel preview"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JOB_STATUS: ${{ job.status }}
+          DEPLOY_SHA: ${{ github.event.deployment.sha }}
+          TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  e2e-skip:
+    name: E2E Tests (Skip)
+    permissions:
+      statuses: write
+    if: >-
+      github.event.deployment_status.state != 'success' ||
+      github.event.deployment.environment != 'Preview' ||
+      !contains(github.event.deployment_status.target_url, 'jaro-labs')
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Post skip status
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${DEPLOY_SHA}" \
+            -f state="success" \
+            -f target_url="$TARGET_URL" \
+            -f context="$STATUS_CONTEXT" \
+            -f description="Skipped — not a matching preview deployment"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEPLOY_SHA: ${{ github.event.deployment.sha }}
           TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
