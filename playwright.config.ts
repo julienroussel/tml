@@ -16,6 +16,18 @@ const hasVercelBypass = !!(
   process.env.BASE_URL && process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 );
 
+// In CI, PLAYWRIGHT_SKIP_BUILD reuses the .next/ output from an earlier step.
+// Without it, build + start from scratch. Locally, use the Turbopack dev server.
+function webServerCommand(): string {
+  if (!process.env.CI) {
+    return "pnpm dev";
+  }
+  if (process.env.PLAYWRIGHT_SKIP_BUILD) {
+    return "pnpm start";
+  }
+  return "pnpm build && pnpm start";
+}
+
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
@@ -36,11 +48,11 @@ export default defineConfig({
       name: "setup",
       testMatch: /auth\.setup\.ts/,
     },
-    // Unauthenticated tests — smoke, auth redirects, PWA
+    // Unauthenticated tests — smoke, auth redirects
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /settings-.*\.spec\.ts/,
+      testIgnore: /settings-.*\.spec\.ts|pwa-offline\.spec\.ts/,
     },
     // Authenticated tests — settings, locale, theme
     {
@@ -52,12 +64,24 @@ export default defineConfig({
       testMatch: /settings-.*\.spec\.ts/,
       dependencies: ["setup"],
     },
+    // PWA tests — SW registration, activation, cache verification.
+    // Only runs on localhost (production build); excluded from Vercel previews
+    // where Deployment Protection blocks SW activation.
+    ...(process.env.BASE_URL
+      ? []
+      : [
+          {
+            name: "pwa",
+            use: { ...devices["Desktop Chrome"] },
+            testMatch: /pwa-offline\.spec\.ts/,
+          },
+        ]),
   ],
   // When BASE_URL is set (e.g., Vercel preview), skip the local dev server
   webServer: process.env.BASE_URL
     ? undefined
     : {
-        command: process.env.CI ? "pnpm build && pnpm start" : "pnpm dev",
+        command: webServerCommand(),
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
       },
