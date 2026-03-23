@@ -7,6 +7,10 @@ import { AUTH_STATE_PATH } from "./e2e/helpers";
 config({ path: ".env.local" });
 const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
 
+// Vercel Deployment Protection shows a login page on preview URLs.
+// The bypass secret lets Playwright access the actual app.
+const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -17,6 +21,9 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    ...(vercelBypass && {
+      extraHTTPHeaders: { "x-vercel-protection-bypass": vercelBypass },
+    }),
   },
   projects: [
     // Auth setup — runs first, creates authenticated session state
