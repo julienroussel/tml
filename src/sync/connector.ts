@@ -5,36 +5,21 @@ import type {
 } from "@powersync/web";
 import { UpdateType } from "@powersync/web";
 import { dispatchSyncError } from "./events";
-import type { SqlParam, SqlStatement, SyncedTableName } from "./queries";
-import {
-  buildQuery as buildQueryFromShared,
-  coerceOpRecord,
-  isSyncedTable,
-  OpType,
-  SYNCED_COLUMNS,
-} from "./queries";
+import { isSyncedTable, OpType } from "./queries";
 
 const POWERSYNC_URL = process.env.NEXT_PUBLIC_POWERSYNC_URL;
-const NEON_DATA_API_URL = process.env.NEXT_PUBLIC_NEON_DATA_API_URL;
 
-/** HTTP status codes for permanent client errors — retrying won't help. */
-const PERMANENT_CLIENT_ERRORS = new Set([400, 404, 409, 422]);
+const BATCH_UPLOAD_PATH = "/api/powersync/batch";
 
-/** Adapter: maps @powersync/web UpdateType to the shared OpType string values. */
-function buildQuery(
-  op: UpdateType,
-  table: SyncedTableName,
-  id: string,
-  record: Record<string, SqlParam>,
-  userId: string
-): SqlStatement {
-  const opMap: Record<UpdateType, OpType> = {
-    [UpdateType.PUT]: OpType.PUT,
-    [UpdateType.PATCH]: OpType.PATCH,
-    [UpdateType.DELETE]: OpType.DELETE,
-  };
-  return buildQueryFromShared(opMap[op], table, id, record, userId);
-}
+/** Maximum operations per batch request — matches the server-side limit. */
+const BATCH_SIZE = 1000;
+
+/** Maps PowerSync SDK UpdateType enum to the shared OpType string values. */
+const UPDATE_TYPE_TO_OP: Record<UpdateType, OpType> = {
+  [UpdateType.PUT]: OpType.PUT,
+  [UpdateType.PATCH]: OpType.PATCH,
+  [UpdateType.DELETE]: OpType.DELETE,
+};
 
 // Intentionally not using CrudEntry from @powersync/web — CrudEntry is a class
 // with methods (toJSON, equals, hashCode) that we don't need. This plain
@@ -46,7 +31,28 @@ interface CrudOp {
   table: string;
 }
 
-/** Callback invoked when a mutation is permanently dropped due to a 4xx error. */
+interface BatchOperation {
+  id: string;
+  op: OpType;
+  opData?: Record<string, unknown>;
+  table: string;
+}
+
+interface BatchResponseResult {
+  error?: string;
+  index: number;
+  status: number;
+}
+
+function isBatchResponseResult(value: unknown): value is BatchResponseResult {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return typeof record.index === "number" && typeof record.status === "number";
+}
+
+/** Callback invoked when a mutation is permanently dropped due to an error. */
 type UploadErrorHandler = (error: {
   message: string;
   op: CrudOp;
@@ -69,82 +75,133 @@ const defaultUploadErrorHandler: UploadErrorHandler = (error) => {
   });
 };
 
-async function handleUploadError(
-  response: Response,
-  op: CrudOp,
-  onPermanentError: UploadErrorHandler
-): Promise<void> {
-  const body = await response.text().catch(() => "");
-  const detailedMessage = `Neon Data API error: ${response.status} ${response.statusText} — ${body}`;
-
-  // Permanent 4xx errors (constraint violations, bad requests) — retrying
-  // won't help and would cause an infinite retry loop via PowerSync.
-  // 401/403 are excluded: the token may have expired and PowerSync will
-  // retry with a fresh token after re-authentication.
-  if (PERMANENT_CLIENT_ERRORS.has(response.status)) {
-    // Log full error details for debugging but dispatch a generic message
-    // to the UI to avoid leaking internal DB details.
-    console.error("Upload error:", detailedMessage);
-    onPermanentError({ message: "Sync failed", op, status: response.status });
-    return;
-  }
-
-  console.error("Upload error (will retry):", detailedMessage);
-  throw new Error("Sync upload failed — will retry");
-}
-
 interface ConnectorOptions {
-  /** Returns the authenticated user's ID for scoping mutations. */
-  getUserId?: () => Promise<string | null>;
-  /** Called when a mutation is permanently dropped (4xx). Defaults to console.error. */
+  /** Called when a mutation is permanently dropped (422). Defaults to console.error + UI event. */
   onUploadError?: UploadErrorHandler;
 }
 
-async function processOperation(
-  op: CrudOp,
-  userId: string,
-  neonDataApiUrl: string,
-  token: string,
+/**
+ * Filters out operations targeting disallowed tables (reporting them as
+ * permanent errors) and maps the remaining ops to the batch endpoint format.
+ *
+ * Client-side table filtering is required because the batch endpoint rejects
+ * the entire request (400) if any operation targets a disallowed table.
+ */
+function toBatchOperations(
+  crud: CrudOp[],
   onPermanentError: UploadErrorHandler
-): Promise<void> {
-  const table = op.table;
+): { batchOps: BatchOperation[]; originalOps: CrudOp[] } {
+  const batchOps: BatchOperation[] = [];
+  const originalOps: CrudOp[] = [];
 
-  if (!isSyncedTable(table)) {
-    throw new Error(`Disallowed table: ${table}`);
+  for (const op of crud) {
+    if (!isSyncedTable(op.table)) {
+      onPermanentError({
+        message: `Disallowed table: ${op.table}`,
+        op,
+        status: 422,
+      });
+      continue;
+    }
+
+    batchOps.push({
+      id: op.id,
+      op: UPDATE_TYPE_TO_OP[op.op],
+      table: op.table,
+      ...(op.opData !== undefined && { opData: op.opData }),
+    });
+    originalOps.push(op);
   }
 
-  // DELETE operations may have undefined opData — skip coercion and
-  // validation since the query only needs the row id and user scope.
-  const record =
-    op.op === UpdateType.DELETE ? {} : coerceOpRecord(op.opData, op.id, table);
+  return { batchOps, originalOps };
+}
 
-  // Prevent forged user_id — always overwrite with the authenticated user
-  // so the client cannot claim another user's ownership.
-  const hasUserId = SYNCED_COLUMNS[table].has("user_id");
-  if (hasUserId) {
-    record.user_id = userId;
+/** Extracts validated results from the batch response JSON. */
+function parseBatchResults(json: unknown): BatchResponseResult[] {
+  if (json === null || typeof json !== "object" || !("results" in json)) {
+    return [];
   }
+  const raw = (json as { results: unknown }).results;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw.filter(isBatchResponseResult);
+}
 
-  const { query, params } = buildQuery(op.op, table, op.id, record, userId);
-
-  const response = await fetch(neonDataApiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ query, params }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!response.ok) {
-    await handleUploadError(response, op, onPermanentError);
+/** Reports per-operation permanent errors from the batch response. */
+function reportPermanentErrors(
+  results: BatchResponseResult[],
+  originalOps: CrudOp[],
+  onPermanentError: UploadErrorHandler
+): void {
+  for (const result of results) {
+    if (result.status !== 422) {
+      continue;
+    }
+    const originalOp = originalOps[result.index];
+    if (originalOp) {
+      onPermanentError({
+        message: result.error ?? "Permanent error",
+        op: originalOp,
+        status: 422,
+      });
+    }
   }
 }
 
 /**
+ * Sends a batch of operations to the server and processes the response.
+ *
+ * - 401 → throws (transient — PowerSync retries after re-auth)
+ * - 500 → throws (transient — PowerSync retries, idempotent ops are safe)
+ * - 200 with per-op 422 → reports each as permanent error
+ */
+async function sendAndProcessBatch(
+  operations: BatchOperation[],
+  originalOps: CrudOp[],
+  onPermanentError: UploadErrorHandler
+): Promise<void> {
+  const response = await fetch(BATCH_UPLOAD_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ operations }),
+    credentials: "same-origin",
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (response.status === 401) {
+    throw new Error("Unauthorized — will retry after re-authentication");
+  }
+
+  // Non-401 4xx errors are permanent — retrying won't help. Report all
+  // operations as failed so PowerSync drops them from the queue.
+  if (response.status >= 400 && response.status < 500) {
+    const body = await response.text().catch(() => "");
+    console.error("Batch upload permanently rejected:", response.status, body);
+    for (const op of originalOps) {
+      onPermanentError({
+        message: `Server rejected batch (${response.status})`,
+        op,
+        status: response.status,
+      });
+    }
+    return;
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error("Batch upload failed:", response.status, body);
+    throw new Error("Batch upload failed — will retry");
+  }
+
+  const json: unknown = await response.json();
+  const results = parseBatchResults(json);
+  reportPermanentErrors(results, originalOps, onPermanentError);
+}
+
+/**
  * Creates a PowerSync connector that uses Neon Auth tokens for authentication
- * and the Neon Data API for uploading mutations.
+ * and the batch endpoint for uploading mutations.
  */
 function createNeonConnector(
   getToken: () => Promise<string | null>,
@@ -155,14 +212,8 @@ function createNeonConnector(
       "NEXT_PUBLIC_POWERSYNC_URL is required but not set in environment"
     );
   }
-  if (!NEON_DATA_API_URL) {
-    throw new Error(
-      "NEXT_PUBLIC_NEON_DATA_API_URL is required but not set in environment"
-    );
-  }
 
   const powerSyncUrl = POWERSYNC_URL;
-  const neonDataApiUrl = NEON_DATA_API_URL;
 
   async function fetchCredentials(): Promise<PowerSyncCredentials | null> {
     const token = await getToken();
@@ -181,22 +232,20 @@ function createNeonConnector(
       return;
     }
 
-    const token = await getToken();
-    if (!token) {
-      throw new Error("Not authenticated — cannot upload data");
-    }
-
     const onPermanentError =
       options?.onUploadError ?? defaultUploadErrorHandler;
-    const userId = options?.getUserId ? await options.getUserId() : null;
-    if (!userId) {
-      throw new Error("Unauthorized: userId is required for mutations");
+
+    const { batchOps, originalOps } = toBatchOperations(
+      transaction.crud,
+      onPermanentError
+    );
+
+    // All operations were filtered out (disallowed tables) — nothing to send.
+    if (batchOps.length === 0) {
+      await transaction.complete();
+      return;
     }
 
-    // Each mutation is a separate HTTP request. A batch endpoint exists at
-    // /api/powersync/batch for reducing round-trips — wiring the connector
-    // to use it is tracked in #59.
-    //
     // Idempotency on retry (PowerSync replays the entire transaction on failure):
     // - PUT: Uses INSERT ... ON CONFLICT (upsert) — fully idempotent.
     // - DELETE: Soft-delete sets deleted_at — re-applying is a no-op UPDATE.
@@ -205,14 +254,11 @@ function createNeonConnector(
     //   write with stale column values, but this is acceptable under the sync
     //   engine's last-write-wins conflict resolution strategy.
     try {
-      for (const op of transaction.crud) {
-        await processOperation(
-          op,
-          userId,
-          neonDataApiUrl,
-          token,
-          onPermanentError
-        );
+      // Chunk into batches of BATCH_SIZE to stay within the server limit.
+      for (let i = 0; i < batchOps.length; i += BATCH_SIZE) {
+        const chunk = batchOps.slice(i, i + BATCH_SIZE);
+        const chunkOriginals = originalOps.slice(i, i + BATCH_SIZE);
+        await sendAndProcessBatch(chunk, chunkOriginals, onPermanentError);
       }
 
       await transaction.complete();

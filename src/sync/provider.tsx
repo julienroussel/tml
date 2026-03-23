@@ -41,12 +41,7 @@ export function PowerSyncProvider({
 
     const connectAsync = async (): Promise<void> => {
       try {
-        const connector = createNeonConnector(getToken, {
-          getUserId: async () => {
-            const { data } = await authClient.getSession();
-            return data?.session?.userId ?? null;
-          },
-        });
+        const connector = createNeonConnector(getToken);
 
         if (cancelled) {
           return;
