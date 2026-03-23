@@ -12,15 +12,9 @@ test.describe("PWA offline resilience", () => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for the service worker to register and activate (async process)
+    // Wait for the service worker to register, activate, AND claim this page
     await page.waitForFunction(
-      async () => {
-        if (!("serviceWorker" in navigator)) {
-          return false;
-        }
-        const reg = await navigator.serviceWorker.getRegistration();
-        return reg?.active !== undefined;
-      },
+      () => navigator.serviceWorker.controller !== null,
       { timeout: 10_000 }
     );
   });
@@ -30,12 +24,9 @@ test.describe("PWA offline resilience", () => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for SW to activate
+    // Wait for SW to control this page (active + clients.claim() resolved)
     await page.waitForFunction(
-      async () => {
-        const reg = await navigator.serviceWorker.getRegistration();
-        return reg?.active !== undefined;
-      },
+      () => navigator.serviceWorker.controller !== null,
       { timeout: 10_000 }
     );
 
@@ -43,7 +34,7 @@ test.describe("PWA offline resilience", () => {
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for the SW to finish writing to the pages cache (cache.put is async)
+    // Wait for the pages cache to be populated (cache.put is async)
     await page.waitForFunction(
       async () => {
         const cache = await caches.open("pages-v1");
@@ -53,9 +44,11 @@ test.describe("PWA offline resilience", () => {
       { timeout: 5000 }
     );
 
-    // Go offline — SW falls back to cached response on network error
+    // Go offline and navigate — SW catch handler falls back to cache.match()
     await page.context().setOffline(true);
-    await page.reload({ waitUntil: "domcontentloaded" });
+
+    // Use goto (not reload) — reload can bypass SW in some Chromium builds
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("main#main-content")).toBeVisible();
 
     await page.context().setOffline(false);
@@ -66,10 +59,7 @@ test.describe("PWA offline resilience", () => {
     await expect(page.locator("main#main-content")).toBeVisible();
 
     await page.waitForFunction(
-      async () => {
-        const reg = await navigator.serviceWorker.getRegistration();
-        return reg?.active !== undefined;
-      },
+      () => navigator.serviceWorker.controller !== null,
       { timeout: 10_000 }
     );
 
@@ -77,19 +67,18 @@ test.describe("PWA offline resilience", () => {
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for caches to populate
     await page.waitForFunction(
       async () => {
-        const pages = await caches.open("pages-v1");
-        const pagesKeys = await pages.keys();
-        return pagesKeys.length > 0;
+        const cache = await caches.open("pages-v1");
+        const keys = await cache.keys();
+        return keys.length > 0;
       },
       { timeout: 5000 }
     );
 
-    // Go offline and check that CSS/JS still loads
+    // Go offline and verify page renders with styles
     await page.context().setOffline(true);
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
 
     const hasStyles = await page.evaluate(() => {
       const computedStyle = getComputedStyle(document.body);
