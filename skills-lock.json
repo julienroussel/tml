@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "515ba75178bd44875812d9a560bdf14651f86709f89cf1d4f209638e879807f3"
     },
+    "powersync": {
+      "source": "powersync-ja/agent-skills",
+      "sourceType": "github",
+      "computedHash": "55734cdb9484980e5c0bfd10cdf201fd1ddfdc06ade5837294ebff21af6ab936"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
