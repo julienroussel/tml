@@ -204,6 +204,8 @@ Type safety is a first-class concern. All code must be rigorously typed.
 
 **IMPORTANT — Single migration file rule**: The `@neondatabase/serverless` driver uses stateless HTTP requests. Each migration file runs as an independent HTTP call, so DDL changes from one migration (e.g., `ADD COLUMN`) are **not visible** to the next migration within the same `drizzle-kit migrate` run. **Never split dependent SQL across multiple migration files.** If a later statement references a column or object created earlier, it must be in the **same** migration file. Hand-written migrations (e.g., RLS policy updates) that depend on a generated migration must be appended to that migration file, not created as a separate file.
 
+**IMPORTANT — Journal timestamps must be monotonically increasing**: Drizzle-orm only applies migrations whose `when` timestamp (in `meta/_journal.json`) is greater than the last applied migration's `created_at`. If a new entry has a lower timestamp than a previous one, it will be **silently skipped**. After generating or hand-writing a migration, verify the new entry's `when` value is strictly greater than all previous entries.
+
 ## UI/Design Conventions
 
 - **Mobile-first**: Design for <768px first, then tablet (768-1024px), then desktop (>1024px)
