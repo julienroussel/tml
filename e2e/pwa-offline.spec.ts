@@ -12,15 +12,17 @@ test.describe("PWA offline resilience", () => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Service worker should be registered
-    const swRegistered = await page.evaluate(async () => {
-      if (!("serviceWorker" in navigator)) {
-        return false;
-      }
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      return registrations.length > 0;
-    });
-    expect(swRegistered).toBe(true);
+    // Wait for the service worker to register and activate (async process)
+    await page.waitForFunction(
+      async () => {
+        if (!("serviceWorker" in navigator)) {
+          return false;
+        }
+        const reg = await navigator.serviceWorker.getRegistration();
+        return reg?.active !== undefined;
+      },
+      { timeout: 10_000 }
+    );
   });
 
   test("landing page loads from cache when offline", async ({ page }) => {
