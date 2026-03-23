@@ -46,5 +46,13 @@
         "source.organizeImports.biome": true
       }
     }
+  },
+  "context_servers": {
+    "docs": {
+      "source": "custom",
+      "type": "http",
+      "url": "https://docs.powersync.com/mcp",
+      "headers": {}
+    }
   }
 }

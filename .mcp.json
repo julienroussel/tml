@@ -11,6 +11,10 @@
     "neon": {
       "type": "http",
       "url": "https://mcp.neon.tech/mcp"
+    },
+    "docs": {
+      "type": "http",
+      "url": "https://docs.powersync.com/mcp"
     }
   }
 }
