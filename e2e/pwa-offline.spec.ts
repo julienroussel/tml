@@ -26,7 +26,7 @@ test.describe("PWA offline resilience", () => {
   });
 
   test("landing page loads from cache when offline", async ({ page }) => {
-    // First visit — populate service worker cache
+    // First visit — registers the service worker
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
@@ -39,23 +39,23 @@ test.describe("PWA offline resilience", () => {
       { timeout: 10_000 }
     );
 
-    // Go offline
-    await page.context().setOffline(true);
-
-    // Reload — service worker should serve cached page
+    // Second visit — SW fetch handler caches the page (stale-while-revalidate)
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Restore online
+    // Go offline — SW should serve from cache
+    await page.context().setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("main#main-content")).toBeVisible();
+
     await page.context().setOffline(false);
   });
 
   test("static assets served from cache when offline", async ({ page }) => {
-    // Visit app to populate caches
+    // First visit — registers and activates the SW
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for service worker
     await page.waitForFunction(
       async () => {
         const reg = await navigator.serviceWorker.getRegistration();
@@ -64,14 +64,16 @@ test.describe("PWA offline resilience", () => {
       { timeout: 10_000 }
     );
 
+    // Second visit — SW caches static assets
+    await page.reload();
+    await expect(page.locator("main#main-content")).toBeVisible();
+
     // Go offline and check that CSS/JS still loads
     await page.context().setOffline(true);
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
 
-    // Page should render with styles (not broken HTML)
     const hasStyles = await page.evaluate(() => {
-      const body = document.body;
-      const computedStyle = getComputedStyle(body);
+      const computedStyle = getComputedStyle(document.body);
       return computedStyle.fontFamily.length > 0;
     });
     expect(hasStyles).toBe(true);
