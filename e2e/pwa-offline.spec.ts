@@ -1,30 +1,27 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 // These tests require a production build served over HTTPS — the service worker
 // caches /_next/static/* assets which are unstable in dev mode. In CI they run
 // against Vercel preview deployments (production build + HTTPS). Locally, skip
 // unless BASE_URL points to a deployed target.
 
-/** Wait for the service worker to activate and control the page. */
-async function waitForSwController(page: import("@playwright/test").Page) {
-  // Wait for SW to be active
+/** Wait for the service worker to activate, claim the page, and be the controller. */
+async function waitForSwController(page: Page) {
   await page.waitForFunction(
     async () => {
+      // First check: SW must be in the "activated" state (not null)
       const reg = await navigator.serviceWorker.getRegistration();
-      return reg?.active !== undefined;
-    },
-    { timeout: 10_000 }
-  );
+      if (!reg?.active) {
+        return false;
+      }
 
-  // If the page was loaded before the SW activated, controller is null.
-  // A reload through the active SW ensures it becomes the controller.
-  if (await page.evaluate(() => navigator.serviceWorker.controller === null)) {
-    await page.reload();
-    await page.waitForFunction(
-      () => navigator.serviceWorker.controller !== null,
-      { timeout: 5000 }
-    );
-  }
+      // Second check: SW must control this page (clients.claim() completed)
+      // On the very first load the controller is null even after activation.
+      // A reload through the active SW makes it the controller.
+      return navigator.serviceWorker.controller !== null;
+    },
+    { timeout: 15_000 }
+  );
 }
 
 test.describe("PWA offline resilience", () => {
@@ -33,15 +30,32 @@ test.describe("PWA offline resilience", () => {
   test("service worker registers on first visit", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
+
+    // SW activates via skipWaiting + clients.claim — controller may need a reload
+    const isController = await page.evaluate(
+      () => navigator.serviceWorker.controller !== null
+    );
+    if (!isController) {
+      // Reload so the active SW becomes the controller for the new navigation
+      await page.reload();
+    }
+
     await waitForSwController(page);
   });
 
   test("landing page loads from cache when offline", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
+
+    const isController = await page.evaluate(
+      () => navigator.serviceWorker.controller !== null
+    );
+    if (!isController) {
+      await page.reload();
+    }
     await waitForSwController(page);
 
-    // Navigate again so the SW's fetch handler caches the page
+    // Navigate again so the SW's fetch handler caches the page (network-first)
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
@@ -66,6 +80,13 @@ test.describe("PWA offline resilience", () => {
   test("static assets served from cache when offline", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
+
+    const isController = await page.evaluate(
+      () => navigator.serviceWorker.controller !== null
+    );
+    if (!isController) {
+      await page.reload();
+    }
     await waitForSwController(page);
 
     await page.reload();
