@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { ReactElement, ReactNode } from "react";
-import { ensureUserExists } from "@/auth/ensure-user";
+import { getOrEnsureUserSettings } from "@/auth/ensure-user";
 import { auth } from "@/auth/server";
 import { AppSidebar } from "@/components/app-sidebar";
 import { HeaderTitle } from "@/components/header-title";
@@ -25,9 +25,10 @@ export default async function AppLayout({
     redirect("/auth/sign-in");
   }
 
-  // ensureUserExists is idempotent (INSERT ... ON CONFLICT DO UPDATE).
-  // Returns the user's persisted locale and theme for cookie restoration.
-  const settings = await ensureUserExists();
+  // Pass the pre-fetched session to avoid a duplicate auth.getSession() call.
+  // Uses a cookie cache to skip the DB upsert on repeat page loads.
+  // Falls through to ensureUserExists() when the cookie is absent or stale.
+  const settings = await getOrEnsureUserSettings(session);
 
   // Locale restoration from DB is handled client-side by LocaleRestorer
   // (rendered below). Server Components cannot reliably set cookies in
@@ -37,7 +38,11 @@ export default async function AppLayout({
     <PowerSyncProvider>
       <SyncErrorToaster />
       {settings && (
-        <SettingsRestorer dbLocale={settings.locale} dbTheme={settings.theme} />
+        <SettingsRestorer
+          dbLocale={settings.locale}
+          dbTheme={settings.theme}
+          userId={session.user.id}
+        />
       )}
       <SidebarProvider>
         <AppSidebar />

@@ -16,6 +16,12 @@ const unauthenticatedSession: MockSession = {
 
 vi.mock("server-only", () => ({}));
 
+const mockCookieDelete = vi.fn();
+const mockCookies = vi.fn().mockResolvedValue({ delete: mockCookieDelete });
+vi.mock("next/headers", () => ({
+  cookies: mockCookies,
+}));
+
 vi.mock("@/auth/server", () => ({
   auth: {
     getSession: vi.fn().mockResolvedValue(authenticatedSession),
@@ -122,6 +128,22 @@ describe("settings server actions", () => {
       await updateLocale("zz");
       expect(mockUpdate).not.toHaveBeenCalled();
     });
+
+    it("deletes the user-synced cookie on successful update", async () => {
+      const { updateLocale } = await import("./actions");
+      await updateLocale("fr");
+
+      expect(mockCookieDelete).toHaveBeenCalledWith("user-synced");
+    });
+
+    it("does not delete the user-synced cookie on failure", async () => {
+      mockUpdateReturning.mockRejectedValueOnce(new Error("DB error"));
+
+      const { updateLocale } = await import("./actions");
+      await updateLocale("fr");
+
+      expect(mockCookieDelete).not.toHaveBeenCalled();
+    });
   });
 
   describe("updateTheme", () => {
@@ -192,6 +214,22 @@ describe("settings server actions", () => {
       const { updateTheme } = await import("./actions");
       await updateTheme("invalid");
       expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it("deletes the user-synced cookie on successful update", async () => {
+      const { updateTheme } = await import("./actions");
+      await updateTheme("dark");
+
+      expect(mockCookieDelete).toHaveBeenCalledWith("user-synced");
+    });
+
+    it("does not delete the user-synced cookie on failure", async () => {
+      mockUpdateReturning.mockRejectedValueOnce(new Error("DB error"));
+
+      const { updateTheme } = await import("./actions");
+      await updateTheme("dark");
+
+      expect(mockCookieDelete).not.toHaveBeenCalled();
     });
   });
 

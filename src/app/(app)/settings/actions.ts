@@ -2,7 +2,9 @@
 
 import "server-only";
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { auth } from "@/auth/server";
+import { USER_SYNCED_COOKIE } from "@/auth/sync-cookie";
 import { getDb } from "@/db";
 import { users } from "@/db/schema/users";
 import type { Locale } from "@/i18n/config";
@@ -41,6 +43,9 @@ export async function updateLocale(locale: string): Promise<ActionResult> {
       return { success: false, error: "User not found" };
     }
 
+    // Invalidate the user-synced cache so the next page load re-reads from DB
+    (await cookies()).delete(USER_SYNCED_COOKIE);
+
     return { success: true };
   } catch (error: unknown) {
     console.error("Failed to update locale:", {
@@ -77,6 +82,9 @@ export async function updateTheme(theme: string): Promise<ActionResult> {
     if (rows.length === 0) {
       return { success: false, error: "User not found" };
     }
+
+    // Invalidate the user-synced cache so the next page load re-reads from DB
+    (await cookies()).delete(USER_SYNCED_COOKIE);
 
     return { success: true };
   } catch (error: unknown) {

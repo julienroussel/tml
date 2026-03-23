@@ -5,14 +5,22 @@ import { useTheme } from "next-themes";
 import { type ReactElement, useEffect } from "react";
 import { updateLocale, updateTheme } from "@/app/(app)/settings/actions";
 import {
+  buildSyncCookieValue,
+  USER_SYNCED_COOKIE,
+  USER_SYNCED_MAX_AGE,
+} from "@/auth/sync-cookie";
+import {
   getLocaleCookie,
   setLocaleCookie,
 } from "@/features/settings/locale-cookie";
 import { isLocale, type Locale } from "@/i18n/config";
 import { isTheme, type Theme } from "@/lib/theme";
 
-/** Sync locale between cookie and DB. Returns true if a page refresh is needed. */
-function syncLocale(dbLocale: Locale): boolean {
+/** Sync locale between cookie and DB. Returns the resolved locale and whether a refresh is needed. */
+function syncLocale(dbLocale: Locale): {
+  locale: Locale;
+  needsRefresh: boolean;
+} {
   const cookieLocale = getLocaleCookie();
 
   if (!cookieLocale) {
@@ -22,7 +30,7 @@ function syncLocale(dbLocale: Locale): boolean {
     // Always refresh: the server may have negotiated a different locale via
     // Accept-Language (e.g., user chose "en" but browser sends "fr"). The
     // cookie won't take effect until the next request.
-    return true;
+    return { locale: dbLocale, needsRefresh: true };
   }
 
   if (isLocale(cookieLocale) && cookieLocale !== dbLocale) {
@@ -30,32 +38,49 @@ function syncLocale(dbLocale: Locale): boolean {
     updateLocale(cookieLocale).catch(() => {
       // Still offline — will retry on next mount
     });
+    return { locale: cookieLocale, needsRefresh: false };
   }
 
-  return false;
+  return { locale: dbLocale, needsRefresh: false };
 }
 
-/** Sync theme between localStorage/next-themes and DB. */
-function syncTheme(dbTheme: Theme, setTheme: (theme: string) => void): void {
+/** Sync theme between localStorage/next-themes and DB. Returns the resolved theme. */
+function syncTheme(dbTheme: Theme, setTheme: (theme: string) => void): Theme {
   const storedTheme = localStorage.getItem("theme");
 
   if (!storedTheme || storedTheme === "system") {
     if (dbTheme !== "system") {
       setTheme(dbTheme);
     }
-    return;
+    return dbTheme;
   }
 
   if (isTheme(storedTheme) && storedTheme !== dbTheme) {
     updateTheme(storedTheme).catch(() => {
       // Still offline — will retry on next mount
     });
+    return storedTheme;
   }
+
+  return dbTheme;
+}
+
+/** Sets the user-synced cookie with the resolved settings. */
+function setUserSyncedCookie(
+  userId: string,
+  locale: Locale,
+  theme: Theme
+): void {
+  const secure = location.protocol === "https:" ? ";secure" : "";
+
+  // biome-ignore lint/suspicious/noDocumentCookie: document.cookie is the standard API for setting cookies client-side
+  document.cookie = `${USER_SYNCED_COOKIE}=${buildSyncCookieValue(userId, locale, theme)};path=/;max-age=${USER_SYNCED_MAX_AGE};samesite=lax${secure}`;
 }
 
 interface SettingsRestorerProps {
   dbLocale: Locale;
   dbTheme: Theme;
+  userId: string;
 }
 
 /**
@@ -71,9 +96,13 @@ interface SettingsRestorerProps {
  *    The user changed the setting while offline and the server action failed.
  *    Syncs local → DB so the preference persists across devices.
  *
+ * After syncing, sets the `user-synced` cookie so subsequent page loads can
+ * skip the DB upsert in `getOrEnsureUserSettings()`.
+ *
  * Runs once on mount — after that, LocaleSelector / ThemeSelector manage changes.
  */
 export function SettingsRestorer({
+  userId,
   dbLocale,
   dbTheme,
 }: SettingsRestorerProps): ReactElement | null {
@@ -82,8 +111,10 @@ export function SettingsRestorer({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount — props are stable from server render, setTheme is stable from next-themes
   useEffect(() => {
-    const needsRefresh = syncLocale(dbLocale);
-    syncTheme(dbTheme, setTheme);
+    const { locale: resolvedLocale, needsRefresh } = syncLocale(dbLocale);
+    const resolvedTheme = syncTheme(dbTheme, setTheme);
+
+    setUserSyncedCookie(userId, resolvedLocale, resolvedTheme);
 
     if (needsRefresh) {
       router.refresh();

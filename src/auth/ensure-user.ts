@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { after } from "next/server";
 import { getDb } from "@/db";
 import { userPreferences } from "@/db/schema/user-preferences";
@@ -10,6 +11,7 @@ import { sendWelcomeEmail } from "@/lib/email";
 import type { Theme } from "@/lib/theme";
 import { isTheme } from "@/lib/theme";
 import { auth } from "./server";
+import { parseSyncCookie, USER_SYNCED_COOKIE } from "./sync-cookie";
 
 /** Persisted user settings needed by the app layout for locale/theme restoration. */
 interface UserSettings {
@@ -26,6 +28,11 @@ interface UpsertResult {
   xmax: string;
 }
 
+/** Session shape derived from Neon Auth — stays in sync with library updates. */
+type SessionData = NonNullable<
+  Awaited<ReturnType<typeof auth.getSession>>["data"]
+>;
+
 /**
  * Ensures the authenticated user exists in the `public.users` table and
  * that a corresponding `user_preferences` row exists.
@@ -40,8 +47,10 @@ interface UpsertResult {
  * Returns the user's persisted locale and theme so the app layout can
  * restore them into cookies/headers on new device login.
  */
-export async function ensureUserExists(): Promise<UserSettings | null> {
-  const { data: session } = await auth.getSession();
+export async function ensureUserExists(
+  prefetchedSession?: SessionData
+): Promise<UserSettings | null> {
+  const session = prefetchedSession ?? (await auth.getSession()).data;
 
   if (!session?.user) {
     return null;
@@ -144,6 +153,42 @@ export async function ensureUserExists(): Promise<UserSettings | null> {
     locale: isLocale(row.locale) ? row.locale : defaultLocale,
     theme: isTheme(row.theme) ? row.theme : "system",
   };
+}
+
+/**
+ * Returns user settings, using a cookie cache to avoid per-request DB upserts.
+ *
+ * Fast path: If the `user-synced` cookie exists and its userId matches the
+ * current session, returns cached locale/theme without touching the database.
+ *
+ * Slow path: Falls through to `ensureUserExists()` for the full DB upsert
+ * (first login, different user, expired/malformed cookie).
+ *
+ * Called once per request from the app layout, which passes its pre-fetched
+ * session to avoid duplicate `auth.getSession()` calls.
+ */
+export async function getOrEnsureUserSettings(
+  prefetchedSession?: SessionData
+): Promise<UserSettings | null> {
+  const session = prefetchedSession ?? (await auth.getSession()).data;
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const cookieStore = await cookies();
+  const syncCookie = cookieStore.get(USER_SYNCED_COOKIE)?.value;
+
+  if (syncCookie) {
+    const parsed = parseSyncCookie(syncCookie);
+    if (parsed && parsed.userId === session.user.id) {
+      return { locale: parsed.locale, theme: parsed.theme };
+    }
+  }
+
+  // Cookie absent, mismatched, or malformed — fall through to DB upsert.
+  // Pass the pre-fetched session to avoid a duplicate auth.getSession() call.
+  return ensureUserExists(session);
 }
 
 export type { UserSettings };

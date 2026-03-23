@@ -7,6 +7,12 @@ vi.mock("next/server", () => ({
   after: mockAfter,
 }));
 
+const mockCookieGet = vi.fn();
+const mockCookies = vi.fn().mockResolvedValue({ get: mockCookieGet });
+vi.mock("next/headers", () => ({
+  cookies: mockCookies,
+}));
+
 const mockReturning = vi.fn().mockResolvedValue([
   {
     id: "user-1",
@@ -330,5 +336,96 @@ describe("ensureUserExists", () => {
     );
 
     consoleSpy.mockRestore();
+  });
+});
+
+describe("getOrEnsureUserSettings", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns cached settings from cookie when userId matches (fast path)", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: uuid, email: "test@example.com", name: "Test User" },
+      },
+    });
+    mockCookieGet.mockReturnValue({ value: `${uuid}|fr|dark` });
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(result).toEqual({ locale: "fr", theme: "dark" });
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("falls through to ensureUserExists when no cookie exists (slow path)", async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+    mockCookieGet.mockReturnValue(undefined);
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(result).toEqual({ locale: "en", theme: "system" });
+    expect(mockInsert).toHaveBeenCalled();
+  });
+
+  it("falls through to ensureUserExists when userId mismatches", async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: {
+          id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+          email: "other@example.com",
+          name: "Other",
+        },
+      },
+    });
+    mockCookieGet.mockReturnValue({
+      value: "a1b2c3d4-e5f6-7890-abcd-ef1234567890|en|system",
+    });
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(mockInsert).toHaveBeenCalled();
+    expect(result).toEqual({ locale: "en", theme: "system" });
+  });
+
+  it("falls through to ensureUserExists when cookie is malformed", async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+    mockCookieGet.mockReturnValue({ value: "garbage" });
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(mockInsert).toHaveBeenCalled();
+    expect(result).toEqual({ locale: "en", theme: "system" });
+  });
+
+  it("returns null when there is no session", async () => {
+    mockGetSession.mockResolvedValue({ data: null });
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(result).toBeNull();
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 });
