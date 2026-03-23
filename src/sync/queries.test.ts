@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildQuery,
   coerceOpRecord,
+  isSqlParam,
+  isSyncedTable,
   OpType,
   quoteId,
   validateRecord,
@@ -11,6 +13,47 @@ const MISSING_OP_DATA_PATTERN = /Missing opData/;
 const USER_ID_WHERE_PATTERN = /WHERE\s+"tricks"\."user_id"\s*=\s*\$/;
 const NON_PRIMITIVE_NESTED_PATTERN = /Non-primitive value for column "nested"/;
 const NON_PRIMITIVE_TAGS_PATTERN = /Non-primitive value for column "tags"/;
+
+describe("isSqlParam", () => {
+  it("returns true for null", () => {
+    expect(isSqlParam(null)).toBe(true);
+  });
+
+  it("returns true for string", () => {
+    expect(isSqlParam("hello")).toBe(true);
+  });
+
+  it("returns true for number", () => {
+    expect(isSqlParam(42)).toBe(true);
+  });
+
+  it("returns true for boolean", () => {
+    expect(isSqlParam(true)).toBe(true);
+    expect(isSqlParam(false)).toBe(true);
+  });
+
+  it("returns false for undefined", () => {
+    expect(isSqlParam(undefined)).toBe(false);
+  });
+
+  it("returns false for object", () => {
+    expect(isSqlParam({ key: "value" })).toBe(false);
+  });
+
+  it("returns false for array", () => {
+    expect(isSqlParam([1, 2])).toBe(false);
+  });
+});
+
+describe("isSyncedTable", () => {
+  it("returns true for a synced table", () => {
+    expect(isSyncedTable("tricks")).toBe(true);
+  });
+
+  it("returns false for a non-synced table", () => {
+    expect(isSyncedTable("users")).toBe(false);
+  });
+});
 
 describe("coerceOpRecord", () => {
   it("coerces a normal record with primitive values", () => {
@@ -145,8 +188,7 @@ describe("buildQuery", () => {
       expect(result.query).toContain("INSERT INTO");
       expect(result.query).toContain('"tricks"');
       expect(result.query).toContain('ON CONFLICT ("id") DO UPDATE SET');
-      expect(result.params).toContain("trick-1");
-      expect(result.params).toContain("Card Trick");
+      expect(result.params).toEqual(["trick-1", "Card Trick", userId, userId]);
     });
 
     it("scopes the upsert to the authenticated user_id", () => {
@@ -198,6 +240,45 @@ describe("buildQuery", () => {
       expect(result.query).toContain("$1");
       expect(result.query).toContain("$2");
     });
+
+    it("excludes id from ON CONFLICT SET clause", () => {
+      const result = buildQuery(
+        OpType.PUT,
+        "tricks",
+        "abc",
+        { id: "abc", name: "Card Trick" },
+        "user-1"
+      );
+
+      const onConflictPart = result.query.split("DO UPDATE SET")[1];
+      expect(onConflictPart).not.toContain('"id"');
+    });
+
+    it("uses EXCLUDED references in ON CONFLICT SET clause", () => {
+      const result = buildQuery(
+        OpType.PUT,
+        "tricks",
+        "abc",
+        { id: "abc", name: "Card Trick" },
+        "user-1"
+      );
+
+      expect(result.query).toContain("EXCLUDED");
+    });
+
+    it("uses NOW() for updated_at in ON CONFLICT SET clause instead of client value", () => {
+      const result = buildQuery(
+        OpType.PUT,
+        "tricks",
+        "abc",
+        { id: "abc", name: "Card Trick", updated_at: "2024-01-01T00:00:00Z" },
+        "user-1"
+      );
+
+      const onConflictPart = result.query.split("DO UPDATE SET")[1];
+      expect(onConflictPart).toContain('"updated_at" = NOW()');
+      expect(onConflictPart).not.toContain('EXCLUDED."updated_at"');
+    });
   });
 
   describe("PATCH operations", () => {
@@ -242,6 +323,37 @@ describe("buildQuery", () => {
       expect(result.query).toContain('"user_id"');
       expect(result.params).toContain(userId);
     });
+
+    it("excludes id from SET clause", () => {
+      const result = buildQuery(
+        OpType.PATCH,
+        "tricks",
+        "abc",
+        { id: "abc", name: "Updated Trick" },
+        "user-1"
+      );
+
+      expect(result.query).not.toContain('SET "id"');
+      expect(result.params).toEqual(["Updated Trick", "abc", "user-1"]);
+    });
+
+    it("uses NOW() for updated_at instead of client value", () => {
+      const result = buildQuery(
+        OpType.PATCH,
+        "tricks",
+        "abc",
+        {
+          id: "abc",
+          name: "Updated Trick",
+          updated_at: "2024-01-01T00:00:00Z",
+        },
+        "user-1"
+      );
+
+      expect(result.query).toContain('"updated_at" = NOW()');
+      expect(result.params).not.toContain("2024-01-01T00:00:00Z");
+      expect(result.params).toEqual(["Updated Trick", "abc", "user-1"]);
+    });
   });
 
   describe("DELETE operations", () => {
@@ -260,6 +372,27 @@ describe("buildQuery", () => {
       expect(result.query).toContain('"id" = $1');
       expect(result.query).toContain('"user_id" = $2');
       expect(result.params).toEqual(["trick-1", userId]);
+    });
+  });
+
+  describe("junction table scoping", () => {
+    it("includes user_id clause for junction tables", () => {
+      const result = buildQuery(
+        OpType.PUT,
+        "routine_tricks",
+        "abc",
+        {
+          id: "abc",
+          user_id: "user-1",
+          routine_id: "r1",
+          trick_id: "t1",
+          position: 1,
+        },
+        "user-1"
+      );
+
+      expect(result.params).toContain("user-1");
+      expect(result.query).toContain('"user_id"');
     });
   });
 });
