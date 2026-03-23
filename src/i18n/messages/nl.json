@@ -89,7 +89,16 @@
   },
   "settings": {
     "title": "Instellingen",
-    "description": "Beheer je account en voorkeuren."
+    "description": "Beheer je account en voorkeuren.",
+    "language": "Taal",
+    "languageDescription": "Kies de taal van de interface.",
+    "theme": "Thema",
+    "themeDescription": "Kies hoe de app eruitziet.",
+    "themeLight": "Licht",
+    "themeDark": "Donker",
+    "themeSystem": "Systeem",
+    "saved": "Instellingen opgeslagen.",
+    "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
   },
   "faq": {
     "title": "Veelgestelde vragen",

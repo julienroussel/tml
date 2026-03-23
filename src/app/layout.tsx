@@ -4,12 +4,13 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { headers } from "next/headers";
-import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
 import { authClient } from "@/auth/client";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { DynamicIntlProvider } from "@/i18n/client-provider";
+import { defaultLocale, isLocale } from "@/i18n/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -75,9 +76,10 @@ export default async function RootLayout({
     headers(),
   ]);
   const nonce = headersList.get("x-nonce") ?? undefined;
+  const typedLocale = isLocale(locale) ? locale : defaultLocale;
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={typedLocale} suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
@@ -90,7 +92,10 @@ export default async function RootLayout({
             emailOTP
             social={{ providers: ["google"] }}
           >
-            <NextIntlClientProvider messages={messages}>
+            <DynamicIntlProvider
+              initialLocale={typedLocale}
+              initialMessages={messages}
+            >
               <a
                 className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
                 href="#main-content"
@@ -99,7 +104,7 @@ export default async function RootLayout({
               </a>
               {children}
               <Toaster />
-            </NextIntlClientProvider>
+            </DynamicIntlProvider>
           </NeonAuthUIProvider>
         </ThemeProvider>
         <Analytics />

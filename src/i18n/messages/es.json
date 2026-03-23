@@ -89,7 +89,16 @@
   },
   "settings": {
     "title": "Ajustes",
-    "description": "Gestiona tu cuenta y preferencias."
+    "description": "Gestiona tu cuenta y preferencias.",
+    "language": "Idioma",
+    "languageDescription": "Elige el idioma de la interfaz.",
+    "theme": "Tema",
+    "themeDescription": "Elige la apariencia de la aplicación.",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "themeSystem": "Sistema",
+    "saved": "Ajustes guardados.",
+    "saveFailed": "Error al guardar. Inténtalo de nuevo."
   },
   "faq": {
     "title": "Preguntas frecuentes",

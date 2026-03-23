@@ -53,7 +53,8 @@
       "includes": [
         "**/ensure-user.test.ts",
         "**/email.test.ts",
-        "**/connector.test.ts"
+        "**/connector.test.ts",
+        "**/batch/route.test.ts"
       ],
       "linter": {
         "rules": {

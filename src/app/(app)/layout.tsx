@@ -11,6 +11,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { SettingsRestorer } from "@/features/settings/components/settings-restorer";
 import { PowerSyncProvider } from "@/sync/provider";
 import { SyncErrorToaster } from "@/sync/sync-error-toaster";
 
@@ -25,12 +26,19 @@ export default async function AppLayout({
   }
 
   // ensureUserExists is idempotent (INSERT ... ON CONFLICT DO UPDATE).
-  // Called unconditionally — the upsert is cheap and avoids cookie-in-render issues.
-  await ensureUserExists();
+  // Returns the user's persisted locale and theme for cookie restoration.
+  const settings = await ensureUserExists();
+
+  // Locale restoration from DB is handled client-side by LocaleRestorer
+  // (rendered below). Server Components cannot reliably set cookies in
+  // Next.js — only Server Actions, Route Handlers, and Proxy can.
 
   return (
     <PowerSyncProvider>
       <SyncErrorToaster />
+      {settings && (
+        <SettingsRestorer dbLocale={settings.locale} dbTheme={settings.theme} />
+      )}
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset id="main-content">

@@ -151,14 +151,14 @@ describe("buildCsp", () => {
   });
 
   it("includes nonce in script-src when provided", () => {
-    const csp = buildCsp({ isDev: false, nonce: "test-nonce-123" });
-    expect(csp).toContain("'nonce-test-nonce-123'");
+    const csp = buildCsp({ isDev: false, nonce: "dGVzdA==" });
+    expect(csp).toContain("'nonce-dGVzdA=='");
   });
 
   it("keeps unsafe-inline alongside nonce for CSP Level 1 fallback", () => {
-    const csp = buildCsp({ isDev: false, nonce: "test-nonce" });
+    const csp = buildCsp({ isDev: false, nonce: "dGVzdA==" });
     expect(csp).toContain("'unsafe-inline'");
-    expect(csp).toContain("'nonce-test-nonce'");
+    expect(csp).toContain("'nonce-dGVzdA=='");
   });
 
   it("does not include nonce when omitted", () => {
@@ -167,7 +167,7 @@ describe("buildCsp", () => {
   });
 
   it("does not add nonce to style-src", () => {
-    const csp = buildCsp({ isDev: false, nonce: "test-nonce" });
+    const csp = buildCsp({ isDev: false, nonce: "dGVzdA==" });
     const styleSrc = csp.split("; ").find((d) => d.startsWith("style-src"));
     expect(styleSrc).toBeDefined();
     expect(styleSrc).not.toContain("nonce");

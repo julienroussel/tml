@@ -89,7 +89,16 @@
   },
   "settings": {
     "title": "Definições",
-    "description": "Faça a gestão da sua conta e preferências."
+    "description": "Faça a gestão da sua conta e preferências.",
+    "language": "Idioma",
+    "languageDescription": "Escolha o idioma da interface.",
+    "theme": "Tema",
+    "themeDescription": "Escolha a aparência da aplicação.",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "themeSystem": "Sistema",
+    "saved": "Definições guardadas.",
+    "saveFailed": "Falha ao guardar. Tente novamente."
   },
   "faq": {
     "title": "Perguntas frequentes",
