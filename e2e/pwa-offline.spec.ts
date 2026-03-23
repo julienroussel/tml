@@ -30,7 +30,7 @@ test.describe("PWA offline resilience", () => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for service worker to install and activate
+    // Wait for SW to activate
     await page.waitForFunction(
       async () => {
         const reg = await navigator.serviceWorker.getRegistration();
@@ -39,11 +39,21 @@ test.describe("PWA offline resilience", () => {
       { timeout: 10_000 }
     );
 
-    // Second visit — SW fetch handler caches the page (stale-while-revalidate)
+    // Second visit — SW intercepts navigate, fetches from network, and caches
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Go offline — SW should serve from cache
+    // Wait for the SW to finish writing to the pages cache (cache.put is async)
+    await page.waitForFunction(
+      async () => {
+        const cache = await caches.open("pages-v1");
+        const keys = await cache.keys();
+        return keys.length > 0;
+      },
+      { timeout: 5000 }
+    );
+
+    // Go offline — SW falls back to cached response on network error
     await page.context().setOffline(true);
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator("main#main-content")).toBeVisible();
@@ -52,7 +62,6 @@ test.describe("PWA offline resilience", () => {
   });
 
   test("static assets served from cache when offline", async ({ page }) => {
-    // First visit — registers and activates the SW
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
@@ -64,9 +73,19 @@ test.describe("PWA offline resilience", () => {
       { timeout: 10_000 }
     );
 
-    // Second visit — SW caches static assets
+    // Second visit — SW caches static assets and HTML
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
+
+    // Wait for caches to populate
+    await page.waitForFunction(
+      async () => {
+        const pages = await caches.open("pages-v1");
+        const pagesKeys = await pages.keys();
+        return pagesKeys.length > 0;
+      },
+      { timeout: 5000 }
+    );
 
     // Go offline and check that CSS/JS still loads
     await page.context().setOffline(true);
