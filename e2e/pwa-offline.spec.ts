@@ -5,36 +5,47 @@ import { expect, test } from "@playwright/test";
 // against Vercel preview deployments (production build + HTTPS). Locally, skip
 // unless BASE_URL points to a deployed target.
 
+/** Wait for the service worker to activate and control the page. */
+async function waitForSwController(page: import("@playwright/test").Page) {
+  // Wait for SW to be active
+  await page.waitForFunction(
+    async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return reg?.active !== undefined;
+    },
+    { timeout: 10_000 }
+  );
+
+  // If the page was loaded before the SW activated, controller is null.
+  // A reload through the active SW ensures it becomes the controller.
+  if (await page.evaluate(() => navigator.serviceWorker.controller === null)) {
+    await page.reload();
+    await page.waitForFunction(
+      () => navigator.serviceWorker.controller !== null,
+      { timeout: 5000 }
+    );
+  }
+}
+
 test.describe("PWA offline resilience", () => {
   test.skip(!process.env.BASE_URL, "Requires a deployed target (set BASE_URL)");
 
   test("service worker registers on first visit", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
-
-    // Wait for the service worker to register, activate, AND claim this page
-    await page.waitForFunction(
-      () => navigator.serviceWorker.controller !== null,
-      { timeout: 10_000 }
-    );
+    await waitForSwController(page);
   });
 
   test("landing page loads from cache when offline", async ({ page }) => {
-    // First visit — registers the service worker
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
+    await waitForSwController(page);
 
-    // Wait for SW to control this page (active + clients.claim() resolved)
-    await page.waitForFunction(
-      () => navigator.serviceWorker.controller !== null,
-      { timeout: 10_000 }
-    );
-
-    // Second visit — SW intercepts navigate, fetches from network, and caches
+    // Navigate again so the SW's fetch handler caches the page
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    // Wait for the pages cache to be populated (cache.put is async)
+    // Wait for cache.put() to complete (async inside the SW fetch handler)
     await page.waitForFunction(
       async () => {
         const cache = await caches.open("pages-v1");
@@ -44,10 +55,8 @@ test.describe("PWA offline resilience", () => {
       { timeout: 5000 }
     );
 
-    // Go offline and navigate — SW catch handler falls back to cache.match()
+    // Go offline — SW catch handler falls back to cache.match()
     await page.context().setOffline(true);
-
-    // Use goto (not reload) — reload can bypass SW in some Chromium builds
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("main#main-content")).toBeVisible();
 
@@ -57,13 +66,8 @@ test.describe("PWA offline resilience", () => {
   test("static assets served from cache when offline", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
+    await waitForSwController(page);
 
-    await page.waitForFunction(
-      () => navigator.serviceWorker.controller !== null,
-      { timeout: 10_000 }
-    );
-
-    // Second visit — SW caches static assets and HTML
     await page.reload();
     await expect(page.locator("main#main-content")).toBeVisible();
 
@@ -76,7 +80,6 @@ test.describe("PWA offline resilience", () => {
       { timeout: 5000 }
     );
 
-    // Go offline and verify page renders with styles
     await page.context().setOffline(true);
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
