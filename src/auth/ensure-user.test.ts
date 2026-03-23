@@ -10,6 +10,8 @@ vi.mock("next/server", () => ({
 const mockReturning = vi.fn().mockResolvedValue([
   {
     id: "user-1",
+    locale: "en",
+    theme: "system",
     xmax: "1",
   },
 ]);
@@ -19,7 +21,19 @@ const mockOnConflictDoUpdate = vi.fn(() => ({
 const mockValues = vi.fn(() => ({
   onConflictDoUpdate: mockOnConflictDoUpdate,
 }));
-const mockInsert = vi.fn(() => ({ values: mockValues }));
+// Track preferences insert separately
+const mockOnConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+const mockPrefsValues = vi.fn(() => ({
+  onConflictDoNothing: mockOnConflictDoNothing,
+}));
+// Distinguish tables by schema shape (has "userId" → user_preferences)
+// instead of call order, so tests survive if production code reorders inserts.
+const mockInsert = vi.fn((table: unknown) => {
+  if (typeof table === "object" && table !== null && "userId" in table) {
+    return { values: mockPrefsValues };
+  }
+  return { values: mockValues };
+});
 const mockGetDb = vi.fn(() => ({ insert: mockInsert }));
 
 vi.mock("@/db", () => ({
@@ -27,7 +41,18 @@ vi.mock("@/db", () => ({
 }));
 
 vi.mock("@/db/schema/users", () => ({
-  users: { id: "id" },
+  users: {
+    id: "id",
+    email: { name: "email" },
+    displayName: { name: "display_name" },
+    locale: "locale",
+    theme: "theme",
+    updatedAt: "updated_at",
+  },
+}));
+
+vi.mock("@/db/schema/user-preferences", () => ({
+  userPreferences: { userId: "user_id" },
 }));
 
 const mockSendWelcomeEmail = vi.fn().mockResolvedValue({ id: "email-1" });
@@ -73,6 +98,42 @@ describe("ensureUserExists", () => {
     );
   });
 
+  it("creates a user_preferences row", async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    // Second insert call is for user_preferences
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    expect(mockPrefsValues).toHaveBeenCalledWith({ userId: "user-1" });
+    expect(mockOnConflictDoNothing).toHaveBeenCalledWith({
+      target: "user_id",
+    });
+  });
+
+  it("returns user settings (locale and theme)", async () => {
+    mockReturning.mockResolvedValue([
+      { id: "user-1", locale: "fr", theme: "dark", xmax: "1" },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toEqual({ locale: "fr", theme: "dark" });
+  });
+
   it("uses onConflictDoUpdate for subsequent logins", async () => {
     mockGetSession.mockResolvedValue({
       data: {
@@ -87,27 +148,29 @@ describe("ensureUserExists", () => {
     expect(mockOnConflictDoUpdate).toHaveBeenCalled();
   });
 
-  it("returns early when there is no session", async () => {
+  it("returns null when there is no session", async () => {
     mockGetSession.mockResolvedValue({ data: null });
 
     const { ensureUserExists } = await import("@/auth/ensure-user");
-    await ensureUserExists();
+    const result = await ensureUserExists();
 
+    expect(result).toBeNull();
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
-  it("returns early when session has no user", async () => {
+  it("returns null when session has no user", async () => {
     mockGetSession.mockResolvedValue({
       data: { session: {}, user: null },
     });
 
     const { ensureUserExists } = await import("@/auth/ensure-user");
-    await ensureUserExists();
+    const result = await ensureUserExists();
 
+    expect(result).toBeNull();
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
-  it("returns early when user has no id", async () => {
+  it("returns null when user has no id", async () => {
     mockGetSession.mockResolvedValue({
       data: {
         session: {},
@@ -116,12 +179,13 @@ describe("ensureUserExists", () => {
     });
 
     const { ensureUserExists } = await import("@/auth/ensure-user");
-    await ensureUserExists();
+    const result = await ensureUserExists();
 
+    expect(result).toBeNull();
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
-  it("returns early when user has no email", async () => {
+  it("returns null when user has no email", async () => {
     mockGetSession.mockResolvedValue({
       data: {
         session: {},
@@ -130,8 +194,9 @@ describe("ensureUserExists", () => {
     });
 
     const { ensureUserExists } = await import("@/auth/ensure-user");
-    await ensureUserExists();
+    const result = await ensureUserExists();
 
+    expect(result).toBeNull();
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
@@ -154,7 +219,9 @@ describe("ensureUserExists", () => {
   });
 
   it("sends a welcome email when a new user is created", async () => {
-    mockReturning.mockResolvedValue([{ id: "user-1", xmax: "0" }]);
+    mockReturning.mockResolvedValue([
+      { id: "user-1", locale: "en", theme: "system", xmax: "0" },
+    ]);
     mockGetSession.mockResolvedValue({
       data: {
         session: {},
@@ -179,7 +246,9 @@ describe("ensureUserExists", () => {
   });
 
   it("does not throw when welcome email fails", async () => {
-    mockReturning.mockResolvedValue([{ id: "user-1", xmax: "0" }]);
+    mockReturning.mockResolvedValue([
+      { id: "user-1", locale: "en", theme: "system", xmax: "0" },
+    ]);
     mockSendWelcomeEmail.mockRejectedValue(new Error("Resend API down"));
     mockGetSession.mockResolvedValue({
       data: {
@@ -189,7 +258,9 @@ describe("ensureUserExists", () => {
     });
 
     const { ensureUserExists } = await import("@/auth/ensure-user");
-    await expect(ensureUserExists()).resolves.toBeUndefined();
+    const result = await ensureUserExists();
+
+    expect(result).toEqual({ locale: "en", theme: "system" });
   });
 
   it("re-throws when the database upsert fails", async () => {
@@ -220,7 +291,9 @@ describe("ensureUserExists", () => {
   });
 
   it("does not send a welcome email for existing users", async () => {
-    mockReturning.mockResolvedValue([{ id: "user-1", xmax: "1" }]);
+    mockReturning.mockResolvedValue([
+      { id: "user-1", locale: "en", theme: "system", xmax: "1" },
+    ]);
     mockGetSession.mockResolvedValue({
       data: {
         session: {},
@@ -232,5 +305,30 @@ describe("ensureUserExists", () => {
     await ensureUserExists();
 
     expect(mockSendWelcomeEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not fail when user_preferences insert fails", async () => {
+    mockOnConflictDoNothing.mockRejectedValue(new Error("DB error"));
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+      // Suppress expected error output
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toEqual({ locale: "en", theme: "system" });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[ensureUserExists] user_preferences insert failed — non-fatal:",
+      expect.objectContaining({ userId: "user-1" })
+    );
+
+    consoleSpy.mockRestore();
   });
 });

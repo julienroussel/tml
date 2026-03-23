@@ -89,7 +89,16 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Manage your account and preferences."
+    "description": "Manage your account and preferences.",
+    "language": "Language",
+    "languageDescription": "Choose your preferred language for the interface.",
+    "theme": "Theme",
+    "themeDescription": "Choose how the app looks.",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "saved": "Settings saved.",
+    "saveFailed": "Failed to save settings. Please try again."
   },
   "faq": {
     "title": "Frequently Asked Questions",

@@ -2,10 +2,15 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useTheme } from "next-themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { trackEvent } from "@/lib/analytics";
 import { ThemeToggle } from "./theme-toggle";
 
 vi.mock("next-themes", () => ({
   useTheme: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics", () => ({
+  trackEvent: vi.fn(),
 }));
 
 const mockSetTheme = vi.fn();
@@ -83,6 +88,7 @@ describe("ThemeToggle", () => {
     const button = screen.getByRole("button");
     await userEvent.click(button);
     expect(mockSetTheme).toHaveBeenCalledWith("dark");
+    expect(trackEvent).toHaveBeenCalledWith("theme_changed", { theme: "dark" });
   });
 
   it('calls setTheme("light") when clicking in dark mode', async () => {
@@ -95,6 +101,9 @@ describe("ThemeToggle", () => {
     const button = screen.getByRole("button");
     await userEvent.click(button);
     expect(mockSetTheme).toHaveBeenCalledWith("light");
+    expect(trackEvent).toHaveBeenCalledWith("theme_changed", {
+      theme: "light",
+    });
   });
 
   it("renders placeholder before mount when resolvedTheme is undefined", () => {

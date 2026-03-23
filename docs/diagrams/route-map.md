@@ -1,6 +1,6 @@
 # Route Map
 
-<!-- Last verified: 2026-03-21 -->
+<!-- Last verified: 2026-03-23 -->
 
 ## Route Structure
 
@@ -39,12 +39,18 @@ graph TD
   n30 --> n31["auth"]
   n31 --> n32["[...path]"]
   n32 --> n33(["API: route.ts"])
-  n30 --> n34["email"]
-  n34 --> n35["unsubscribe"]
+  n30 --> n34["cron"]
+  n34 --> n35["cleanup"]
   n35 --> n36(["API: route.ts"])
-  root --> n37["auth"]
-  n37 --> n38["[path]"]
-  n38 --> n39(["page.tsx"])
+  n30 --> n37["email"]
+  n37 --> n38["unsubscribe"]
+  n38 --> n39(["API: route.ts"])
+  n30 --> n40["powersync"]
+  n40 --> n41["batch"]
+  n41 --> n42(["API: route.ts"])
+  root --> n43["auth"]
+  n43 --> n44["[path]"]
+  n44 --> n45(["page.tsx"])
 ```
 
 ## Route Groups

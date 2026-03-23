@@ -5,189 +5,22 @@ import type {
 } from "@powersync/web";
 import { UpdateType } from "@powersync/web";
 import { dispatchSyncError } from "./events";
+import type { SqlParam, SqlStatement, SyncedTableName } from "./queries";
+import {
+  buildQuery as buildQueryFromShared,
+  coerceOpRecord,
+  isSyncedTable,
+  OpType,
+  SYNCED_COLUMNS,
+} from "./queries";
 
 const POWERSYNC_URL = process.env.NEXT_PUBLIC_POWERSYNC_URL;
 const NEON_DATA_API_URL = process.env.NEXT_PUBLIC_NEON_DATA_API_URL;
 
-// Only client-synced tables are listed here. Server-only tables (users,
-// user_preferences) are excluded — the DELETE handler relies on every
-// synced table having a deleted_at column for soft-delete.
-const SYNCED_TABLE_NAMES = [
-  "goals",
-  "item_tricks",
-  "items",
-  "performances",
-  "practice_session_tricks",
-  "practice_sessions",
-  "routine_tricks",
-  "routines",
-  "tricks",
-] as const;
-
-type SyncedTableName = (typeof SYNCED_TABLE_NAMES)[number];
-
-const SYNCED_TABLES = new Set<SyncedTableName>(SYNCED_TABLE_NAMES);
-
-const SYNCED_COLUMNS = {
-  goals: new Set([
-    "id",
-    "user_id",
-    "title",
-    "description",
-    "target_type",
-    "target_value",
-    "current_value",
-    "deadline",
-    "completed_at",
-    "trick_id",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  item_tricks: new Set([
-    "id",
-    "user_id",
-    "item_id",
-    "trick_id",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  items: new Set([
-    "id",
-    "user_id",
-    "name",
-    "type",
-    "description",
-    "brand",
-    "condition",
-    "location",
-    "notes",
-    "purchase_date",
-    "purchase_price",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  performances: new Set([
-    "id",
-    "user_id",
-    "date",
-    "venue",
-    "event_name",
-    "routine_id",
-    "audience_size",
-    "audience_type",
-    "duration_minutes",
-    "rating",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  practice_session_tricks: new Set([
-    "id",
-    "user_id",
-    "practice_session_id",
-    "trick_id",
-    "repetitions",
-    "rating",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  practice_sessions: new Set([
-    "id",
-    "user_id",
-    "date",
-    "duration_minutes",
-    "mood",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  routine_tricks: new Set([
-    "id",
-    "user_id",
-    "routine_id",
-    "trick_id",
-    "position",
-    "transition_notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  routines: new Set([
-    "id",
-    "user_id",
-    "name",
-    "description",
-    "estimated_duration_minutes",
-    "tags",
-    "language",
-    "environment",
-    "requirements",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  tricks: new Set([
-    "id",
-    "user_id",
-    "name",
-    "description",
-    "category",
-    "difficulty",
-    "status",
-    "tags",
-    "notes",
-    "source",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-} satisfies Record<SyncedTableName, Set<string>>;
-
-function isSyncedTable(table: string): table is SyncedTableName {
-  return (SYNCED_TABLES as ReadonlySet<string>).has(table);
-}
-
-const quoteId = (id: string): string => `"${id.replaceAll('"', '""')}"`;
-
 /** HTTP status codes for permanent client errors — retrying won't help. */
 const PERMANENT_CLIENT_ERRORS = new Set([400, 404, 409, 422]);
 
-type SqlParam = string | number | boolean | null;
-
-function isSqlParam(value: unknown): value is SqlParam {
-  return (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  );
-}
-
-interface SqlStatement {
-  params: SqlParam[];
-  query: string;
-}
-
-function validateRecord(
-  table: SyncedTableName,
-  record: Record<string, SqlParam>
-): void {
-  const allowedColumns = SYNCED_COLUMNS[table];
-  for (const col of Object.keys(record)) {
-    if (!allowedColumns.has(col)) {
-      throw new Error(`Disallowed column "${col}" on table "${table}"`);
-    }
-  }
-}
-
+/** Adapter: maps @powersync/web UpdateType to the shared OpType string values. */
 function buildQuery(
   op: UpdateType,
   table: SyncedTableName,
@@ -195,110 +28,12 @@ function buildQuery(
   record: Record<string, SqlParam>,
   userId: string
 ): SqlStatement {
-  const quotedTable = quoteId(table);
-
-  switch (op) {
-    case UpdateType.PUT: {
-      const entries = Object.entries(record);
-      const columns = entries.map(([col]) => col);
-      const values: SqlParam[] = entries.map(([, val]) => val);
-      const quotedColumns = columns.map(quoteId);
-      const placeholders = columns.map((_, i) => `$${i + 1}`);
-      const conflictSetClauses = entries
-        .filter(([col]) => col !== "id")
-        .map(([col]) =>
-          col === "updated_at"
-            ? `${quoteId(col)} = NOW()`
-            : `${quoteId(col)} = EXCLUDED.${quoteId(col)}`
-        );
-
-      // Ensure soft-deleted rows are resurrected on re-insert
-      if (!entries.some(([col]) => col === "deleted_at")) {
-        conflictSetClauses.push('"deleted_at" = NULL');
-      }
-
-      // Scope the upsert to the current user's rows when the table has a
-      // user_id column. Without this WHERE clause, a crafted PUT with another
-      // user's row ID could overwrite that row.
-      const hasUserId = SYNCED_COLUMNS[table].has("user_id");
-      let userIdWhereClause = "";
-      if (hasUserId) {
-        values.push(userId);
-        userIdWhereClause = ` WHERE ${quotedTable}."user_id" = $${values.length}`;
-      }
-
-      return {
-        params: values,
-        query: `INSERT INTO ${quotedTable} (${quotedColumns.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT ("id") DO UPDATE SET ${conflictSetClauses.join(", ")}${userIdWhereClause}`,
-      };
-    }
-    case UpdateType.PATCH: {
-      const entries: [string, SqlParam][] = Object.entries(record).filter(
-        ([key]) => key !== "id"
-      );
-      const nonTimestampEntries = entries.filter(
-        ([col]) => col !== "updated_at"
-      );
-      const setClauses = nonTimestampEntries.map(
-        ([col], i) => `${quoteId(col)} = $${i + 1}`
-      );
-      setClauses.push(`"updated_at" = NOW()`);
-      const params: SqlParam[] = [
-        ...nonTimestampEntries.map(([, val]) => val),
-        id,
-      ];
-      let whereClause = `WHERE "id" = $${nonTimestampEntries.length + 1}`;
-      const hasUserId = SYNCED_COLUMNS[table].has("user_id");
-      if (hasUserId) {
-        params.push(userId);
-        whereClause += ` AND "user_id" = $${params.length}`;
-      }
-      return {
-        params,
-        query: `UPDATE ${quotedTable} SET ${setClauses.join(", ")} ${whereClause}`,
-      };
-    }
-    case UpdateType.DELETE: {
-      const params: SqlParam[] = [id];
-      let whereClause = 'WHERE "id" = $1';
-      const hasUserId = SYNCED_COLUMNS[table].has("user_id");
-      if (hasUserId) {
-        params.push(userId);
-        whereClause += ` AND "user_id" = $${params.length}`;
-      }
-      return {
-        params,
-        query: `UPDATE ${quotedTable} SET "deleted_at" = NOW(), "updated_at" = NOW() ${whereClause}`,
-      };
-    }
-    default: {
-      const _exhaustive: never = op;
-      throw new Error(`Unknown operation type: ${_exhaustive}`);
-    }
-  }
-}
-
-function coerceOpRecord(
-  opData: Record<string, unknown> | undefined,
-  id: string,
-  table: string
-): Record<string, SqlParam> {
-  if (!opData) {
-    throw new Error(
-      `Missing opData for table "${table}" (id: ${id}) — cannot build record`
-    );
-  }
-  const rawRecord: Record<string, unknown> = { ...opData, id };
-  const record: Record<string, SqlParam> = {};
-  for (const [key, value] of Object.entries(rawRecord)) {
-    if (!isSqlParam(value)) {
-      throw new Error(
-        `Non-primitive value for column "${key}" on table "${table}": ${typeof value}`
-      );
-    }
-    record[key] = value;
-  }
-  return record;
+  const opMap: Record<UpdateType, OpType> = {
+    [UpdateType.PUT]: OpType.PUT,
+    [UpdateType.PATCH]: OpType.PATCH,
+    [UpdateType.DELETE]: OpType.DELETE,
+  };
+  return buildQueryFromShared(opMap[op], table, id, record, userId);
 }
 
 // Intentionally not using CrudEntry from @powersync/web — CrudEntry is a class
@@ -340,18 +75,22 @@ async function handleUploadError(
   onPermanentError: UploadErrorHandler
 ): Promise<void> {
   const body = await response.text().catch(() => "");
-  const message = `Neon Data API error: ${response.status} ${response.statusText} — ${body}`;
+  const detailedMessage = `Neon Data API error: ${response.status} ${response.statusText} — ${body}`;
 
   // Permanent 4xx errors (constraint violations, bad requests) — retrying
   // won't help and would cause an infinite retry loop via PowerSync.
   // 401/403 are excluded: the token may have expired and PowerSync will
   // retry with a fresh token after re-authentication.
   if (PERMANENT_CLIENT_ERRORS.has(response.status)) {
-    onPermanentError({ message, op, status: response.status });
+    // Log full error details for debugging but dispatch a generic message
+    // to the UI to avoid leaking internal DB details.
+    console.error("Upload error:", detailedMessage);
+    onPermanentError({ message: "Sync failed", op, status: response.status });
     return;
   }
 
-  throw new Error(message);
+  console.error("Upload error (will retry):", detailedMessage);
+  throw new Error("Sync upload failed — will retry");
 }
 
 interface ConnectorOptions {
@@ -368,14 +107,16 @@ async function processOperation(
   token: string,
   onPermanentError: UploadErrorHandler
 ): Promise<void> {
-  const record = coerceOpRecord(op.opData, op.id, op.table);
   const table = op.table;
 
   if (!isSyncedTable(table)) {
     throw new Error(`Disallowed table: ${table}`);
   }
 
-  validateRecord(table, record);
+  // DELETE operations may have undefined opData — skip coercion and
+  // validation since the query only needs the row id and user scope.
+  const record =
+    op.op === UpdateType.DELETE ? {} : coerceOpRecord(op.opData, op.id, table);
 
   // Prevent forged user_id — always overwrite with the authenticated user
   // so the client cannot claim another user's ownership.
@@ -452,7 +193,9 @@ function createNeonConnector(
       throw new Error("Unauthorized: userId is required for mutations");
     }
 
-    // Each mutation is a separate HTTP request — see #59 for batching plan.
+    // Each mutation is a separate HTTP request. A batch endpoint exists at
+    // /api/powersync/batch for reducing round-trips — wiring the connector
+    // to use it is tracked in #59.
     //
     // Idempotency on retry (PowerSync replays the entire transaction on failure):
     // - PUT: Uses INSERT ... ON CONFLICT (upsert) — fully idempotent.
@@ -482,18 +225,5 @@ function createNeonConnector(
   return { fetchCredentials, uploadData };
 }
 
-export type {
-  ConnectorOptions,
-  SqlParam,
-  SqlStatement,
-  SyncedTableName,
-  UploadErrorHandler,
-};
-export {
-  buildQuery,
-  createNeonConnector,
-  defaultUploadErrorHandler,
-  isSqlParam,
-  isSyncedTable,
-  validateRecord,
-};
+export type { ConnectorOptions, UploadErrorHandler };
+export { createNeonConnector, defaultUploadErrorHandler };

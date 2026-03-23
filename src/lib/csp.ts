@@ -108,9 +108,15 @@ const BOOLEAN_DIRECTIVES: ReadonlySet<CspDirectiveName> = new Set([
   "upgrade-insecure-requests",
 ]);
 
-function directivesToString(directives: CspDirectives): string {
+function directivesToString(
+  directives: CspDirectives,
+  skip?: ReadonlySet<CspDirectiveName>
+): string {
   const parts: string[] = [];
   for (const directive of cspDirectiveNames(directives)) {
+    if (skip?.has(directive)) {
+      continue;
+    }
     const values = directives[directive];
     if (values.length > 0) {
       parts.push(`${directive} ${values.join(" ")}`);
@@ -120,6 +126,8 @@ function directivesToString(directives: CspDirectives): string {
   }
   return parts.join("; ");
 }
+
+const NONCE_PATTERN = /^[A-Za-z0-9+/=]+$/;
 
 interface BuildCspOptions {
   isDev: boolean;
@@ -144,10 +152,20 @@ function buildCsp(options: BuildCspOptions): string {
     : BASE_DIRECTIVES;
 
   if (options.nonce !== undefined) {
+    if (!NONCE_PATTERN.test(options.nonce)) {
+      throw new Error("Invalid CSP nonce format");
+    }
     directives = applyNonce(directives, options.nonce);
   }
 
-  return directivesToString(directives);
+  // upgrade-insecure-requests tells the browser to upgrade all HTTP requests
+  // to HTTPS. In dev mode (HTTP localhost), this breaks server action fetches,
+  // service worker registration, and internal navigation.
+  const skip = options.isDev
+    ? new Set<CspDirectiveName>(["upgrade-insecure-requests"])
+    : undefined;
+
+  return directivesToString(directives, skip);
 }
 
 export type { BuildCspOptions, CspDirectiveName, CspDirectives };

@@ -89,7 +89,16 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "description": "Verwalte dein Konto und deine Einstellungen."
+    "description": "Verwalte dein Konto und deine Einstellungen.",
+    "language": "Sprache",
+    "languageDescription": "Wähle die Sprache der Benutzeroberfläche.",
+    "theme": "Design",
+    "themeDescription": "Wähle das Aussehen der App.",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel",
+    "themeSystem": "System",
+    "saved": "Einstellungen gespeichert.",
+    "saveFailed": "Speichern fehlgeschlagen. Bitte erneut versuchen."
   },
   "faq": {
     "title": "Häufig gestellte Fragen",

@@ -64,6 +64,20 @@
       "when": 1774037051824,
       "tag": "0008_crazy_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774329600000,
+      "tag": "0009_updated_at_triggers_and_check_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774502400000,
+      "tag": "0010_deleted_at_partial_indexes",
+      "breakpoints": true
     }
   ]
 }

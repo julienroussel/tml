@@ -9,13 +9,13 @@ vi.mock("./events", () => ({
 }));
 
 import { UpdateType } from "@powersync/web";
+import { dispatchSyncError } from "./events";
 import {
   buildQuery,
   isSqlParam,
   isSyncedTable,
   validateRecord,
-} from "./connector";
-import { dispatchSyncError } from "./events";
+} from "./queries";
 
 describe("isSqlParam", () => {
   it("returns true for null", () => {
@@ -361,7 +361,7 @@ describe("createNeonConnector", () => {
         id: string;
         op: string;
         table: string;
-        opData: Record<string, unknown>;
+        opData?: Record<string, unknown>;
       }>
     ): { getNextCrudTransaction: ReturnType<typeof vi.fn> } {
       const transaction = {
@@ -587,6 +587,36 @@ describe("createNeonConnector", () => {
       );
     });
 
+    it("handles DELETE with undefined opData without crashing", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => "my-token", {
+        getUserId: async () => "user-1",
+      });
+      const db = createMockDatabase([
+        {
+          id: "trick-1",
+          op: "DELETE",
+          table: "tricks",
+        },
+      ]);
+
+      await connector.uploadData(
+        db as unknown as Parameters<typeof connector.uploadData>[0]
+      );
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [, deleteInit] = fetchSpy.mock.calls[0]!;
+      const body = JSON.parse((deleteInit as RequestInit).body as string) as {
+        query: string;
+        params: unknown[];
+      };
+      expect(body.query).toContain('"deleted_at"');
+      expect(body.params).toContain("trick-1");
+    });
+
     it("completes the transaction after all operations succeed", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue(
         new Response(JSON.stringify({}), { status: 200 })
@@ -644,7 +674,7 @@ describe("createNeonConnector", () => {
         await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).toHaveBeenCalledOnce();
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("mutation dropped"),
+        "Upload error:",
         expect.stringContaining("400")
       );
     });
@@ -673,7 +703,7 @@ describe("createNeonConnector", () => {
         connector.uploadData(
           db as unknown as Parameters<typeof connector.uploadData>[0]
         )
-      ).rejects.toThrow("Neon Data API error: 500");
+      ).rejects.toThrow("Sync upload failed — will retry");
 
       const transaction =
         await db.getNextCrudTransaction.mock.results[0]!.value;
@@ -792,7 +822,7 @@ describe("createNeonConnector", () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(3);
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("mutation dropped"),
+        "Upload error:",
         expect.stringContaining("409")
       );
       const transaction =
@@ -965,10 +995,15 @@ describe("createNeonConnector", () => {
           table: "tricks",
           operation: "PUT",
           status: 400,
-          message: expect.stringContaining("400"),
+          message: "Sync failed",
         })
       );
-      expect(consoleSpy).toHaveBeenCalledOnce();
+      // Two console.error calls: one from handleUploadError (detailed), one from defaultUploadErrorHandler
+      expect(consoleSpy).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Upload error:",
+        expect.stringContaining("400")
+      );
     });
 
     it("does not dispatch sync error event when custom onUploadError is provided", async () => {
