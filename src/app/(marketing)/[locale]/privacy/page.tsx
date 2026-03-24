@@ -1,14 +1,37 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactElement } from "react";
+import {
+  defaultLocale,
+  isLocale,
+  type Locale,
+  type LocaleParams,
+  locales,
+} from "@/i18n/config";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "Privacy policy for The Magic Lab.",
-};
+export async function generateMetadata({
+  params,
+}: LocaleParams): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  setRequestLocale(isLocale(rawLocale) ? rawLocale : defaultLocale);
 
-export default async function PrivacyPage(): Promise<ReactElement> {
-  const t = await getTranslations("privacy");
+  return {
+    title: "Privacy Policy",
+    description: "Privacy policy for The Magic Lab.",
+    alternates: {
+      languages: Object.fromEntries(locales.map((l) => [l, `/${l}/privacy`])),
+    },
+  };
+}
+
+export default async function PrivacyPage({
+  params,
+}: Readonly<LocaleParams>): Promise<ReactElement> {
+  const { locale: rawLocale } = await params;
+  const locale: Locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
+  setRequestLocale(locale);
+
+  const t = await getTranslations({ locale, namespace: "privacy" });
 
   return (
     <section className="mx-auto max-w-3xl px-6 py-24">

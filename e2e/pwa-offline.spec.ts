@@ -80,8 +80,9 @@ test.describe("PWA offline resilience", () => {
     // Navigate to the marketing page — no manual SW registration.
     // The ServiceWorkerRegistration component in the root layout should
     // register sw.js automatically after page load.
-    await page.goto("/");
-    await expect(page.locator("main#main-content")).toBeVisible();
+    // Use locale-prefixed URL to avoid the 302 redirect from bare "/".
+    await page.goto("/en");
+    await page.locator("main#main-content").waitFor({ state: "attached" });
 
     await waitForAutoRegistration(page);
 
@@ -97,15 +98,16 @@ test.describe("PWA offline resilience", () => {
     page,
   }) => {
     // First load — triggers SW registration
-    await page.goto("/");
-    await expect(page.locator("main#main-content")).toBeVisible();
+    // Use locale-prefixed URLs to avoid the 302 redirect from bare paths.
+    await page.goto("/en");
+    await page.locator("main#main-content").waitFor({ state: "attached" });
 
     await waitForAutoRegistration(page);
     await waitForController(page);
 
     // Second navigation — SW intercepts and caches
-    await page.goto("/faq");
-    await expect(page.locator("main#main-content")).toBeVisible();
+    await page.goto("/en/faq");
+    await page.locator("main#main-content").waitFor({ state: "attached" });
 
     const cacheInfo = await page.evaluate(async () => {
       const staticCache = await caches.open("static-v1");
@@ -125,6 +127,6 @@ test.describe("PWA offline resilience", () => {
     expect(cacheInfo.staticCount).toBeGreaterThan(0);
     expect(cacheInfo.hasNextStatic).toBe(true);
     expect(cacheInfo.pagesCount).toBeGreaterThan(0);
-    expect(cacheInfo.cachedPages).toContain("/faq");
+    expect(cacheInfo.cachedPages).toContain("/en/faq");
   });
 });

@@ -47,6 +47,18 @@ describe("DynamicIntlProvider", () => {
     expect(screen.getByText("Hello world")).toBeInTheDocument();
   });
 
+  it("sets document lang to initialLocale on mount", () => {
+    document.documentElement.lang = "en";
+
+    render(
+      <DynamicIntlProvider initialLocale="fr" initialMessages={EN_MESSAGES}>
+        <p>Bonjour</p>
+      </DynamicIntlProvider>
+    );
+
+    expect(document.documentElement.lang).toBe("fr");
+  });
+
   it("switchLocale updates messages via context", async () => {
     const user = userEvent.setup();
 
@@ -66,6 +78,8 @@ describe("DynamicIntlProvider", () => {
 
     // After switch, shows French
     expect(screen.getByTestId("translated")).toHaveTextContent("Enregistrer");
+
+    expect(document.documentElement.lang).toBe("fr");
   });
 });
 

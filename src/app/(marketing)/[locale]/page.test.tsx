@@ -9,18 +9,20 @@ mockNextLink();
 const GITHUB_RE = /GitHub/;
 
 describe("Home (marketing landing page)", () => {
+  const defaultParams = { params: Promise.resolve({ locale: "en" }) };
+
   it("renders the heading", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
   it("renders the trust bar section", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     expect(screen.getByLabelText("Key benefits")).toBeInTheDocument();
   });
 
   it("renders the hero section with tagline paragraph", async () => {
-    const { container } = render(await Home());
+    const { container } = render(await Home(defaultParams));
     const heroTitle = container.querySelector("#hero-title");
     expect(heroTitle).toBeInTheDocument();
     // Hero section contains at least one paragraph (the tagline)
@@ -31,7 +33,7 @@ describe("Home (marketing landing page)", () => {
   });
 
   it("renders the Get Started CTA linking to sign-up", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const ctas = screen
       .getAllByRole("link")
       .filter((link) => link.getAttribute("href") === "/auth/sign-up");
@@ -39,7 +41,7 @@ describe("Home (marketing landing page)", () => {
   });
 
   it("renders feature section with all 6 modules", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const featureSection = document.getElementById("features");
     expect(featureSection).toBeInTheDocument();
     // Each module renders as a link with an h3 heading
@@ -49,7 +51,7 @@ describe("Home (marketing landing page)", () => {
   });
 
   it("renders the GitHub link with correct attributes", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const links = screen.getAllByRole("link", { name: GITHUB_RE });
     const externalLink = links.find(
       (link) =>
@@ -61,7 +63,7 @@ describe("Home (marketing landing page)", () => {
   });
 
   it("renders both logo images", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const images = screen.getAllByRole("presentation");
     const logos = images.filter(
       (img) =>
@@ -72,14 +74,14 @@ describe("Home (marketing landing page)", () => {
   });
 
   it("renders trust bar with at least 3 badges", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const trustBar = screen.getByLabelText("Key benefits");
     const badges = trustBar.querySelectorAll("span");
     expect(badges.length).toBeGreaterThanOrEqual(3);
   });
 
   it("renders the how it works section with steps", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const section = document.getElementById("how-it-works");
     expect(section).toBeInTheDocument();
     // Section has 3 step headings
@@ -88,19 +90,25 @@ describe("Home (marketing landing page)", () => {
   });
 
   it("renders the open source section", async () => {
-    render(await Home());
+    render(await Home(defaultParams));
     const section = document.getElementById("open-source");
     expect(section).toBeInTheDocument();
     expect(section?.tagName).toBe("H2");
   });
 
   it("renders JSON-LD structured data", async () => {
-    const { container } = render(await Home());
+    const { container } = render(await Home(defaultParams));
     const script = container.querySelector(
       'script[type="application/ld+json"]'
     );
     expect(script).toBeInTheDocument();
     const data = JSON.parse(script?.textContent ?? "{}");
     expect(data["@type"]).toBe("SoftwareApplication");
+  });
+
+  it("passes non-default locale to setRequestLocale", async () => {
+    const { setRequestLocale } = await import("next-intl/server");
+    render(await Home({ params: Promise.resolve({ locale: "fr" }) }));
+    expect(setRequestLocale).toHaveBeenCalledWith("fr");
   });
 });

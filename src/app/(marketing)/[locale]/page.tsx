@@ -1,14 +1,41 @@
 import { Code, Dumbbell, Globe, Shield, WifiOff } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactElement } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  defaultLocale,
+  isLocale,
+  type Locale,
+  type LocaleParams,
+  locales,
+} from "@/i18n/config";
 import { getMainModules } from "@/lib/modules";
 
-export default async function Home(): Promise<ReactElement> {
-  const t = await getTranslations("marketing");
+export async function generateMetadata({
+  params,
+}: LocaleParams): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  setRequestLocale(isLocale(rawLocale) ? rawLocale : defaultLocale);
+
+  return {
+    alternates: {
+      languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])),
+    },
+  };
+}
+
+export default async function Home({
+  params,
+}: Readonly<LocaleParams>): Promise<ReactElement> {
+  const { locale: rawLocale } = await params;
+  const locale: Locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
+  setRequestLocale(locale);
+
+  const t = await getTranslations({ locale, namespace: "marketing" });
   const modules = getMainModules();
 
   return (

@@ -147,8 +147,8 @@ describe("proxy", () => {
   it("sets Content-Security-Policy header on all responses", async () => {
     const { proxy } = await import("./proxy");
 
-    // Public route
-    const publicResponse = await proxy(createRequest("/", false));
+    // Public route (locale-prefixed — bare "/" redirects to /en)
+    const publicResponse = await proxy(createRequest("/en", false));
     expect(publicResponse.headers.get("Content-Security-Policy")).toBeTruthy();
 
     // Protected route
@@ -162,16 +162,91 @@ describe("proxy", () => {
   it("does not call auth middleware for public routes", async () => {
     const { proxy } = await import("./proxy");
 
-    await proxy(createRequest("/", false));
+    // Use locale-prefixed path (bare "/" now redirects)
+    await proxy(createRequest("/en", false));
 
     expect(mockMiddleware).not.toHaveBeenCalled();
+  });
+
+  it("redirects bare marketing paths to locale-prefixed versions", async () => {
+    const { proxy } = await import("./proxy");
+
+    const rootResponse = await proxy(createRequest("/", false));
+    expect(rootResponse.status).toBe(302);
+    expect(new URL(rootResponse.headers.get("location") ?? "").pathname).toBe(
+      "/en"
+    );
+
+    const faqResponse = await proxy(createRequest("/faq", false));
+    expect(faqResponse.status).toBe(302);
+    expect(new URL(faqResponse.headers.get("location") ?? "").pathname).toBe(
+      "/en/faq"
+    );
+
+    const privacyResponse = await proxy(createRequest("/privacy", false));
+    expect(privacyResponse.status).toBe(302);
+    expect(
+      new URL(privacyResponse.headers.get("location") ?? "").pathname
+    ).toBe("/en/privacy");
+  });
+
+  it("detects locale from NEXT_LOCALE cookie for marketing redirect", async () => {
+    const { proxy } = await import("./proxy");
+
+    const request = createRequest("/", false);
+    request.cookies.set("NEXT_LOCALE", "fr");
+    const response = await proxy(request);
+
+    expect(response.status).toBe(302);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      "/fr"
+    );
+  });
+
+  it("detects locale from Accept-Language header when no cookie is set", async () => {
+    const { proxy } = await import("./proxy");
+
+    const request = createRequest("/", false);
+    request.headers.set("accept-language", "fr-FR,fr;q=0.9,en;q=0.8");
+    const response = await proxy(request);
+
+    expect(response.status).toBe(302);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      "/fr"
+    );
+  });
+
+  it("falls back to Accept-Language when NEXT_LOCALE cookie has invalid value", async () => {
+    const { proxy } = await import("./proxy");
+    const request = createRequest("/", false);
+    request.cookies.set("NEXT_LOCALE", "xyz");
+    request.headers.set("accept-language", "fr");
+    const response = await proxy(request);
+    expect(response.status).toBe(302);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      "/fr"
+    );
+  });
+
+  it("falls back to default locale when Accept-Language has no supported locales", async () => {
+    const { proxy } = await import("./proxy");
+
+    const request = createRequest("/", false);
+    request.headers.set("accept-language", "ja,zh,ko");
+    const response = await proxy(request);
+
+    expect(response.status).toBe(302);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      "/en"
+    );
   });
 
   it("calls buildCsp with a nonce argument", async () => {
     const { buildCsp } = await import("@/lib/csp");
     const { proxy } = await import("./proxy");
 
-    await proxy(createRequest("/faq", false));
+    // Use a dynamic (non-static) route — static routes skip nonce
+    await proxy(createRequest("/about", false));
 
     expect(buildCsp).toHaveBeenCalledWith(
       expect.objectContaining({ nonce: expect.any(String) })
@@ -208,16 +283,50 @@ describe("proxy", () => {
 
   it("forwards x-nonce in request headers for server components", async () => {
     const { proxy } = await import("./proxy");
-    const request = createRequest("/", false);
+    // Use a dynamic (non-static) route — static routes skip nonce
+    const request = createRequest("/about", false);
     await proxy(request);
     // The nonce should be present in request headers passed to NextResponse.next()
     // We verify via the buildCsp mock which receives the nonce
     const { buildCsp } = await import("@/lib/csp");
     const { nonce } = vi.mocked(buildCsp).mock.calls[0]?.[0] ?? {};
     expect(nonce).toBeTruthy();
-    // Also verify the response has CSP with that nonce
-    const response = await proxy(createRequest("/", false));
+    // Also verify the response has CSP with the nonce
+    const response = await proxy(createRequest("/about", false));
     expect(response.headers.get("Content-Security-Policy")).toContain("nonce");
+  });
+
+  it("skips nonce for static routes (locale-prefixed and auth)", async () => {
+    const { buildCsp } = await import("@/lib/csp");
+    const { proxy } = await import("./proxy");
+
+    // Locale-prefixed homepage
+    await proxy(createRequest("/en", false));
+    expect(buildCsp).toHaveBeenCalledWith(
+      expect.objectContaining({ nonce: undefined })
+    );
+
+    // Locale-prefixed subpath
+    vi.mocked(buildCsp).mockClear();
+    await proxy(createRequest("/fr/privacy", false));
+    expect(buildCsp).toHaveBeenCalledWith(
+      expect.objectContaining({ nonce: undefined })
+    );
+
+    // Auth route
+    vi.mocked(buildCsp).mockClear();
+    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
+    await proxy(createRequest("/auth/sign-in", false));
+    expect(buildCsp).toHaveBeenCalledWith(
+      expect.objectContaining({ nonce: undefined })
+    );
+
+    // Non-locale path that starts with a locale-like prefix should get nonce
+    vi.mocked(buildCsp).mockClear();
+    await proxy(createRequest("/english", false));
+    expect(buildCsp).toHaveBeenCalledWith(
+      expect.objectContaining({ nonce: expect.any(String) })
+    );
   });
 
   it("applies CSP header to auth middleware redirect", async () => {

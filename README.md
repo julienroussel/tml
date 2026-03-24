@@ -109,7 +109,7 @@ pnpm setup            # Initial project setup
 ```
 src/
   app/                    # Next.js App Router
-    (marketing)/          # Public pages (landing, FAQ, privacy)
+    (marketing)/[locale]/ # Public pages (landing, FAQ, privacy) — statically generated per locale
     (app)/                # Authenticated app (dashboard, modules)
     auth/                 # Sign-in / sign-up
     api/                  # API routes (auth, sync, email, cron)

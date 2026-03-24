@@ -5,9 +5,9 @@
 
 ## Docs
 
-- [Home](https://themagiclab.app): Overview and features
-- [Privacy](https://themagiclab.app/privacy): Privacy policy
-- [FAQ](https://themagiclab.app/faq): Common questions
+- [Home](https://themagiclab.app/en): Overview and features
+- [Privacy](https://themagiclab.app/en/privacy): Privacy policy
+- [FAQ](https://themagiclab.app/en/faq): Common questions
 
 ## Optional
 

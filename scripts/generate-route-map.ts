@@ -104,10 +104,11 @@ ${mermaid}
 
 ## Route Groups
 
-### \`(marketing)/\` — Public Pages
-- \`/\` — Landing page (hero, features, CTAs)
-- \`/privacy\` — Privacy policy
-- \`/faq\` — Frequently asked questions
+### \`(marketing)/[locale]/\` — Public Pages (statically generated)
+- \`/[locale]\` — Landing page (hero, features, CTAs) — 7 locale variants
+- \`/[locale]/privacy\` — Privacy policy — 7 locale variants
+- \`/[locale]/faq\` — Frequently asked questions — 7 locale variants
+- Bare paths (\`/\`, \`/faq\`, \`/privacy\`) are 302-redirected by proxy to locale-prefixed versions
 
 ### \`(app)/\` — Authenticated App
 - \`/dashboard\` — Main dashboard
