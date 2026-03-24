@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import FaqPage from "./page";
 
 describe("FaqPage", () => {
+  const defaultParams = { params: Promise.resolve({ locale: "en" }) };
+
   it("renders the FAQ title", async () => {
-    const element = await FaqPage();
-    render(element);
+    render(await FaqPage(defaultParams));
 
     expect(
       screen.getByRole("heading", { level: 1, name: "faq.title" })
@@ -13,16 +14,14 @@ describe("FaqPage", () => {
   });
 
   it("renders all 9 FAQ items", async () => {
-    const element = await FaqPage();
-    render(element);
+    render(await FaqPage(defaultParams));
 
     const headings = screen.getAllByRole("heading", { level: 2 });
     expect(headings).toHaveLength(9);
   });
 
   it("renders question and answer pairs with correct keys", async () => {
-    const element = await FaqPage();
-    render(element);
+    render(await FaqPage(defaultParams));
 
     expect(screen.getByText("faq.q1")).toBeInTheDocument();
     expect(screen.getByText("faq.a1")).toBeInTheDocument();
@@ -31,8 +30,7 @@ describe("FaqPage", () => {
   });
 
   it("includes JSON-LD structured data", async () => {
-    const element = await FaqPage();
-    const { container } = render(element);
+    const { container } = render(await FaqPage(defaultParams));
 
     const script = container.querySelector(
       'script[type="application/ld+json"]'

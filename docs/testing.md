@@ -185,8 +185,8 @@ End-to-end smoke tests use Playwright to validate the app boots and critical pag
 ### What Smoke Tests Cover
 
 - Landing page loads with tagline and `<main id="main-content">`
-- FAQ page renders at `/faq`
-- Privacy page renders at `/privacy`
+- FAQ page renders at `/[locale]/faq` (e.g., `/en/faq`)
+- Privacy page renders at `/[locale]/privacy` (e.g., `/en/privacy`)
 - Unauthenticated `/dashboard` access redirects to `/auth/sign-in`
 - Auth sign-in page renders
 

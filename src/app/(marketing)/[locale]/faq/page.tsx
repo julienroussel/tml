@@ -1,17 +1,40 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactElement } from "react";
+import {
+  defaultLocale,
+  isLocale,
+  type Locale,
+  type LocaleParams,
+  locales,
+} from "@/i18n/config";
 
 const FAQ_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
-export const metadata: Metadata = {
-  title: "FAQ",
-  description:
-    "Frequently asked questions about The Magic Lab — a free workspace for magicians.",
-};
+export async function generateMetadata({
+  params,
+}: LocaleParams): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  setRequestLocale(isLocale(rawLocale) ? rawLocale : defaultLocale);
 
-export default async function FaqPage(): Promise<ReactElement> {
-  const t = await getTranslations("faq");
+  return {
+    title: "FAQ",
+    description:
+      "Frequently asked questions about The Magic Lab — a free workspace for magicians.",
+    alternates: {
+      languages: Object.fromEntries(locales.map((l) => [l, `/${l}/faq`])),
+    },
+  };
+}
+
+export default async function FaqPage({
+  params,
+}: Readonly<LocaleParams>): Promise<ReactElement> {
+  const { locale: rawLocale } = await params;
+  const locale: Locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
+  setRequestLocale(locale);
+
+  const t = await getTranslations({ locale, namespace: "faq" });
 
   const faqItems = FAQ_KEYS.map((n) => ({
     question: t(`q${n}`),

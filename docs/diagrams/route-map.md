@@ -30,35 +30,37 @@ graph TD
   n0 --> n21["train"]
   n21 --> n22(["page.tsx"])
   root --> n23["(marketing)"]
-  n23 --> n24["faq"]
-  n24 --> n25(["page.tsx"])
-  n23 --> n27(["page.tsx"])
-  n23 --> n28["privacy"]
-  n28 --> n29(["page.tsx"])
-  root --> n30["api"]
-  n30 --> n31["auth"]
-  n31 --> n32["[...path]"]
-  n32 --> n33(["API: route.ts"])
-  n30 --> n34["cron"]
-  n34 --> n35["cleanup"]
-  n35 --> n36(["API: route.ts"])
-  n30 --> n37["email"]
-  n37 --> n38["unsubscribe"]
-  n38 --> n39(["API: route.ts"])
-  n30 --> n40["powersync"]
-  n40 --> n41["batch"]
-  n41 --> n42(["API: route.ts"])
-  root --> n43["auth"]
-  n43 --> n44["[path]"]
-  n44 --> n45(["page.tsx"])
+  n23 --> n24["[locale]"]
+  n24 --> n25["faq"]
+  n25 --> n26(["page.tsx"])
+  n24 --> n28(["page.tsx"])
+  n24 --> n29["privacy"]
+  n29 --> n30(["page.tsx"])
+  root --> n31["api"]
+  n31 --> n32["auth"]
+  n32 --> n33["[...path]"]
+  n33 --> n34(["API: route.ts"])
+  n31 --> n35["cron"]
+  n35 --> n36["cleanup"]
+  n36 --> n37(["API: route.ts"])
+  n31 --> n38["email"]
+  n38 --> n39["unsubscribe"]
+  n39 --> n40(["API: route.ts"])
+  n31 --> n41["powersync"]
+  n41 --> n42["batch"]
+  n42 --> n43(["API: route.ts"])
+  root --> n44["auth"]
+  n44 --> n45["[path]"]
+  n45 --> n46(["page.tsx"])
 ```
 
 ## Route Groups
 
-### `(marketing)/` — Public Pages
-- `/` — Landing page (hero, features, CTAs)
-- `/privacy` — Privacy policy
-- `/faq` — Frequently asked questions
+### `(marketing)/[locale]/` — Public Pages (statically generated)
+- `/[locale]` — Landing page (hero, features, CTAs) — 7 locale variants
+- `/[locale]/privacy` — Privacy policy — 7 locale variants
+- `/[locale]/faq` — Frequently asked questions — 7 locale variants
+- Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions
 
 ### `(app)/` — Authenticated App
 - `/dashboard` — Main dashboard

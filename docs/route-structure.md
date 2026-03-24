@@ -1,32 +1,34 @@
 # Route Structure
 
-The Magic Lab uses Next.js App Router with two route groups to separate public marketing pages from the authenticated application.
+The Magic Lab uses Next.js App Router with route groups to separate public marketing pages from the authenticated application.
 
-## Dual Route Group Pattern
+## Route Group Pattern
 
 ```
 src/app/
-  (marketing)/              # Public, SEO-optimized pages
-  (app)/                    # Authenticated application
+  (marketing)/[locale]/    # Public, SEO-optimized, statically generated (7 locales)
+  (app)/                   # Authenticated application (dynamic)
+  auth/                    # Auth pages (statically generated)
 ```
 
 ### Why Route Groups?
 
 - **Separate layouts**: Marketing pages use a minimal layout (no sidebar). The app uses a full sidebar + header layout.
 - **Auth boundaries**: The proxy (`src/proxy.ts`) redirects unauthenticated users away from `(app)/` routes.
-- **SEO isolation**: Marketing pages have full metadata, Open Graph tags, and structured data. App pages use `noindex`.
+- **SEO isolation**: Marketing pages have full metadata, Open Graph tags, structured data, and hreflang alternates. App pages use `noindex`.
+- **Static generation**: Marketing and auth pages are statically generated at build time. App pages are server-rendered on demand (require auth).
 
 ## Full Route Tree
 
-### Marketing Routes -- `(marketing)/`
+### Marketing Routes -- `(marketing)/[locale]/`
+
+Marketing pages use URL-based locale routing for SEO. Each page is statically generated for all 7 locales (21 total pages). Bare paths (`/`, `/faq`, `/privacy`) are redirected by the proxy to locale-prefixed versions (e.g., `/en`, `/en/faq`).
 
 | Path | Page | Description |
 |---|---|---|
-| `/` | Landing page | Hero, feature grid, CTA |
-| `/faq` | FAQ | Common questions |
-| `/privacy` | Privacy policy | Data handling |
-| `/about` | About (planned) | Project story and mission |
-| `/terms` | Terms of service (planned) | Usage terms |
+| `/[locale]` | Landing page | Hero, feature grid, CTA |
+| `/[locale]/faq` | FAQ | Common questions |
+| `/[locale]/privacy` | Privacy policy | Data handling |
 
 ### App Routes -- `(app)/`
 
@@ -58,16 +60,24 @@ src/app/
 
 ## Proxy Behavior
 
-The proxy (`src/proxy.ts`) handles auth-based redirects:
+The proxy (`src/proxy.ts`) handles locale redirects and auth-based routing:
 
 ```
+Any user
+  |
+  +--> visits / or /faq or /privacy
+  |      --> 302 redirect to /[locale] (detected from cookie or Accept-Language)
+  |
+  +--> visits /en, /fr/faq, etc.
+         --> Serve static page (no server computation)
+
 Unauthenticated user
   |
   +--> visits /dashboard, /improve, etc.
   |      --> Redirect to /auth/sign-in
   |
-  +--> visits /
-         --> Show landing page
+  +--> visits /en/faq
+         --> Show static FAQ page
 
 Authenticated user
   |
@@ -82,21 +92,27 @@ Authenticated user
 
 ```
 RootLayout (src/app/layout.tsx)
-  |-- ThemeProvider, NeonAuthUIProvider, NextIntlClientProvider, fonts, analytics
+  |-- Static shell: <html>, <body>, fonts, ServiceWorker, Analytics
+  |-- No dynamic APIs, no providers (enables static descendant routes)
   |
-  +-- (marketing)/layout.tsx
-  |     |-- Minimal layout (no sidebar)
+  +-- (marketing)/[locale]/layout.tsx
+  |     |-- Providers (theme, auth, i18n), skip-to-content
+  |     |-- Statically generated (setRequestLocale + force-static)
   |     +-- page.tsx (landing)
+  |     +-- faq/page.tsx
+  |     +-- privacy/page.tsx
   |
   +-- (app)/layout.tsx
-  |     |-- SidebarProvider + AppSidebar
-  |     |-- SidebarInset + header
+  |     |-- Providers with nonce + locale from cookies/headers
+  |     |-- Dynamic (auth.getSession)
   |     +-- dashboard/page.tsx
   |     +-- improve/page.tsx
-  |     +-- train/page.tsx
   |     +-- ...
   |
-  +-- auth/[path]/page.tsx (Neon Auth UI)
+  +-- auth/layout.tsx
+  |     |-- Providers (static, default locale)
+  |     +-- auth/[path]/page.tsx (Neon Auth UI)
+  |
   +-- account/[path]/page.tsx (Neon Auth account management)
 ```
 

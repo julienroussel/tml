@@ -62,9 +62,9 @@ Requires Node 24.x and pnpm >= 10.
 
 ### Route Groups
 
-- `src/app/(app)/` — authenticated routes (dashboard, settings, feature modules). Protected by `proxy.ts`.
-- `src/app/(marketing)/` — public pages (landing, FAQ, privacy). No auth required.
-- `src/app/auth/` — sign-in / sign-up pages. Authenticated users are redirected to `/dashboard`.
+- `src/app/(app)/` — authenticated routes (dashboard, settings, feature modules). Protected by `proxy.ts`. Dynamic (server-rendered on demand).
+- `src/app/(marketing)/[locale]/` — public pages (landing, FAQ, privacy). URL-based locale routing with `generateStaticParams` for all 7 locales. Statically generated at build time (21 pages). Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions.
+- `src/app/auth/` — sign-in / sign-up pages. Statically generated. Authenticated users are redirected to `/dashboard`.
 - `src/app/api/` — API route handlers (PowerSync upload, auth, unsubscribe, etc.).
 
 ### Server Actions
@@ -168,8 +168,8 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Message files**: `src/i18n/messages/<locale>.json`
 - **Locales**: `en` (default, American English), `fr` (France), `es` (Spain / Peninsular), `pt` (Portugal / European), `it`, `de`, `nl` (Netherlands)
 - **Key naming**: Namespaced — `"common.save"`, `"improve.logPractice"`, `"nav.dashboard"`
-- **Public pages**: Subpath routing (`/fr/train`, `/es/plan`)
-- **App routes**: Locale from user preferences + cookie (no URL prefix)
+- **Marketing pages**: URL-based locale routing (`/fr`, `/es/faq`, `/en/privacy`). Bare paths redirect via proxy. Statically generated for all 7 locales.
+- **App routes**: Locale from user preferences + cookie (no URL prefix). Dynamic.
 - **Completeness check**: `pnpm i18n:check` validates all locales have matching keys
 
 ## Sync Engine Reference

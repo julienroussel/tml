@@ -16,5 +16,10 @@ function isLocale(value: string): value is Locale {
   return (locales as readonly string[]).includes(value);
 }
 
-export type { Locale };
+/** Props for marketing pages that receive a locale URL segment. */
+interface LocaleParams {
+  params: Promise<{ locale: string }>;
+}
+
+export type { Locale, LocaleParams };
 export { defaultLocale, isLocale, locales };

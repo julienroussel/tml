@@ -1,11 +1,13 @@
 import { ShieldAlert } from "lucide-react";
 import { redirect } from "next/navigation";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
 import { isUserBanned } from "@/auth/ban-check";
 import { getOrEnsureUserSettings } from "@/auth/ensure-user";
 import { auth } from "@/auth/server";
 import { AppSidebar } from "@/components/app-sidebar";
 import { HeaderTitle } from "@/components/header-title";
+import { Providers } from "@/components/providers";
 import { SyncStatus } from "@/components/sync-status";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +17,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { SettingsRestorer } from "@/features/settings/components/settings-restorer";
+import { defaultLocale, isLocale } from "@/i18n/config";
 import { PowerSyncProvider } from "@/sync/provider";
 import { SyncErrorToaster } from "@/sync/sync-error-toaster";
 
@@ -63,30 +66,45 @@ export default async function AppLayout({
   // (rendered below). Server Components cannot reliably set cookies in
   // Next.js — only Server Actions, Route Handlers, and Proxy can.
 
+  const [locale, messages, t] = await Promise.all([
+    getLocale(),
+    getMessages(),
+    getTranslations("common"),
+  ]);
+  const typedLocale = isLocale(locale) ? locale : defaultLocale;
+
   return (
-    <PowerSyncProvider>
-      <SyncErrorToaster />
-      {settings && (
+    <Providers locale={typedLocale} messages={messages}>
+      <a
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
+        href="#main-content"
+      >
+        {t("skipToContent")}
+      </a>
+      <PowerSyncProvider>
+        <SyncErrorToaster />
         <SettingsRestorer
           dbLocale={settings.locale}
           dbTheme={settings.theme}
           userId={session.user.id}
         />
-      )}
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset id="main-content">
-          <header className="flex h-12 items-center gap-2 border-b px-4">
-            <SidebarTrigger />
-            <Separator className="h-4" orientation="vertical" />
-            <HeaderTitle />
-            <div className="ml-auto">
-              <SyncStatus />
-            </div>
-          </header>
-          <div className="flex flex-1 flex-col p-4">{children}</div>
-        </SidebarInset>
-      </SidebarProvider>
-    </PowerSyncProvider>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <header className="flex h-12 items-center gap-2 border-b px-4">
+              <SidebarTrigger />
+              <Separator className="h-4" orientation="vertical" />
+              <HeaderTitle />
+              <div className="ml-auto">
+                <SyncStatus />
+              </div>
+            </header>
+            <main className="flex flex-1 flex-col p-4" id="main-content">
+              {children}
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </PowerSyncProvider>
+    </Providers>
   );
 }

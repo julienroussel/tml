@@ -9,23 +9,17 @@ afterEach(cleanup);
 // Interpolated values are appended in parentheses.
 vi.mock("next-intl", () => ({
   useTranslations: (namespace?: string) => {
-    const t = Object.assign(
-      (key: string, values?: Record<string, string | number>) => {
-        const fullKey = namespace ? `${namespace}.${key}` : key;
-        if (values) {
-          const parts = Object.entries(values).map(
-            ([k, v]) => `${k}: ${String(v)}`
-          );
-          return `${fullKey} (${parts.join(", ")})`;
-        }
-        return fullKey;
-      },
-      { rich: null as unknown, raw: null as unknown, markup: null as unknown }
-    );
-    t.rich = t;
-    t.raw = t;
-    t.markup = t;
-    return t;
+    const t = (key: string, values?: Record<string, string | number>) => {
+      const fullKey = namespace ? `${namespace}.${key}` : key;
+      if (values) {
+        const parts = Object.entries(values).map(
+          ([k, v]) => `${k}: ${String(v)}`
+        );
+        return `${fullKey} (${parts.join(", ")})`;
+      }
+      return fullKey;
+    };
+    return Object.assign(t, { rich: t, raw: t, markup: t });
   },
   useLocale: () => "en",
   useMessages: () => ({}),
@@ -33,24 +27,25 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("next-intl/server", () => ({
-  getTranslations: (namespace?: string) => {
-    const t = Object.assign(
-      (key: string, values?: Record<string, string | number>) => {
-        const fullKey = namespace ? `${namespace}.${key}` : key;
-        if (values) {
-          const parts = Object.entries(values).map(
-            ([k, v]) => `${k}: ${String(v)}`
-          );
-          return `${fullKey} (${parts.join(", ")})`;
-        }
-        return fullKey;
-      },
-      { rich: null as unknown, raw: null as unknown, markup: null as unknown }
-    );
-    t.rich = t;
-    t.raw = t;
-    t.markup = t;
-    return Promise.resolve(t);
+  setRequestLocale: vi.fn(),
+  getTranslations: (
+    namespaceOrOpts?: string | { locale?: string; namespace?: string }
+  ) => {
+    const namespace =
+      typeof namespaceOrOpts === "string"
+        ? namespaceOrOpts
+        : namespaceOrOpts?.namespace;
+    const t = (key: string, values?: Record<string, string | number>) => {
+      const fullKey = namespace ? `${namespace}.${key}` : key;
+      if (values) {
+        const parts = Object.entries(values).map(
+          ([k, v]) => `${k}: ${String(v)}`
+        );
+        return `${fullKey} (${parts.join(", ")})`;
+      }
+      return fullKey;
+    };
+    return Promise.resolve(Object.assign(t, { rich: t, raw: t, markup: t }));
   },
   getLocale: () => Promise.resolve("en"),
   getMessages: () => Promise.resolve({}),

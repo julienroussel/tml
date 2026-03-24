@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import PrivacyPage from "./page";
 
 describe("PrivacyPage", () => {
+  const defaultParams = { params: Promise.resolve({ locale: "en" }) };
+
   it("renders the privacy policy title", async () => {
-    const element = await PrivacyPage();
-    render(element);
+    render(await PrivacyPage(defaultParams));
 
     expect(
       screen.getByRole("heading", { level: 1, name: "privacy.title" })
@@ -13,16 +14,14 @@ describe("PrivacyPage", () => {
   });
 
   it("renders all privacy sections", async () => {
-    const element = await PrivacyPage();
-    render(element);
+    render(await PrivacyPage(defaultParams));
 
     const sectionHeadings = screen.getAllByRole("heading", { level: 2 });
     expect(sectionHeadings).toHaveLength(5);
   });
 
   it("renders section titles with correct translation keys", async () => {
-    const element = await PrivacyPage();
-    render(element);
+    render(await PrivacyPage(defaultParams));
 
     expect(screen.getByText("privacy.dataCollectTitle")).toBeInTheDocument();
     expect(screen.getByText("privacy.dataUseTitle")).toBeInTheDocument();
@@ -32,8 +31,7 @@ describe("PrivacyPage", () => {
   });
 
   it("renders the intro paragraph", async () => {
-    const element = await PrivacyPage();
-    render(element);
+    render(await PrivacyPage(defaultParams));
 
     expect(screen.getByText("privacy.intro")).toBeInTheDocument();
   });

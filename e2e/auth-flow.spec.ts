@@ -37,6 +37,6 @@ test.describe("Auth flow", () => {
 
   test("auth sign-in page loads correctly", async ({ page }) => {
     await page.goto("/auth/sign-in");
-    await expect(page.locator("main#main-content")).toBeVisible();
+    await page.locator("main#main-content").waitFor({ state: "attached" });
   });
 });

@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth/server";
+import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
+import { negotiateLocale } from "@/i18n/negotiate";
 import { buildCsp } from "@/lib/csp";
 
 /**
@@ -31,6 +33,45 @@ const PROTECTED_PREFIXES = [
   "/account",
 ];
 
+/** Bare marketing paths that should redirect to locale-prefixed versions. */
+const MARKETING_PATHS = new Set(["/", "/faq", "/privacy"]);
+
+/**
+ * Static routes are pre-rendered at build time — their inline scripts don't
+ * carry a CSP nonce attribute. Adding a nonce to the CSP header would cause
+ * CSP Level 2+ browsers to ignore 'unsafe-inline', blocking those scripts.
+ * Marketing (locale-prefixed) and auth pages are static; app routes are dynamic
+ * and DO receive a nonce (the app layout reads it via headers()).
+ */
+function isStaticRoute(pathname: string): boolean {
+  const firstSegment = pathname.split("/")[1];
+  const hasLocalePrefix = firstSegment !== undefined && isLocale(firstSegment);
+  return (
+    hasLocalePrefix || pathname === "/auth" || pathname.startsWith("/auth/")
+  );
+}
+
+/**
+ * Detect the user's preferred locale from cookie or Accept-Language header.
+ * Falls back to defaultLocale ("en") when neither source provides a match.
+ */
+function detectLocale(request: NextRequest): Locale {
+  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
+  if (cookieLocale && isLocale(cookieLocale)) {
+    return cookieLocale;
+  }
+
+  const acceptLang = request.headers.get("accept-language");
+  if (acceptLang) {
+    const negotiated = negotiateLocale(acceptLang);
+    if (negotiated) {
+      return negotiated;
+    }
+  }
+
+  return defaultLocale;
+}
+
 // NODE_ENV is intentionally used instead of VERCEL_ENV here — CSP dev
 // extensions (HMR WebSocket, Drizzle Studio frame-src) should only apply
 // during local development, not in Vercel preview deployments.
@@ -48,14 +89,54 @@ function needsAuth(pathname: string): boolean {
   );
 }
 
+/**
+ * Build CSP and (for dynamic routes) generate a nonce.
+ *
+ * Static routes (marketing, auth) are pre-rendered at build time — their inline
+ * scripts don't carry nonce attributes. Adding a nonce to the CSP would cause
+ * CSP Level 2+ browsers to ignore 'unsafe-inline', blocking those scripts.
+ * Dynamic routes (app pages) read the nonce via `headers()` and pass it to
+ * ThemeProvider, so the nonce is safe to include there.
+ */
+function buildCspForRoute(pathname: string): { csp: string; nonce?: string } {
+  const nonce = isStaticRoute(pathname) ? undefined : generateNonce();
+  return { csp: buildCsp({ isDev, nonce }), nonce };
+}
+
+/** Redirect bare marketing paths (/, /faq, /privacy) to locale-prefixed versions. */
+function redirectToLocalePath(
+  request: NextRequest,
+  csp: string
+): NextResponse | undefined {
+  const { pathname } = request.nextUrl;
+  if (!MARKETING_PATHS.has(pathname)) {
+    return undefined;
+  }
+
+  const locale = detectLocale(request);
+  const newPath = pathname === "/" ? `/${locale}` : `/${locale}${pathname}`;
+  const response = NextResponse.redirect(new URL(newPath, request.url), 302);
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+}
+
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
-  const nonce = generateNonce();
-  const csp = buildCsp({ isDev, nonce });
+  const { csp, nonce } = buildCspForRoute(pathname);
 
-  // Forward nonce to server components via request header
+  // Redirect bare marketing paths to locale-prefixed versions.
+  // Uses 302 (not 301) because the target depends on the user's locale
+  // preference which can change (cookie + Accept-Language).
+  const localeRedirect = redirectToLocalePath(request, csp);
+  if (localeRedirect) {
+    return localeRedirect;
+  }
+
+  // Forward nonce to server components via request header (dynamic routes only)
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
+  if (nonce) {
+    requestHeaders.set("x-nonce", nonce);
+  }
 
   // Redirect authenticated users away from auth pages (validate session, not just cookie presence)
   if (AUTH_ROUTES.has(pathname) && request.cookies.has(SESSION_COOKIE_NAME)) {

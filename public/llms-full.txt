@@ -997,35 +997,37 @@ graph TD
   n0 --> n21["train"]
   n21 --> n22(["page.tsx"])
   root --> n23["(marketing)"]
-  n23 --> n24["faq"]
-  n24 --> n25(["page.tsx"])
-  n23 --> n27(["page.tsx"])
-  n23 --> n28["privacy"]
-  n28 --> n29(["page.tsx"])
-  root --> n30["api"]
-  n30 --> n31["auth"]
-  n31 --> n32["[...path]"]
-  n32 --> n33(["API: route.ts"])
-  n30 --> n34["cron"]
-  n34 --> n35["cleanup"]
-  n35 --> n36(["API: route.ts"])
-  n30 --> n37["email"]
-  n37 --> n38["unsubscribe"]
-  n38 --> n39(["API: route.ts"])
-  n30 --> n40["powersync"]
-  n40 --> n41["batch"]
-  n41 --> n42(["API: route.ts"])
-  root --> n43["auth"]
-  n43 --> n44["[path]"]
-  n44 --> n45(["page.tsx"])
+  n23 --> n24["[locale]"]
+  n24 --> n25["faq"]
+  n25 --> n26(["page.tsx"])
+  n24 --> n28(["page.tsx"])
+  n24 --> n29["privacy"]
+  n29 --> n30(["page.tsx"])
+  root --> n31["api"]
+  n31 --> n32["auth"]
+  n32 --> n33["[...path]"]
+  n33 --> n34(["API: route.ts"])
+  n31 --> n35["cron"]
+  n35 --> n36["cleanup"]
+  n36 --> n37(["API: route.ts"])
+  n31 --> n38["email"]
+  n38 --> n39["unsubscribe"]
+  n39 --> n40(["API: route.ts"])
+  n31 --> n41["powersync"]
+  n41 --> n42["batch"]
+  n42 --> n43(["API: route.ts"])
+  root --> n44["auth"]
+  n44 --> n45["[path]"]
+  n45 --> n46(["page.tsx"])
 ```
 
 ## Route Groups
 
-### `(marketing)/` — Public Pages
-- `/` — Landing page (hero, features, CTAs)
-- `/privacy` — Privacy policy
-- `/faq` — Frequently asked questions
+### `(marketing)/[locale]/` — Public Pages (statically generated)
+- `/[locale]` — Landing page (hero, features, CTAs) — 7 locale variants
+- `/[locale]/privacy` — Privacy policy — 7 locale variants
+- `/[locale]/faq` — Frequently asked questions — 7 locale variants
+- Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions
 
 ### `(app)/` — Authenticated App
 - `/dashboard` — Main dashboard
@@ -1369,17 +1371,18 @@ The Magic Lab uses next-intl for internationalization, supporting 7 locales.
 
 The app uses a dual strategy for locale detection:
 
-### Marketing Pages -- Subpath Routing
+### Marketing Pages -- URL-based Locale Routing
 
-Public marketing pages use URL subpaths for locale:
+Public marketing pages use a `[locale]` URL segment for locale. Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by the proxy to locale-prefixed versions based on the user's `NEXT_LOCALE` cookie or `Accept-Language` header.
 
 ```
-/           --> English (default)
-/fr         --> French
-/es         --> Spanish
+/           --> 302 redirect to /en (or detected locale)
+/en         --> English homepage (static)
+/fr         --> French homepage (static)
+/es/faq     --> Spanish FAQ page (static)
 ```
 
-This approach is SEO-friendly: each locale has its own URL, enabling proper `hreflang` tags and search engine indexing.
+All 7 locales × 3 pages = 21 statically generated pages at build time (`● SSG` in build output). This approach is SEO-friendly: each locale has its own URL, enabling proper `hreflang` tags and search engine indexing.
 
 ### App Pages -- Cookie-Based
 
@@ -1439,13 +1442,16 @@ Messages use ICU MessageFormat syntax via next-intl:
 Marketing pages include `hreflang` link tags for search engines:
 
 ```html
-<link rel="alternate" hreflang="en" href="https://themagiclab.app/" />
+<link rel="alternate" hreflang="en" href="https://themagiclab.app/en" />
 <link rel="alternate" hreflang="fr" href="https://themagiclab.app/fr" />
 <link rel="alternate" hreflang="es" href="https://themagiclab.app/es" />
-<link rel="alternate" hreflang="x-default" href="https://themagiclab.app/" />
+<link rel="alternate" hreflang="pt" href="https://themagiclab.app/pt" />
+<link rel="alternate" hreflang="it" href="https://themagiclab.app/it" />
+<link rel="alternate" hreflang="de" href="https://themagiclab.app/de" />
+<link rel="alternate" hreflang="nl" href="https://themagiclab.app/nl" />
 ```
 
-The Next.js `generateMetadata` function and `alternates` API handle this automatically based on the configured locales.
+Each marketing page exports a `generateMetadata` function that includes `alternates.languages` for all 7 locales. Next.js converts these into `<link rel="alternate" hreflang="...">` tags automatically.
 
 ## Offline Availability
 
@@ -1930,33 +1936,35 @@ Source: docs/route-structure.md
 
 # Route Structure
 
-The Magic Lab uses Next.js App Router with two route groups to separate public marketing pages from the authenticated application.
+The Magic Lab uses Next.js App Router with route groups to separate public marketing pages from the authenticated application.
 
-## Dual Route Group Pattern
+## Route Group Pattern
 
 ```
 src/app/
-  (marketing)/              # Public, SEO-optimized pages
-  (app)/                    # Authenticated application
+  (marketing)/[locale]/    # Public, SEO-optimized, statically generated (7 locales)
+  (app)/                   # Authenticated application (dynamic)
+  auth/                    # Auth pages (statically generated)
 ```
 
 ### Why Route Groups?
 
 - **Separate layouts**: Marketing pages use a minimal layout (no sidebar). The app uses a full sidebar + header layout.
 - **Auth boundaries**: The proxy (`src/proxy.ts`) redirects unauthenticated users away from `(app)/` routes.
-- **SEO isolation**: Marketing pages have full metadata, Open Graph tags, and structured data. App pages use `noindex`.
+- **SEO isolation**: Marketing pages have full metadata, Open Graph tags, structured data, and hreflang alternates. App pages use `noindex`.
+- **Static generation**: Marketing and auth pages are statically generated at build time. App pages are server-rendered on demand (require auth).
 
 ## Full Route Tree
 
-### Marketing Routes -- `(marketing)/`
+### Marketing Routes -- `(marketing)/[locale]/`
+
+Marketing pages use URL-based locale routing for SEO. Each page is statically generated for all 7 locales (21 total pages). Bare paths (`/`, `/faq`, `/privacy`) are redirected by the proxy to locale-prefixed versions (e.g., `/en`, `/en/faq`).
 
 | Path | Page | Description |
 |---|---|---|
-| `/` | Landing page | Hero, feature grid, CTA |
-| `/faq` | FAQ | Common questions |
-| `/privacy` | Privacy policy | Data handling |
-| `/about` | About (planned) | Project story and mission |
-| `/terms` | Terms of service (planned) | Usage terms |
+| `/[locale]` | Landing page | Hero, feature grid, CTA |
+| `/[locale]/faq` | FAQ | Common questions |
+| `/[locale]/privacy` | Privacy policy | Data handling |
 
 ### App Routes -- `(app)/`
 
@@ -1988,16 +1996,24 @@ src/app/
 
 ## Proxy Behavior
 
-The proxy (`src/proxy.ts`) handles auth-based redirects:
+The proxy (`src/proxy.ts`) handles locale redirects and auth-based routing:
 
 ```
+Any user
+  |
+  +--> visits / or /faq or /privacy
+  |      --> 302 redirect to /[locale] (detected from cookie or Accept-Language)
+  |
+  +--> visits /en, /fr/faq, etc.
+         --> Serve static page (no server computation)
+
 Unauthenticated user
   |
   +--> visits /dashboard, /improve, etc.
   |      --> Redirect to /auth/sign-in
   |
-  +--> visits /
-         --> Show landing page
+  +--> visits /en/faq
+         --> Show static FAQ page
 
 Authenticated user
   |
@@ -2012,21 +2028,27 @@ Authenticated user
 
 ```
 RootLayout (src/app/layout.tsx)
-  |-- ThemeProvider, NeonAuthUIProvider, NextIntlClientProvider, fonts, analytics
+  |-- Static shell: <html>, <body>, fonts, ServiceWorker, Analytics
+  |-- No dynamic APIs, no providers (enables static descendant routes)
   |
-  +-- (marketing)/layout.tsx
-  |     |-- Minimal layout (no sidebar)
+  +-- (marketing)/[locale]/layout.tsx
+  |     |-- Providers (theme, auth, i18n), skip-to-content
+  |     |-- Statically generated (setRequestLocale + force-static)
   |     +-- page.tsx (landing)
+  |     +-- faq/page.tsx
+  |     +-- privacy/page.tsx
   |
   +-- (app)/layout.tsx
-  |     |-- SidebarProvider + AppSidebar
-  |     |-- SidebarInset + header
+  |     |-- Providers with nonce + locale from cookies/headers
+  |     |-- Dynamic (auth.getSession)
   |     +-- dashboard/page.tsx
   |     +-- improve/page.tsx
-  |     +-- train/page.tsx
   |     +-- ...
   |
-  +-- auth/[path]/page.tsx (Neon Auth UI)
+  +-- auth/layout.tsx
+  |     |-- Providers (static, default locale)
+  |     +-- auth/[path]/page.tsx (Neon Auth UI)
+  |
   +-- account/[path]/page.tsx (Neon Auth account management)
 ```
 
@@ -2351,8 +2373,8 @@ End-to-end smoke tests use Playwright to validate the app boots and critical pag
 ### What Smoke Tests Cover
 
 - Landing page loads with tagline and `<main id="main-content">`
-- FAQ page renders at `/faq`
-- Privacy page renders at `/privacy`
+- FAQ page renders at `/[locale]/faq` (e.g., `/en/faq`)
+- Privacy page renders at `/[locale]/privacy` (e.g., `/en/privacy`)
 - Unauthenticated `/dashboard` access redirects to `/auth/sign-in`
 - Auth sign-in page renders
 
