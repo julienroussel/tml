@@ -31,28 +31,32 @@ export default async function AppLayout({
   // Pass the pre-fetched session to avoid a duplicate auth.getSession() call.
   // Uses a cookie cache to skip the DB upsert on repeat page loads.
   // Falls through to ensureUserExists() when the cookie is absent or stale.
+  // Both paths verify ban status — null means banned or unexpected DB issue.
   const settings = await getOrEnsureUserSettings(session);
 
-  // Unconditional ban check — required because getOrEnsureUserSettings()
-  // has a cookie cache fast path that skips the DB entirely. On the cold
-  // path (no cache) this is redundant with ensureUserExists(), but the
-  // simplicity of always checking outweighs one extra lightweight query.
-  if (await isUserBanned(session.user.id)) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-        <ShieldAlert className="h-16 w-16 text-destructive" />
-        <h1 className="font-semibold text-2xl">Account Suspended</h1>
-        <p className="max-w-md text-muted-foreground">
-          Your account has been suspended. If you believe this is a mistake,
-          please contact support.
-        </p>
-        <form action="/api/auth/sign-out" method="post">
-          <Button type="submit" variant="outline">
-            Sign Out
-          </Button>
-        </form>
-      </main>
-    );
+  if (!settings) {
+    // Confirm ban status to show the appropriate UI. On the fast path,
+    // isUserBanned() already ran inside getOrEnsureUserSettings(); this
+    // second call only fires for the (rare) banned-user case.
+    if (await isUserBanned(session.user.id)) {
+      return (
+        <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
+          <ShieldAlert className="h-16 w-16 text-destructive" />
+          <h1 className="font-semibold text-2xl">Account Suspended</h1>
+          <p className="max-w-md text-muted-foreground">
+            Your account has been suspended. If you believe this is a mistake,
+            please contact support.
+          </p>
+          <form action="/api/auth/sign-out" method="post">
+            <Button type="submit" variant="outline">
+              Sign Out
+            </Button>
+          </form>
+        </main>
+      );
+    }
+    // Non-ban null (e.g., upsert returned zero rows). Redirect as fallback.
+    redirect("/auth/sign-in");
   }
 
   // Locale restoration from DB is handled client-side by LocaleRestorer

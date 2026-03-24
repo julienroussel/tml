@@ -10,6 +10,7 @@ import { defaultLocale, isLocale } from "@/i18n/config";
 import { sendWelcomeEmail } from "@/lib/email";
 import type { Theme } from "@/lib/theme";
 import { isTheme } from "@/lib/theme";
+import { isUserBanned } from "./ban-check";
 import { auth } from "./server";
 import { parseSyncCookie, USER_SYNCED_COOKIE } from "./sync-cookie";
 
@@ -175,7 +176,7 @@ export async function ensureUserExists(
  * Returns user settings, using a cookie cache to avoid per-request DB upserts.
  *
  * Fast path: If the `user-synced` cookie exists and its userId matches the
- * current session, returns cached locale/theme without touching the database.
+ * current session, returns cached locale/theme after a lightweight ban check.
  *
  * Slow path: Falls through to `ensureUserExists()` for the full DB upsert
  * (first login, different user, expired/malformed cookie).
@@ -198,6 +199,11 @@ export async function getOrEnsureUserSettings(
   if (syncCookie) {
     const parsed = parseSyncCookie(syncCookie);
     if (parsed && parsed.userId === session.user.id) {
+      // Cookie cache only stores locale/theme — always verify ban status
+      // against the database to enforce authorization.
+      if (await isUserBanned(session.user.id)) {
+        return null;
+      }
       return { locale: parsed.locale, theme: parsed.theme };
     }
   }
