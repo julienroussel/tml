@@ -19,7 +19,12 @@ export default async function MarketingLayout({
           aria-label="Main navigation"
           className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6"
         >
-          <Logo className="flex items-center gap-2" height={32} width={96} />
+          <Logo
+            className="flex items-center gap-2"
+            height={32}
+            imageClassName="h-8 w-auto"
+            width={96}
+          />
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <MarketingAuthButtons />
