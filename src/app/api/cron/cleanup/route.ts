@@ -82,13 +82,18 @@ interface CleanupClient {
  * Without this, hard-deleting the user row would CASCADE-delete
  * children without creating tombstones, leaving orphaned rows in
  * PowerSync offline clients.
+ *
+ * Note: Banned users (banned_at IS NOT NULL) are excluded. Their data
+ * accumulates intentionally to preserve the ban record for audit and
+ * re-registration blocking. Admin intervention is required to purge
+ * a banned user's data.
  */
 async function tombstoneOrphanedChildren(client: CleanupClient): Promise<void> {
   for (const table of USER_OWNED_TABLES) {
     try {
       const quotedTable = quoteId(table);
       await client.query(
-        `UPDATE ${quotedTable} SET deleted_at = NOW(), updated_at = NOW() WHERE user_id IN (SELECT id FROM "users" WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1) AND deleted_at IS NULL`,
+        `UPDATE ${quotedTable} SET deleted_at = NOW(), updated_at = NOW() WHERE user_id IN (SELECT id FROM "users" WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1 AND banned_at IS NULL) AND deleted_at IS NULL`,
         [RETENTION_DAYS]
       );
     } catch (prePassError: unknown) {
@@ -154,7 +159,7 @@ async function cleanupUsers(
         `NOT EXISTS (SELECT 1 FROM ${quoteId(t)} WHERE user_id = "users".id AND deleted_at IS NOT NULL)`
     ).join(" AND ");
     const result = await client.query(
-      `WITH to_delete AS (SELECT id FROM "users" WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1 AND ${childChecks} LIMIT 10000) DELETE FROM "users" WHERE id IN (SELECT id FROM to_delete)`,
+      `WITH to_delete AS (SELECT id FROM "users" WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1 AND banned_at IS NULL AND ${childChecks} LIMIT 10000) DELETE FROM "users" WHERE id IN (SELECT id FROM to_delete)`,
       [RETENTION_DAYS]
     );
     results.users = result.rowCount ?? 0;

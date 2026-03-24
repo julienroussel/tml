@@ -236,6 +236,60 @@ describe("GET /api/cron/cleanup", () => {
       }
     });
 
+    it("excludes banned users from pre-pass tombstoning", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await GET(createRequest("Bearer test-cron-secret"));
+
+      const calls = mockQuery.mock.calls.map((call) => call[0] as string);
+      const updateCalls = calls.filter((q) => q.startsWith("UPDATE"));
+      expect(updateCalls.length).toBeGreaterThan(0);
+      for (const sql of updateCalls) {
+        expect(sql).toContain("banned_at IS NULL");
+      }
+    });
+
+    it("excludes banned users from user hard-delete", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await GET(createRequest("Bearer test-cron-secret"));
+
+      const calls = mockQuery.mock.calls.map((call) => call[0] as string);
+      const userDeleteQuery = calls.at(-1);
+      expect(userDeleteQuery).toContain('DELETE FROM "users"');
+      expect(userDeleteQuery).toContain("banned_at IS NULL");
+    });
+
+    it("does not filter by banned_at in per-table hard-deletes", async () => {
+      vi.stubEnv("CRON_SECRET", "test-cron-secret");
+      vi.stubEnv("DATABASE_URL", "postgres://test");
+      vi.resetModules();
+      const { GET } = await import("./route");
+
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await GET(createRequest("Bearer test-cron-secret"));
+
+      const calls = mockQuery.mock.calls.map((call) => call[0] as string);
+      const mainDeletes = calls.filter(
+        (q) => q.includes("DELETE") && !q.includes('"users"')
+      );
+      expect(mainDeletes.length).toBeGreaterThan(0);
+      for (const sql of mainDeletes) {
+        expect(sql).not.toContain("banned_at");
+      }
+    });
+
     it("continues main cleanup when a pre-pass UPDATE fails", async () => {
       vi.stubEnv("CRON_SECRET", "test-cron-secret");
       vi.stubEnv("DATABASE_URL", "postgres://test");
