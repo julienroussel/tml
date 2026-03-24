@@ -3,6 +3,7 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { isUserBanned } from "@/auth/ban-check";
 import { auth } from "@/auth/server";
 import { USER_SYNCED_COOKIE } from "@/auth/sync-cookie";
 import { getDb } from "@/db";
@@ -29,6 +30,10 @@ export async function updateLocale(locale: string): Promise<ActionResult> {
   const { data: session } = await auth.getSession();
   if (!session?.user?.id) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  if (await isUserBanned(session.user.id)) {
+    return { success: false, error: "Account suspended" };
   }
 
   try {
@@ -71,6 +76,10 @@ export async function updateTheme(theme: string): Promise<ActionResult> {
     return { success: false, error: "Not authenticated" };
   }
 
+  if (await isUserBanned(session.user.id)) {
+    return { success: false, error: "Account suspended" };
+  }
+
   try {
     const db = getDb();
     const rows = await db
@@ -106,6 +115,10 @@ export async function getUserSettings(): Promise<{
 } | null> {
   const { data: session } = await auth.getSession();
   if (!session?.user?.id) {
+    return null;
+  }
+
+  if (await isUserBanned(session.user.id)) {
     return null;
   }
 

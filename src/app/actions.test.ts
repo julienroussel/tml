@@ -16,6 +16,10 @@ const unauthenticatedSession: MockSession = {
 };
 
 vi.mock("server-only", () => ({}));
+const mockIsUserBanned = vi.fn().mockResolvedValue(false);
+vi.mock("@/auth/ban-check", () => ({
+  isUserBanned: (...args: unknown[]) => mockIsUserBanned(...args),
+}));
 const mockCheckRateLimit = vi.fn().mockResolvedValue(false);
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: mockCheckRateLimit,
@@ -96,6 +100,7 @@ describe("server actions", () => {
     vi.unstubAllEnvs();
     mockReturning.mockResolvedValue([{ id: "test-uuid" }]);
     mockCheckRateLimit.mockResolvedValue(false);
+    mockIsUserBanned.mockResolvedValue(false);
     mockSelectWhere.mockResolvedValue([]);
   });
 
@@ -125,6 +130,34 @@ describe("server actions", () => {
       const { sendNotification } = await import("./actions");
       const result = await sendNotification("Hello");
       expect(result).toEqual({ success: false, error: "Not authenticated" });
+    });
+  });
+
+  describe("banned user rejection", () => {
+    it("subscribeUser rejects banned users", async () => {
+      mockIsUserBanned.mockResolvedValueOnce(true);
+
+      const { subscribeUser } = await import("./actions");
+      const result = await subscribeUser(validSubscription);
+      expect(result).toEqual({ success: false, error: "Account suspended" });
+    });
+
+    it("unsubscribeUser rejects banned users", async () => {
+      mockIsUserBanned.mockResolvedValueOnce(true);
+
+      const { unsubscribeUser } = await import("./actions");
+      const result = await unsubscribeUser(
+        "https://fcm.googleapis.com/push/abc"
+      );
+      expect(result).toEqual({ success: false, error: "Account suspended" });
+    });
+
+    it("sendNotification rejects banned users", async () => {
+      mockIsUserBanned.mockResolvedValueOnce(true);
+
+      const { sendNotification } = await import("./actions");
+      const result = await sendNotification("Hello");
+      expect(result).toEqual({ success: false, error: "Account suspended" });
     });
   });
 

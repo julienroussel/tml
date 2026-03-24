@@ -3,6 +3,7 @@
 import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import webpush from "web-push";
+import { isUserBanned } from "@/auth/ban-check";
 import { auth } from "@/auth/server";
 import { getDb } from "@/db";
 import { pushSubscriptions } from "@/db/schema/push-subscriptions";
@@ -75,6 +76,10 @@ export async function subscribeUser(
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  if (await isUserBanned(session.user.id)) {
+    return { success: false, error: "Account suspended" };
   }
 
   if (!sub?.endpoint || typeof sub.endpoint !== "string") {
@@ -152,6 +157,10 @@ export async function unsubscribeUser(endpoint: string): Promise<ActionResult> {
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  if (await isUserBanned(session.user.id)) {
+    return { success: false, error: "Account suspended" };
   }
 
   if (!endpoint?.startsWith("https://") || endpoint.length > 2048) {
@@ -258,6 +267,10 @@ export async function sendNotification(message: string): Promise<ActionResult> {
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  if (await isUserBanned(session.user.id)) {
+    return { success: false, error: "Account suspended" };
   }
 
   const trimmedMessage = message.trim();

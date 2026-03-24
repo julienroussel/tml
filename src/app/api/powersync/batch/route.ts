@@ -1,6 +1,7 @@
 import "server-only";
 import { Pool } from "@neondatabase/serverless";
 import { type NextRequest, NextResponse } from "next/server";
+import { isUserBanned } from "@/auth/ban-check";
 import { auth } from "@/auth/server";
 import type { SqlParam } from "@/sync/queries";
 import {
@@ -339,6 +340,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { data: session } = await auth.getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 403 is treated as a permanent error by the PowerSync connector —
+  // all queued mutations are dropped from the upload queue.
+  // This is intentional: banned users must not persist data changes.
+  if (await isUserBanned(session.user.id)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const contentType = request.headers.get("content-type");
