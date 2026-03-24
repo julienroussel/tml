@@ -18,7 +18,9 @@ import { AUTH_STATE_PATH } from "./helpers";
 
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL;
 const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD;
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE_URL =
+  process.env.BASE_URL ??
+  (process.env.CI ? "http://localhost:3000" : "https://localhost:3000");
 
 setup("authenticate", async ({ page }) => {
   if (!(TEST_EMAIL && TEST_PASSWORD)) {

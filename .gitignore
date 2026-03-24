@@ -17,6 +17,7 @@
 /blob-report/
 /playwright/.cache/
 /.playwright/
+/.playwright-mcp/
 
 # next.js
 /.next/
@@ -57,3 +58,5 @@ next-env.d.ts
 
 TODO.txt
 .env*.local
+
+certificates

@@ -4,8 +4,10 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
+  Section,
   Text,
 } from "@react-email/components";
 
@@ -34,6 +36,17 @@ export default function WelcomeEmail({
       <Preview>Your workspace is ready — start organizing your magic.</Preview>
       <Body style={body}>
         <Container style={container}>
+          <Section style={logoSection}>
+            <Link href={appUrl}>
+              <Img
+                alt="The Magic Lab"
+                height={50}
+                src={`${appUrl}/logo-email.png`}
+                style={logoImg}
+                width={150}
+              />
+            </Link>
+          </Section>
           <Heading style={heading}>
             {greeting}, welcome to The Magic Lab!
           </Heading>
@@ -58,6 +71,15 @@ export default function WelcomeEmail({
     </Html>
   );
 }
+
+const logoSection: React.CSSProperties = {
+  textAlign: "center",
+  marginBottom: "24px",
+};
+
+const logoImg: React.CSSProperties = {
+  display: "inline-block",
+};
 
 const body: React.CSSProperties = {
   backgroundColor: "#f9fafb",

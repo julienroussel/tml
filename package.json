@@ -19,7 +19,7 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "ultracite check",
@@ -38,7 +38,8 @@
     "db:studio": "drizzle-kit studio",
     "docs:generate": "tsx scripts/generate-docs.ts",
     "i18n:check": "tsx scripts/check-i18n.ts",
-    "email:dev": "email dev --dir src/emails --port 3030"
+    "email:dev": "email dev --dir src/emails --port 3030",
+    "screenshots": "tsx scripts/generate-screenshots.ts"
   },
   "dependencies": {
     "@journeyapps/wa-sqlite": "1.5.0",

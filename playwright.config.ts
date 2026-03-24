@@ -6,7 +6,10 @@ import { AUTH_STATE_PATH } from "./e2e/helpers";
 // Load .env.local for E2E credentials — Next.js does this automatically
 // for the app, but Playwright needs it explicitly.
 config({ path: ".env.local" });
-const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
+// Local dev uses --experimental-https (HTTPS); CI uses pnpm start (HTTP).
+const baseURL =
+  process.env.BASE_URL ??
+  (process.env.CI ? "http://localhost:3000" : "https://localhost:3000");
 
 // When testing against a Vercel preview, the global setup navigates with
 // the bypass query param and saves the _vercel_jwt cookie to a state file.
@@ -42,6 +45,8 @@ export default defineConfig({
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
     trace: "on-first-retry",
+    // Accept self-signed certificate from --experimental-https in local dev
+    ignoreHTTPSErrors: !process.env.CI,
     // Load Vercel bypass cookie if available (set by global-setup.ts)
     ...(hasVercelBypass && { storageState: BYPASS_STATE_PATH }),
   },
@@ -85,7 +90,9 @@ export default defineConfig({
     ? undefined
     : {
         command: webServerCommand(),
-        url: "http://localhost:3000",
+        url: process.env.CI
+          ? "http://localhost:3000"
+          : "https://localhost:3000",
         reuseExistingServer: !process.env.CI,
       },
 });

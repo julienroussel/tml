@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
+import { Logo } from "@/components/logo";
 import { MarketingAuthButtons } from "@/components/marketing-auth-buttons";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -19,23 +19,7 @@ export default async function MarketingLayout({
           aria-label="Main navigation"
           className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6"
         >
-          <Link className="flex items-center gap-2" href="/">
-            <Image
-              alt=""
-              className="block h-8 w-auto dark:hidden"
-              height={32}
-              src="/logo-light.svg"
-              width={96}
-            />
-            <Image
-              alt=""
-              className="hidden h-8 w-auto dark:block"
-              height={32}
-              src="/logo-dark.svg"
-              width={96}
-            />
-            <span className="sr-only">The Magic Lab</span>
-          </Link>
+          <Logo className="flex items-center gap-2" height={32} width={96} />
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <MarketingAuthButtons />

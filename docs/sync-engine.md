@@ -95,7 +95,7 @@ The PowerSync client is initialized with:
 
 - **WASM SQLite** for the local database (runs in a Web Worker)
 - **Schema definition** matching the server-side Drizzle schema (see [migrations.md](./migrations.md) for the dual-schema problem)
-- **Token from Neon Auth** for authenticating with PowerSync Cloud (fetched client-side via the auth client)
+- **JWT from Neon Auth** for authenticating with PowerSync Cloud — fetched client-side via `GET /api/auth/token` (a Better Auth endpoint served by the catch-all route at `src/app/api/auth/[...path]/route.ts`). The connector decodes the JWT `exp` claim and passes `expiresAt` to PowerSync so the SDK knows when to refresh credentials.
 
 ## Sync Rules
 

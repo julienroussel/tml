@@ -65,6 +65,7 @@ const BASE_DIRECTIVES: CspDirectives = {
     "https://va.vercel-scripts.com",
     "https://vitals.vercel-insights.com",
     "https://*.powersync.journeyapps.com",
+    "wss://*.powersync.journeyapps.com",
     "https://*.neonauth.c-2.eu-central-1.aws.neon.tech",
     "https://*.apirest.c-2.eu-central-1.aws.neon.tech",
   ],
@@ -82,7 +83,8 @@ const BASE_DIRECTIVES: CspDirectives = {
 
 const DEV_EXTENSIONS: Partial<CspDirectives> = {
   "script-src": ["'unsafe-eval'"],
-  "connect-src": ["ws://localhost:*"],
+  // Dev server uses --experimental-https (HTTPS); HMR WebSocket is wss://.
+  "connect-src": ["wss://localhost:*"],
   "frame-src": ["https://local.drizzle.studio"],
 };
 

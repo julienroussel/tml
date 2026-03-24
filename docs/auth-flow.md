@@ -40,9 +40,11 @@ export default async function ProtectedPage() {
 import { authClient } from "@/auth/client";
 
 // authClient is a Neon Auth client created with createAuthClient()
-// Use authClient.getSession() for one-off session checks
+// Use authClient.getSession() for UI session checks (returns opaque session token)
 // The NeonAuthUIProvider in the root layout provides auth context to the UI
 ```
+
+**PowerSync authentication** uses a separate path: the connector calls `GET /api/auth/token` (a Better Auth endpoint) which returns a JWT with standard claims (`sub`, `exp`, `iss`, `aud`). This JWT is passed to PowerSync Cloud for sync stream authentication — it is distinct from the opaque session token returned by `authClient.getSession()`.
 
 ## Route Protection (proxy.ts)
 

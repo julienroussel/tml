@@ -95,6 +95,20 @@ describe("GET /api/email/unsubscribe", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
   });
+
+  it("includes brand header with THE and MAGIC LAB", async () => {
+    const response = GET(createGetRequest("test-token"));
+    const html = await response.text();
+
+    expect(html).toContain(">THE</p>");
+    expect(html).toContain(">MAGIC LAB</p>");
+  });
+
+  it("sets Content-Type to text/html", () => {
+    const response = GET(createGetRequest("test-token"));
+
+    expect(response.headers.get("Content-Type")).toBe("text/html");
+  });
 });
 
 describe("POST /api/email/unsubscribe", () => {
@@ -214,6 +228,29 @@ describe("POST /api/email/unsubscribe", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(200);
+  });
+
+  it("includes brand header in success response", async () => {
+    mockVerifyUnsubscribeToken.mockReturnValue("user-123");
+    mockOnConflictDoUpdate.mockResolvedValue(undefined);
+
+    const request = createPostRequest("valid-token", {
+      origin: "https://themagiclab.app",
+    });
+    const response = await POST(request);
+    const html = await response.text();
+
+    expect(html).toContain(">THE</p>");
+    expect(html).toContain(">MAGIC LAB</p>");
+  });
+
+  it("sets Content-Type to text/html on all responses", async () => {
+    const request = createPostRequest(null, {
+      origin: "https://themagiclab.app",
+    });
+    const response = await POST(request);
+
+    expect(response.headers.get("Content-Type")).toBe("text/html");
   });
 
   it("returns 500 when database throws a non-FK error", async () => {

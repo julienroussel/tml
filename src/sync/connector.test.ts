@@ -48,6 +48,97 @@ describe("createNeonConnector", () => {
       });
     });
 
+    it("extracts expiresAt from JWT with numeric exp claim", async () => {
+      const exp = Math.floor(Date.now() / 1000) + 3600;
+      const payload = btoa(JSON.stringify({ exp }));
+      const token = `header.${payload}.signature`;
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => token);
+
+      const result = await connector.fetchCredentials();
+
+      expect(result).toEqual({
+        endpoint: "https://ps.example.com",
+        token,
+        expiresAt: new Date(exp * 1000),
+      });
+    });
+
+    it("returns undefined expiresAt when JWT has no exp claim", async () => {
+      const payload = btoa(JSON.stringify({ sub: "user-1" }));
+      const token = `header.${payload}.signature`;
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => token);
+
+      const result = await connector.fetchCredentials();
+
+      expect(result).toEqual({
+        endpoint: "https://ps.example.com",
+        token,
+      });
+    });
+
+    it("returns undefined expiresAt when JWT exp is not a number", async () => {
+      const payload = btoa(JSON.stringify({ exp: "not-a-number" }));
+      const token = `header.${payload}.signature`;
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => token);
+
+      const result = await connector.fetchCredentials();
+
+      expect(result).toEqual({
+        endpoint: "https://ps.example.com",
+        token,
+      });
+    });
+
+    it("returns undefined expiresAt for malformed JWT (invalid base64/JSON)", async () => {
+      const token = "header.!!!notbase64!!!.signature";
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => token);
+
+      const result = await connector.fetchCredentials();
+
+      expect(result).toEqual({
+        endpoint: "https://ps.example.com",
+        token,
+      });
+    });
+
+    it("returns undefined expiresAt for JWT with only one segment (no dots)", async () => {
+      const token = "singlesegmentwithoutdots";
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => token);
+
+      const result = await connector.fetchCredentials();
+
+      expect(result).toEqual({
+        endpoint: "https://ps.example.com",
+        token,
+      });
+    });
+
+    it("decodes base64url-encoded JWT payload correctly", async () => {
+      const exp = Math.floor(Date.now() / 1000) + 3600;
+      // Use base64url encoding: replace + with -, / with _, strip padding
+      const base64 = btoa(JSON.stringify({ exp, sub: "user+special/chars" }));
+      const base64url = base64
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replaceAll("=", "");
+      const token = `header.${base64url}.signature`;
+      const mod = await importWithEnv(VALID_ENV);
+      const connector = mod.createNeonConnector(async () => token);
+
+      const result = await connector.fetchCredentials();
+
+      expect(result).toEqual({
+        endpoint: "https://ps.example.com",
+        token,
+        expiresAt: new Date(exp * 1000),
+      });
+    });
+
     it("returns null when no token is available", async () => {
       const mod = await importWithEnv(VALID_ENV);
       const connector = mod.createNeonConnector(async () => null);

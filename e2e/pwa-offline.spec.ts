@@ -12,38 +12,38 @@ import { expect, type Page, test } from "@playwright/test";
 // Instead, we verify the SW activates and populates the correct caches.
 
 /**
- * Manually register and wait for the service worker to activate.
- *
- * The app's SW registration lives in push-notifications.tsx (authenticated
- * layout only), so the marketing landing page doesn't trigger it.
- * Tests call navigator.serviceWorker.register() directly.
+ * Wait for the app to auto-register the SW and activate it.
+ * Polls `getRegistration()` until an active SW appears (up to 15s).
  */
-async function registerAndActivateSW(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.register("/sw.js", {
-      scope: "/",
-      updateViaCache: "none",
-    });
-
-    const sw = reg.installing ?? reg.waiting ?? reg.active;
-    if (!sw) {
-      throw new Error("No SW found after registration");
-    }
-    if (sw.state === "activated") {
-      return;
-    }
-
+async function waitForAutoRegistration(page: Page): Promise<void> {
+  await page.evaluate(() => {
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
-        () => reject(new Error(`SW stuck in "${sw.state}" state`)),
+        () => reject(new Error("SW did not auto-register within 15s")),
         15_000
       );
-      sw.addEventListener("statechange", () => {
-        if (sw.state === "activated") {
+
+      async function check(): Promise<void> {
+        const reg = await navigator.serviceWorker.getRegistration("/");
+        const sw = reg?.active ?? reg?.waiting ?? reg?.installing;
+        if (sw?.state === "activated") {
           clearTimeout(timeout);
           resolve();
+          return;
         }
-      });
+        if (sw) {
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "activated") {
+              clearTimeout(timeout);
+              resolve();
+            }
+          });
+        } else {
+          setTimeout(check, 500);
+        }
+      }
+
+      check();
     });
   });
 }
@@ -74,46 +74,37 @@ async function waitForController(page: Page): Promise<void> {
 }
 
 test.describe("PWA offline resilience", () => {
-  test("service worker registers and activates", async ({ page }) => {
+  test("app auto-registers service worker without manual intervention", async ({
+    page,
+  }) => {
+    // Navigate to the marketing page — no manual SW registration.
+    // The ServiceWorkerRegistration component in the root layout should
+    // register sw.js automatically after page load.
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    await registerAndActivateSW(page);
+    await waitForAutoRegistration(page);
 
-    // After activate, clients.claim() should make the SW the controller
+    // Verify the SW claimed the page as controller
     await waitForController(page);
-
     const hasController = await page.evaluate(
       () => navigator.serviceWorker.controller != null
     );
     expect(hasController).toBe(true);
   });
 
-  test("expected caches are created", async ({ page }) => {
+  test("auto-registered SW caches assets on subsequent navigation", async ({
+    page,
+  }) => {
+    // First load — triggers SW registration
     await page.goto("/");
     await expect(page.locator("main#main-content")).toBeVisible();
 
-    await registerAndActivateSW(page);
+    await waitForAutoRegistration(page);
     await waitForController(page);
 
-    // Navigate so the SW fetch handler intercepts requests and populates caches
-    await page.goto("/");
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    const cacheNames = await page.evaluate(() => caches.keys());
-    expect(cacheNames).toContain("static-v1");
-    expect(cacheNames).toContain("pages-v1");
-  });
-
-  test("static assets are cached after navigation", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.locator("main#main-content")).toBeVisible();
-
-    await registerAndActivateSW(page);
-    await waitForController(page);
-
-    // Navigate again — SW fetch handler intercepts and caches the response
-    await page.goto("/");
+    // Second navigation — SW intercepts and caches
+    await page.goto("/faq");
     await expect(page.locator("main#main-content")).toBeVisible();
 
     const cacheInfo = await page.evaluate(async () => {
@@ -127,11 +118,13 @@ test.describe("PWA offline resilience", () => {
         hasNextStatic: staticKeys.some((r) =>
           new URL(r.url).pathname.startsWith("/_next/static/")
         ),
+        cachedPages: pagesKeys.map((r) => new URL(r.url).pathname),
       };
     });
 
     expect(cacheInfo.staticCount).toBeGreaterThan(0);
-    expect(cacheInfo.pagesCount).toBeGreaterThan(0);
     expect(cacheInfo.hasNextStatic).toBe(true);
+    expect(cacheInfo.pagesCount).toBeGreaterThan(0);
+    expect(cacheInfo.cachedPages).toContain("/faq");
   });
 });

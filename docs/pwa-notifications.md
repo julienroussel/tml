@@ -8,32 +8,35 @@ The Magic Lab is a Progressive Web App with push notification support for practi
 
 The manifest is generated dynamically by `src/app/manifest.ts`:
 
+- **id**: `/` (stable identity across start_url changes)
 - **Name**: The Magic Lab
 - **Short name**: Magic Lab
 - **Display**: standalone (full-screen, no browser chrome)
+- **Scope**: `/` (covers both marketing and app routes)
+- **Orientation**: any
+- **Language**: en (ltr)
 - **Icons**: 192x192 and 512x512 PNG icons with maskable variant
+- **Screenshots**: Desktop (1280x720) and mobile (390x844) for enhanced install prompt — regenerate with `pnpm screenshots`
 - **Theme color**: `#ffffff` (manifest uses a single value; viewport meta tag provides light/dark variants)
+- **Shortcuts**: "Log Practice" and "My Routines"
 
 ### Service Worker
 
 The service worker (`public/sw.js`) handles:
 
-1. **Push notifications**: Receiving and displaying push messages
-2. **Notification click**: Opening the app when a notification is tapped
-3. **Installation**: Immediate activation via `skipWaiting()` and `clients.claim()`
-
-Future enhancements (planned):
-- **Workbox integration** for precaching the app shell
-- **Runtime caching strategies** for API responses
-- **Background sync** for offline write queue
+1. **Static asset caching**: Cache-first for `/_next/static/` and `/@powersync/` (WASM, web workers)
+2. **Navigation caching**: Stale-while-revalidate for HTML pages (offline fallback)
+3. **Bypass rules**: Never caches API routes, PowerSync sync traffic, Neon Auth, or analytics
+4. **Push notifications**: Receiving and displaying push messages
+5. **Notification click**: Opening the app when a notification is tapped
+6. **Installation**: Immediate activation via `skipWaiting()` and `clients.claim()`
+7. **Cache cleanup**: Removes stale caches on activate, supports `clear-user-cache` message
 
 ### Service Worker Registration
 
-The service worker is registered client-side in a React component that:
+The service worker is automatically registered by the `ServiceWorkerRegistration` component (`src/components/sw-registration.tsx`), which is mounted in the root layout (`src/app/layout.tsx`). This ensures the SW is active on all routes (marketing, auth, and app).
 
-1. Checks for service worker support
-2. Registers `sw.js` on mount
-3. Handles updates by prompting the user to refresh
+Registration is deferred until after `window.load` to avoid competing with initial page resources.
 
 ## Push Notifications
 
