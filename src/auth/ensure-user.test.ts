@@ -76,6 +76,11 @@ vi.mock("@/auth/server", () => ({
   },
 }));
 
+const mockIsUserBanned = vi.fn().mockResolvedValue(false);
+vi.mock("@/auth/ban-check", () => ({
+  isUserBanned: mockIsUserBanned,
+}));
+
 describe("ensureUserExists", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -565,6 +570,44 @@ describe("getOrEnsureUserSettings", () => {
     const result = await getOrEnsureUserSettings();
 
     expect(result).toBeNull();
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("returns null on fast path when user is banned", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: uuid, email: "test@example.com", name: "Test User" },
+      },
+    });
+    mockCookieGet.mockReturnValue({ value: `${uuid}|fr|dark` });
+    mockIsUserBanned.mockResolvedValue(true);
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(result).toBeNull();
+    expect(mockIsUserBanned).toHaveBeenCalledWith(uuid);
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("returns settings on fast path when user is not banned", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: uuid, email: "test@example.com", name: "Test User" },
+      },
+    });
+    mockCookieGet.mockReturnValue({ value: `${uuid}|fr|dark` });
+    mockIsUserBanned.mockResolvedValue(false);
+
+    const { getOrEnsureUserSettings } = await import("@/auth/ensure-user");
+    const result = await getOrEnsureUserSettings();
+
+    expect(result).toEqual({ locale: "fr", theme: "dark" });
+    expect(mockIsUserBanned).toHaveBeenCalledWith(uuid);
     expect(mockInsert).not.toHaveBeenCalled();
   });
 });
