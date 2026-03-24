@@ -21,6 +21,7 @@ interface UserSettings {
 
 /** Row shape returned by the upsert with Postgres xmax system column. */
 interface UpsertResult {
+  bannedAt: Date | null;
   id: string;
   locale: string;
   theme: string;
@@ -86,22 +87,20 @@ export async function ensureUserExists(
           displayName,
           // Clear soft-delete on re-login so a user who deleted their
           // account can seamlessly re-activate by signing in again.
-          // TODO: This unconditionally reactivates ANY soft-deleted user.
-          // When implementing admin bans or moderation, add a check
-          // (e.g., deactivation_reason or banned_at) to prevent banned
-          // users from self-reactivating via login.
-          deletedAt: null,
+          // Banned users are excluded — their deletedAt is preserved.
+          deletedAt: sql`CASE WHEN ${users.bannedAt} IS NULL THEN NULL ELSE ${users.deletedAt} END`,
           // users.email.name / users.displayName.name are Drizzle's public
           // Column.name property, returning the raw SQL column identifier
           // (e.g., "email", "display_name"). Safe for sql.raw() because
           // column names are simple ASCII identifiers defined in our schema.
-          updatedAt: sql`CASE WHEN ${users.email} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.email.name}"`)} OR ${users.displayName} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.displayName.name}"`)} OR ${users.deletedAt} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.deletedAt.name}"`)} THEN NOW() ELSE ${users.updatedAt} END`,
+          updatedAt: sql`CASE WHEN ${users.email} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.email.name}"`)} OR ${users.displayName} IS DISTINCT FROM EXCLUDED.${sql.raw(`"${users.displayName.name}"`)} OR ${users.deletedAt} IS DISTINCT FROM (CASE WHEN ${users.bannedAt} IS NULL THEN NULL ELSE ${users.deletedAt} END) THEN NOW() ELSE ${users.updatedAt} END`,
         },
       })
       .returning({
         id: users.id,
         locale: users.locale,
         theme: users.theme,
+        bannedAt: users.bannedAt,
         xmax: sql<string>`xmax`,
       })) satisfies UpsertResult[];
 
@@ -131,10 +130,25 @@ export async function ensureUserExists(
     throw new Error("Failed to initialize user profile", { cause: error });
   }
 
+  const row = result[0];
+  if (!row) {
+    return null;
+  }
+
+  // Banned users must not gain app access, even though the upsert
+  // syncs their auth-provider profile. Log for observability.
+  if (row.bannedAt) {
+    console.warn("[ensureUserExists] Banned user attempted login:", {
+      userId: id,
+      bannedAt: row.bannedAt,
+    });
+    return null;
+  }
+
   // New-user detection via Postgres xmax system column:
   // xmax = "0" means the row was just INSERTed (new user).
   // xmax != "0" means the row was UPDATEd via the ON CONFLICT branch (existing user).
-  const isNewUser = result.length > 0 && result[0]?.xmax === "0";
+  const isNewUser = row.xmax === "0";
 
   if (isNewUser) {
     after(() =>
@@ -149,11 +163,6 @@ export async function ensureUserExists(
         });
       })
     );
-  }
-
-  const row = result[0];
-  if (!row) {
-    return null;
   }
 
   return {

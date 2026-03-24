@@ -33,6 +33,7 @@ function createTestUser(overrides?: Partial<NewUser>): User {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    bannedAt: null,
     ...overrides,
   };
 }

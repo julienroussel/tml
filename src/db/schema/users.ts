@@ -27,4 +27,5 @@ export const users = pgTable("users", {
     .notNull()
     .$onUpdate(() => sql`NOW()`),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  bannedAt: timestamp("banned_at", { withTimezone: true }),
 });
