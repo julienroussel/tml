@@ -4,6 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const mockGetSession = vi.fn();
+const mockIsUserBanned = vi.fn();
+
+vi.mock("@/auth/ban-check", () => ({
+  isUserBanned: (...args: unknown[]) => mockIsUserBanned(...args),
+}));
 
 vi.mock("@/auth/server", () => ({
   auth: { getSession: mockGetSession },
@@ -27,6 +32,8 @@ beforeEach(() => {
   });
   // BEGIN and COMMIT succeed by default
   mockClientQuery.mockResolvedValue({ rowCount: 0 });
+  // Non-banned by default
+  mockIsUserBanned.mockResolvedValue(false);
 });
 
 afterEach(() => {
@@ -117,6 +124,22 @@ describe("POST /api/powersync/batch", () => {
       const response = await POST(createRequest({ operations: [] }));
 
       expect(response.status).toBe(401);
+    });
+
+    it("returns 403 when user is banned", async () => {
+      authenticatedSession();
+      mockIsUserBanned.mockResolvedValue(true);
+      const { POST } = await import("./route");
+
+      const response = await POST(
+        createRequest({
+          operations: [putOp("tricks", "t-1", { name: "Card Trick" })],
+        })
+      );
+
+      expect(response.status).toBe(403);
+      const body = await response.json();
+      expect(body).toEqual({ error: "Forbidden" });
     });
   });
 

@@ -15,6 +15,10 @@ const unauthenticatedSession: MockSession = {
 };
 
 vi.mock("server-only", () => ({}));
+const mockIsUserBanned = vi.fn().mockResolvedValue(false);
+vi.mock("@/auth/ban-check", () => ({
+  isUserBanned: (...args: unknown[]) => mockIsUserBanned(...args),
+}));
 
 const mockCookieDelete = vi.fn();
 const mockCookies = vi.fn().mockResolvedValue({ delete: mockCookieDelete });
@@ -61,8 +65,35 @@ describe("settings server actions", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    mockIsUserBanned.mockResolvedValue(false);
     mockUpdateReturning.mockResolvedValue([{ id: "test-user" }]);
     mockSelectLimit.mockResolvedValue([]);
+  });
+
+  describe("banned user rejection", () => {
+    it("updateLocale rejects banned users", async () => {
+      mockIsUserBanned.mockResolvedValueOnce(true);
+
+      const { updateLocale } = await import("./actions");
+      const result = await updateLocale("en");
+      expect(result).toEqual({ success: false, error: "Account suspended" });
+    });
+
+    it("updateTheme rejects banned users", async () => {
+      mockIsUserBanned.mockResolvedValueOnce(true);
+
+      const { updateTheme } = await import("./actions");
+      const result = await updateTheme("dark");
+      expect(result).toEqual({ success: false, error: "Account suspended" });
+    });
+
+    it("getUserSettings returns null for banned users", async () => {
+      mockIsUserBanned.mockResolvedValueOnce(true);
+
+      const { getUserSettings } = await import("./actions");
+      const result = await getUserSettings();
+      expect(result).toBeNull();
+    });
   });
 
   describe("updateLocale", () => {
