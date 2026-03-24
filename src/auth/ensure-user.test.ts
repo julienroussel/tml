@@ -18,6 +18,7 @@ const mockReturning = vi.fn().mockResolvedValue([
     id: "user-1",
     locale: "en",
     theme: "system",
+    bannedAt: null,
     xmax: "1",
   },
 ]);
@@ -52,6 +53,7 @@ vi.mock("@/db/schema/users", () => ({
     email: { name: "email" },
     displayName: { name: "display_name" },
     deletedAt: { name: "deleted_at" },
+    bannedAt: "banned_at",
     locale: "locale",
     theme: "theme",
     updatedAt: "updated_at",
@@ -126,7 +128,7 @@ describe("ensureUserExists", () => {
 
   it("returns user settings (locale and theme)", async () => {
     mockReturning.mockResolvedValue([
-      { id: "user-1", locale: "fr", theme: "dark", xmax: "1" },
+      { id: "user-1", locale: "fr", theme: "dark", bannedAt: null, xmax: "1" },
     ]);
     mockGetSession.mockResolvedValue({
       data: {
@@ -227,7 +229,13 @@ describe("ensureUserExists", () => {
 
   it("sends a welcome email when a new user is created", async () => {
     mockReturning.mockResolvedValue([
-      { id: "user-1", locale: "en", theme: "system", xmax: "0" },
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "0",
+      },
     ]);
     mockGetSession.mockResolvedValue({
       data: {
@@ -254,7 +262,13 @@ describe("ensureUserExists", () => {
 
   it("does not throw when welcome email fails", async () => {
     mockReturning.mockResolvedValue([
-      { id: "user-1", locale: "en", theme: "system", xmax: "0" },
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "0",
+      },
     ]);
     mockSendWelcomeEmail.mockRejectedValue(new Error("Resend API down"));
     mockGetSession.mockResolvedValue({
@@ -299,7 +313,13 @@ describe("ensureUserExists", () => {
 
   it("does not send a welcome email for existing users", async () => {
     mockReturning.mockResolvedValue([
-      { id: "user-1", locale: "en", theme: "system", xmax: "1" },
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "1",
+      },
     ]);
     mockGetSession.mockResolvedValue({
       data: {
@@ -337,6 +357,124 @@ describe("ensureUserExists", () => {
     );
 
     consoleSpy.mockRestore();
+  });
+
+  it("returns null when user is banned", async () => {
+    const bannedDate = new Date("2026-03-01T00:00:00Z");
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: bannedDate,
+        xmax: "1",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      // Suppress expected warning output
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toBeNull();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[ensureUserExists] Banned user attempted login:",
+      expect.objectContaining({ userId: "user-1", bannedAt: bannedDate })
+    );
+    expect(mockSendWelcomeEmail).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it("does not send welcome email to newly created banned users", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: new Date("2026-03-01T00:00:00Z"),
+        xmax: "0",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      // Suppress expected warning output
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toBeNull();
+    expect(mockAfter).not.toHaveBeenCalled();
+    expect(mockSendWelcomeEmail).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it("still creates user_preferences row for banned users", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: new Date("2026-03-01T00:00:00Z"),
+        xmax: "1",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      // Suppress expected warning output
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    expect(mockPrefsValues).toHaveBeenCalledWith({ userId: "user-1" });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("reactivates self-deleted (non-banned) users normally", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "1",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toEqual({ locale: "en", theme: "system" });
   });
 });
 
