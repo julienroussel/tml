@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
+import { cn } from "@/lib/utils";
 
 interface LogoProps {
   className?: string;
   height: number;
   href?: string;
+  imageClassName?: string;
   width: number;
 }
 
@@ -14,12 +16,13 @@ export function Logo({
   width,
   className,
   href = "/",
+  imageClassName = "h-auto w-full",
 }: LogoProps): ReactElement {
   return (
     <Link className={className} href={href}>
       <Image
         alt=""
-        className="block h-auto w-full dark:hidden"
+        className={cn("block dark:hidden", imageClassName)}
         height={height}
         loading="eager"
         src="/logo-light.svg"
@@ -27,7 +30,7 @@ export function Logo({
       />
       <Image
         alt=""
-        className="hidden h-auto w-full dark:block"
+        className={cn("hidden dark:block", imageClassName)}
         height={height}
         loading="eager"
         src="/logo-dark.svg"
