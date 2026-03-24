@@ -17,7 +17,7 @@ import type { ReactElement, ReactNode } from "react";
  */
 function AllProviders({ children }: { children: ReactNode }): ReactElement {
   return (
-    <NextIntlClientProvider locale="en" messages={{}}>
+    <NextIntlClientProvider locale="en" messages={{}} timeZone="UTC">
       {children}
     </NextIntlClientProvider>
   );

@@ -30,6 +30,7 @@ pnpm db:migrate     # Apply pending migrations to Neon
 pnpm db:studio      # Open Drizzle Studio GUI
 pnpm i18n:check     # Validate all locales have matching keys
 pnpm docs:generate  # Regenerate llms.txt files from docs/
+pnpm screenshots    # Regenerate PWA manifest screenshots (dev server must be running)
 pnpm setup          # Initial project setup
 ```
 

@@ -1,9 +1,8 @@
 import { UserButton } from "@neondatabase/auth/react";
 import { LayoutDashboard, UserCog } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
+import { Logo } from "@/components/logo";
 import { SidebarNavItem } from "@/components/sidebar-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -27,23 +26,12 @@ export async function AppSidebar(): Promise<ReactElement> {
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link className="block px-2 py-1" href="/dashboard">
-          <Image
-            alt=""
-            className="block h-auto w-full max-w-[600px] dark:hidden"
-            height={200}
-            src="/logo-light.svg"
-            width={600}
-          />
-          <Image
-            alt=""
-            className="hidden h-auto w-full max-w-[600px] dark:block"
-            height={200}
-            src="/logo-dark.svg"
-            width={600}
-          />
-          <span className="sr-only">The Magic Lab</span>
-        </Link>
+        <Logo
+          className="block px-2 py-1"
+          height={200}
+          href="/dashboard"
+          width={600}
+        />
       </SidebarHeader>
       <SidebarContent className="overflow-x-hidden">
         <SidebarGroup className="pt-0">

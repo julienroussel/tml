@@ -22,7 +22,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [https://localhost:3000](https://localhost:3000) in your browser. The dev server uses HTTPS with a self-signed certificate (`--experimental-https`).
 
 ## Environment Variables
 
@@ -46,7 +46,7 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_public_key_here
 VAPID_PRIVATE_KEY=your_private_key_here
 
 # App URL — used for email unsubscribe links (defaults to https://themagiclab.app)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://localhost:3000
 
 # Email (Resend)
 RESEND_API_KEY=
@@ -97,7 +97,7 @@ Neon Auth works on localhost out of the box:
 
 - Set `NEON_AUTH_BASE_URL` to your Neon Auth URL from the console
 - Set `NEON_AUTH_COOKIE_SECRET` (generate with `openssl rand -base64 32`)
-- Google OAuth: Add `http://localhost:3000` to authorized JavaScript origins and redirect URIs in the Google Cloud Console
+- Google OAuth: Add `https://localhost:3000` to authorized JavaScript origins and redirect URIs in the Google Cloud Console
 
 ## Push Notifications on Localhost
 

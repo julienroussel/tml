@@ -157,9 +157,11 @@ export default async function ProtectedPage() {
 import { authClient } from "@/auth/client";
 
 // authClient is a Neon Auth client created with createAuthClient()
-// Use authClient.getSession() for one-off session checks
+// Use authClient.getSession() for UI session checks (returns opaque session token)
 // The NeonAuthUIProvider in the root layout provides auth context to the UI
 ```
+
+**PowerSync authentication** uses a separate path: the connector calls `GET /api/auth/token` (a Better Auth endpoint) which returns a JWT with standard claims (`sub`, `exp`, `iss`, `aud`). This JWT is passed to PowerSync Cloud for sync stream authentication — it is distinct from the opaque session token returned by `authClient.getSession()`.
 
 ## Route Protection (proxy.ts)
 
@@ -269,7 +271,7 @@ script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'nonce-<per-request>' https
 style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob: https://lh3.googleusercontent.com;
 font-src 'self';
-connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.powersync.journeyapps.com https://*.neonauth.c-2.eu-central-1.aws.neon.tech https://*.apirest.c-2.eu-central-1.aws.neon.tech;
+connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.powersync.journeyapps.com wss://*.powersync.journeyapps.com https://*.neonauth.c-2.eu-central-1.aws.neon.tech https://*.apirest.c-2.eu-central-1.aws.neon.tech;
 worker-src 'self';
 object-src 'none';
 frame-ancestors 'none';
@@ -293,7 +295,8 @@ upgrade-insecure-requests
 | `connect-src` | `'self'` | API calls to same origin |
 | | `https://va.vercel-scripts.com` | Vercel Analytics data |
 | | `https://vitals.vercel-insights.com` | Vercel Speed Insights |
-| | `https://*.powersync.journeyapps.com` | PowerSync Cloud sync |
+| | `https://*.powersync.journeyapps.com` | PowerSync Cloud sync (HTTPS) |
+| | `wss://*.powersync.journeyapps.com` | PowerSync Cloud sync (WebSocket) |
 | | `https://*.neonauth.c-2.eu-central-1.aws.neon.tech` | Neon Auth endpoints |
 | | `https://*.apirest.c-2.eu-central-1.aws.neon.tech` | Neon Data API |
 | `worker-src` | `'self'` | Service worker |
@@ -322,6 +325,7 @@ const BASE_DIRECTIVES: CspDirectives = {
     "https://va.vercel-scripts.com",
     "https://vitals.vercel-insights.com",
     "https://*.powersync.journeyapps.com",
+    "wss://*.powersync.journeyapps.com",
     "https://*.neonauth.c-2.eu-central-1.aws.neon.tech",
     "https://*.apirest.c-2.eu-central-1.aws.neon.tech",
   ],
@@ -330,7 +334,7 @@ const BASE_DIRECTIVES: CspDirectives = {
 
 const DEV_EXTENSIONS: Partial<CspDirectives> = {
   "script-src": ["'unsafe-eval'"],
-  "connect-src": ["ws://localhost:*"],
+  "connect-src": ["wss://localhost:*"],
   "frame-src": ["https://local.drizzle.studio"],
 };
 
@@ -354,9 +358,10 @@ The `applyNonce` helper appends `'nonce-<value>'` to `script-src`. The existing 
 | Source | Dev Only | Production |
 |---|---|---|
 | `'unsafe-eval'` (script-src) | Yes | No |
-| `ws://localhost:*` (connect-src) | Yes | No |
+| `wss://localhost:*` (connect-src) | Yes | No |
 | `https://local.drizzle.studio` (frame-src) | Yes | No |
 | `https://*.powersync.journeyapps.com` (connect-src) | No | Yes |
+| `wss://*.powersync.journeyapps.com` (connect-src) | No | Yes |
 | `https://*.neonauth.c-2.eu-central-1.aws.neon.tech` (connect-src) | No | Yes |
 | `https://*.apirest.c-2.eu-central-1.aws.neon.tech` (connect-src) | No | Yes |
 | `https://va.vercel-scripts.com` (script/connect) | No | Yes |
@@ -962,7 +967,7 @@ Source: docs/diagrams/route-map.md
 
 # Route Map
 
-<!-- Last verified: 2026-03-23 -->
+<!-- Last verified: 2026-03-24 -->
 
 ## Route Structure
 
@@ -1509,7 +1514,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [https://localhost:3000](https://localhost:3000) in your browser. The dev server uses HTTPS with a self-signed certificate (`--experimental-https`).
 
 ## Environment Variables
 
@@ -1533,7 +1538,7 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_public_key_here
 VAPID_PRIVATE_KEY=your_private_key_here
 
 # App URL — used for email unsubscribe links (defaults to https://themagiclab.app)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://localhost:3000
 
 # Email (Resend)
 RESEND_API_KEY=
@@ -1584,7 +1589,7 @@ Neon Auth works on localhost out of the box:
 
 - Set `NEON_AUTH_BASE_URL` to your Neon Auth URL from the console
 - Set `NEON_AUTH_COOKIE_SECRET` (generate with `openssl rand -base64 32`)
-- Google OAuth: Add `http://localhost:3000` to authorized JavaScript origins and redirect URIs in the Google Cloud Console
+- Google OAuth: Add `https://localhost:3000` to authorized JavaScript origins and redirect URIs in the Google Cloud Console
 
 ## Push Notifications on Localhost
 
@@ -1801,32 +1806,35 @@ The Magic Lab is a Progressive Web App with push notification support for practi
 
 The manifest is generated dynamically by `src/app/manifest.ts`:
 
+- **id**: `/` (stable identity across start_url changes)
 - **Name**: The Magic Lab
 - **Short name**: Magic Lab
 - **Display**: standalone (full-screen, no browser chrome)
+- **Scope**: `/` (covers both marketing and app routes)
+- **Orientation**: any
+- **Language**: en (ltr)
 - **Icons**: 192x192 and 512x512 PNG icons with maskable variant
+- **Screenshots**: Desktop (1280x720) and mobile (390x844) for enhanced install prompt — regenerate with `pnpm screenshots`
 - **Theme color**: `#ffffff` (manifest uses a single value; viewport meta tag provides light/dark variants)
+- **Shortcuts**: "Log Practice" and "My Routines"
 
 ### Service Worker
 
 The service worker (`public/sw.js`) handles:
 
-1. **Push notifications**: Receiving and displaying push messages
-2. **Notification click**: Opening the app when a notification is tapped
-3. **Installation**: Immediate activation via `skipWaiting()` and `clients.claim()`
-
-Future enhancements (planned):
-- **Workbox integration** for precaching the app shell
-- **Runtime caching strategies** for API responses
-- **Background sync** for offline write queue
+1. **Static asset caching**: Cache-first for `/_next/static/` and `/@powersync/` (WASM, web workers)
+2. **Navigation caching**: Stale-while-revalidate for HTML pages (offline fallback)
+3. **Bypass rules**: Never caches API routes, PowerSync sync traffic, Neon Auth, or analytics
+4. **Push notifications**: Receiving and displaying push messages
+5. **Notification click**: Opening the app when a notification is tapped
+6. **Installation**: Immediate activation via `skipWaiting()` and `clients.claim()`
+7. **Cache cleanup**: Removes stale caches on activate, supports `clear-user-cache` message
 
 ### Service Worker Registration
 
-The service worker is registered client-side in a React component that:
+The service worker is automatically registered by the `ServiceWorkerRegistration` component (`src/components/sw-registration.tsx`), which is mounted in the root layout (`src/app/layout.tsx`). This ensures the SW is active on all routes (marketing, auth, and app).
 
-1. Checks for service worker support
-2. Registers `sw.js` on mount
-3. Handles updates by prompting the user to refresh
+Registration is deferred until after `window.load` to avoid competing with initial page resources.
 
 ## Push Notifications
 
@@ -2128,7 +2136,7 @@ The PowerSync client is initialized with:
 
 - **WASM SQLite** for the local database (runs in a Web Worker)
 - **Schema definition** matching the server-side Drizzle schema (see [migrations.md](./migrations.md) for the dual-schema problem)
-- **Token from Neon Auth** for authenticating with PowerSync Cloud (fetched client-side via the auth client)
+- **JWT from Neon Auth** for authenticating with PowerSync Cloud — fetched client-side via `GET /api/auth/token` (a Better Auth endpoint served by the catch-all route at `src/app/api/auth/[...path]/route.ts`). The connector decodes the JWT `exp` claim and passes `expiresAt` to PowerSync so the SDK knows when to refresh credentials.
 
 ## Sync Rules
 

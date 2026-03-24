@@ -14,7 +14,7 @@ script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'nonce-<per-request>' https
 style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob: https://lh3.googleusercontent.com;
 font-src 'self';
-connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.powersync.journeyapps.com https://*.neonauth.c-2.eu-central-1.aws.neon.tech https://*.apirest.c-2.eu-central-1.aws.neon.tech;
+connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.powersync.journeyapps.com wss://*.powersync.journeyapps.com https://*.neonauth.c-2.eu-central-1.aws.neon.tech https://*.apirest.c-2.eu-central-1.aws.neon.tech;
 worker-src 'self';
 object-src 'none';
 frame-ancestors 'none';
@@ -38,7 +38,8 @@ upgrade-insecure-requests
 | `connect-src` | `'self'` | API calls to same origin |
 | | `https://va.vercel-scripts.com` | Vercel Analytics data |
 | | `https://vitals.vercel-insights.com` | Vercel Speed Insights |
-| | `https://*.powersync.journeyapps.com` | PowerSync Cloud sync |
+| | `https://*.powersync.journeyapps.com` | PowerSync Cloud sync (HTTPS) |
+| | `wss://*.powersync.journeyapps.com` | PowerSync Cloud sync (WebSocket) |
 | | `https://*.neonauth.c-2.eu-central-1.aws.neon.tech` | Neon Auth endpoints |
 | | `https://*.apirest.c-2.eu-central-1.aws.neon.tech` | Neon Data API |
 | `worker-src` | `'self'` | Service worker |
@@ -67,6 +68,7 @@ const BASE_DIRECTIVES: CspDirectives = {
     "https://va.vercel-scripts.com",
     "https://vitals.vercel-insights.com",
     "https://*.powersync.journeyapps.com",
+    "wss://*.powersync.journeyapps.com",
     "https://*.neonauth.c-2.eu-central-1.aws.neon.tech",
     "https://*.apirest.c-2.eu-central-1.aws.neon.tech",
   ],
@@ -75,7 +77,7 @@ const BASE_DIRECTIVES: CspDirectives = {
 
 const DEV_EXTENSIONS: Partial<CspDirectives> = {
   "script-src": ["'unsafe-eval'"],
-  "connect-src": ["ws://localhost:*"],
+  "connect-src": ["wss://localhost:*"],
   "frame-src": ["https://local.drizzle.studio"],
 };
 
@@ -99,9 +101,10 @@ The `applyNonce` helper appends `'nonce-<value>'` to `script-src`. The existing 
 | Source | Dev Only | Production |
 |---|---|---|
 | `'unsafe-eval'` (script-src) | Yes | No |
-| `ws://localhost:*` (connect-src) | Yes | No |
+| `wss://localhost:*` (connect-src) | Yes | No |
 | `https://local.drizzle.studio` (frame-src) | Yes | No |
 | `https://*.powersync.journeyapps.com` (connect-src) | No | Yes |
+| `wss://*.powersync.journeyapps.com` (connect-src) | No | Yes |
 | `https://*.neonauth.c-2.eu-central-1.aws.neon.tech` (connect-src) | No | Yes |
 | `https://*.apirest.c-2.eu-central-1.aws.neon.tech` (connect-src) | No | Yes |
 | `https://va.vercel-scripts.com` (script/connect) | No | Yes |

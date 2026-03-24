@@ -1,10 +1,30 @@
-# The Magic Lab
+<p align="center">
+  <img src="public/icon-512x512.png" width="120" alt="The Magic Lab" />
+</p>
 
-**Train. Plan. Perform. Elevate your magic.**
+<h1 align="center">The Magic Lab</h1>
 
-A free, open-source workspace for magicians -- whether you're just starting out or performing professionally. The Magic Lab is a single place to organize your repertoire, plan your routines, track your practice sessions, and refine your performance over time.
+<p align="center">
+  <strong>Train. Plan. Perform. Elevate your magic.</strong>
+</p>
 
-**Is there a free app for magicians to track practice, plan routines, and log performances?** Yes -- The Magic Lab is exactly that. It works offline, syncs across devices, and is completely free and open-source.
+<p align="center">
+  <a href="https://github.com/julienroussel/tml/actions/workflows/ci.yml"><img src="https://github.com/julienroussel/tml/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/julienroussel/tml" alt="License" /></a>
+  <img src="https://img.shields.io/badge/node-24.x-green" alt="Node 24" />
+</p>
+
+<p align="center">
+  A free, open-source workspace for magicians — organize your repertoire, plan routines, track practice sessions, and refine performances. Works offline, syncs across devices.
+</p>
+
+<p align="center">
+  <a href="https://themagiclab.app/">Website</a> · <a href="docs/">Documentation</a> · <a href="https://github.com/julienroussel/tml/issues">Issues</a>
+</p>
+
+<p align="center">
+  <img src="public/screenshot-desktop.png" alt="The Magic Lab — landing page" width="800" />
+</p>
 
 ## Features
 
@@ -21,14 +41,15 @@ A free, open-source workspace for magicians -- whether you're just starting out 
 - [React 19](https://react.dev/) with React Compiler
 - [Tailwind CSS v4](https://tailwindcss.com/) for styling
 - [shadcn/ui](https://ui.shadcn.com/) component primitives (Radix UI)
-- [Neon Postgres](https://neon.tech/) serverless database (planned)
-- [PowerSync](https://www.powersync.com/) offline-first sync engine (planned)
-- [Better Auth](https://www.better-auth.com/) via Neon Auth (planned)
-- [Drizzle ORM](https://orm.drizzle.team/) for type-safe SQL (planned)
-- [next-intl](https://next-intl.dev/) for internationalization (planned)
-- [Vitest](https://vitest.dev/) for testing
+- [Neon Postgres](https://neon.tech/) serverless database
+- [PowerSync](https://www.powersync.com/) offline-first sync engine
+- [Neon Auth](https://neon.tech/docs/guides/neon-auth-guide) for authentication (email OTP + Google)
+- [Drizzle ORM](https://orm.drizzle.team/) for type-safe SQL
+- [next-intl](https://next-intl.dev/) for internationalization (7 locales)
+- [React Email](https://react.email/) + [Resend](https://resend.com/) for transactional emails
+- [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/) for testing
 - [Biome](https://biomejs.dev/) via [Ultracite](https://github.com/haydenbleasel/ultracite) for linting and formatting
-- PWA support with push notifications
+- PWA support with offline access and push notifications
 
 ## Getting Started
 
@@ -43,69 +64,84 @@ A free, open-source workspace for magicians -- whether you're just starting out 
 git clone https://github.com/julienroussel/tml.git
 cd tml
 pnpm install
-pnpm dev
+pnpm setup          # configure environment
+pnpm dev            # start dev server (https://localhost:3000)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Available Scripts
+## Scripts
 
 ```bash
-pnpm dev              # Start dev server
+# Development
+pnpm dev              # Start dev server (Turbopack, HTTPS)
 pnpm build            # Production build
 pnpm start            # Start production server
-pnpm lint             # Lint and format check (Ultracite)
+
+# Code quality
+pnpm lint             # Lint and format check (Ultracite/Biome)
 pnpm fix              # Auto-fix lint and format issues
-pnpm test             # Run tests in watch mode (Vitest)
-pnpm test:run         # Run tests once
-pnpm test:coverage    # Run tests with coverage
-pnpm test:ui          # Open Vitest UI
 pnpm typecheck        # TypeScript type checking
+
+# Testing
+pnpm test             # Run unit tests in watch mode (Vitest)
+pnpm test:run         # Run unit tests once
+pnpm test:coverage    # Run unit tests with coverage
+pnpm test:ui          # Open Vitest UI
+pnpm test:e2e         # Run E2E tests (Playwright)
+pnpm test:e2e:ui      # Open Playwright UI mode
+
+# Database
+pnpm db:generate      # Generate Drizzle migration from schema changes
+pnpm db:migrate       # Apply pending migrations to Neon
+pnpm db:studio        # Open Drizzle Studio GUI
+
+# i18n & docs
+pnpm i18n:check       # Validate all locales have matching keys
+pnpm docs:generate    # Regenerate llms.txt files from docs/
+
+# Other
+pnpm email:dev        # Start email template dev server
+pnpm screenshots      # Regenerate PWA manifest screenshots
+pnpm setup            # Initial project setup
 ```
 
 ## Project Structure
 
 ```
 src/
-  app/                  # Next.js App Router
-    (marketing)/        # Public SEO pages (landing, about, FAQ)
-    (app)/              # Authenticated app (dashboard, modules)
-    api/                # API routes (planned)
-    layout.tsx          # Root layout (theme, fonts, analytics)
-  components/           # React components
-    ui/                 # shadcn/ui primitives
-  hooks/                # Custom React hooks
-  lib/                  # Utilities, modules, config
-docs/                   # Architecture and design documentation
-public/                 # Static assets, service worker
-scripts/                # Build and generation scripts
+  app/                    # Next.js App Router
+    (marketing)/          # Public pages (landing, FAQ, privacy)
+    (app)/                # Authenticated app (dashboard, modules)
+    auth/                 # Sign-in / sign-up
+    api/                  # API routes (auth, sync, email, cron)
+  features/               # Feature modules (improve, train, plan, ...)
+    <module>/components/  # Module-specific components
+    <module>/hooks/       # Module-specific hooks
+  components/             # Shared React components
+    ui/                   # shadcn/ui primitives
+  db/                     # Drizzle schema, migrations
+  sync/                   # PowerSync offline-first sync engine
+  i18n/                   # Internationalization (7 locales)
+  emails/                 # Transactional email templates
+  hooks/                  # Shared React hooks
+  lib/                    # Utilities, modules, config
+  test/                   # Test utilities, factories, mocks
+docs/                     # Architecture and design documentation
+public/                   # Static assets, service worker
+scripts/                  # Build and generation scripts
 ```
 
 ## Architecture
 
-The Magic Lab is built as an offline-first progressive web app (PWA). Data lives in a local SQLite database (WASM) in the browser, synced bidirectionally with Neon Postgres via PowerSync Cloud. Authentication uses Better Auth with OAuth providers (Google, Apple, Microsoft).
+The Magic Lab is an offline-first progressive web app (PWA). Data lives in a local SQLite database (via WASM) in the browser, synced bidirectionally with Neon Postgres through PowerSync Cloud. Authentication uses Neon Auth with email OTP and Google social login.
 
-For full architecture details, see the [docs/](docs/) directory:
-
-- [Architecture Overview](docs/architecture.md)
-- [Data Model](docs/data-model.md)
-- [Sync Engine](docs/sync-engine.md)
-- [Auth Flow](docs/auth-flow.md)
-- [Route Structure](docs/route-structure.md)
-- [i18n](docs/i18n.md)
-- [PWA & Notifications](docs/pwa-notifications.md)
-- [Testing Strategy](docs/testing.md)
-- [Migrations](docs/migrations.md)
-- [UI Conventions](docs/ui-conventions.md)
-- [Local Development](docs/local-development.md)
-- [CSP Policy](docs/csp-policy.md)
+For detailed documentation, see the [docs/](docs/) directory — covering [architecture](docs/architecture.md), [data model](docs/data-model.md), [sync engine](docs/sync-engine.md), [auth flow](docs/auth-flow.md), [i18n](docs/i18n.md), [testing](docs/testing.md), [migrations](docs/migrations.md), and more.
 
 ## Contributing
 
-Contributions are welcome. Please review the documentation in [docs/](docs/) to understand the architecture and conventions before submitting a pull request.
+Contributions are welcome. Please review the [documentation](docs/) to understand the architecture and conventions before submitting a pull request.
 
 - Code quality is enforced by [Ultracite](https://github.com/haydenbleasel/ultracite) (Biome) with pre-commit hooks via Lefthook
-- Tests run with Vitest -- 80% coverage threshold
+- Tests run with Vitest (80% coverage threshold) and Playwright (E2E)
 - TypeScript strict mode -- no `any`, explicit return types on exports
 
 ## License

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { type ReactElement, useEffect, useRef } from "react";
 
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 
 export default function AuthError({
@@ -23,10 +24,11 @@ export default function AuthError({
 
   return (
     <div
-      className="flex min-h-screen flex-col items-center justify-center gap-4"
+      className="flex min-h-screen flex-col items-center justify-center gap-6"
       ref={mainRef}
       tabIndex={-1}
     >
+      <Logo className="flex items-center" height={56} width={168} />
       <div role="alert">
         <h1 className="font-semibold text-xl">{t("authError")}</h1>
         <p className="text-muted-foreground">{t("authErrorDesc")}</p>

@@ -9,6 +9,12 @@ const TRAILING_SLASHES = /\/+$/;
 const CSP_HEADER =
   "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'";
 
+const BODY_STYLE =
+  'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 40px auto; padding: 0 24px; color: #374151;';
+
+const BRAND_HEADER =
+  '<div style="margin-bottom: 32px;"><p style="font-size: 14px; color: #6b7280; letter-spacing: 0.2em; font-weight: 300; margin: 0 0 2px;">THE</p><p style="font-size: 24px; color: #111827; font-weight: 700; letter-spacing: 0.03em; margin: 0;">MAGIC LAB</p></div>';
+
 function htmlResponse(body: string, status: number): NextResponse {
   return new NextResponse(body, {
     status,
@@ -19,9 +25,22 @@ function htmlResponse(body: string, status: number): NextResponse {
   });
 }
 
+function brandedPage(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>The Magic Lab</title></head>
+<body style="${BODY_STYLE}">
+  ${BRAND_HEADER}
+  ${content}
+</body>
+</html>`;
+}
+
 function errorResponse(message: string, status: number): NextResponse {
   return htmlResponse(
-    `<html><body><h1>Error</h1><p>${message}</p></body></html>`,
+    brandedPage(
+      `<h1 style="font-size: 20px; margin: 0 0 8px;">Error</h1><p>${message}</p>`
+    ),
     status
   );
 }
@@ -70,18 +89,12 @@ export function GET(request: NextRequest): NextResponse {
   const escapedToken = escapeHtml(token);
 
   return htmlResponse(
-    `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Unsubscribe</title></head>
-<body>
-  <h1>Unsubscribe from email notifications</h1>
+    brandedPage(`<h1 style="font-size: 20px; margin: 0 0 8px;">Unsubscribe from email notifications</h1>
   <p>Click the button below to confirm you want to unsubscribe.</p>
   <form method="POST" action="/api/email/unsubscribe">
     <input type="hidden" name="token" value="${escapedToken}" />
-    <button type="submit">Unsubscribe</button>
-  </form>
-</body>
-</html>`,
+    <button type="submit" style="background-color: #7c3aed; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; min-height: 44px; min-width: 44px; font-size: 16px; cursor: pointer;">Unsubscribe</button>
+  </form>`),
     200
   );
 }
@@ -129,7 +142,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
 
     return htmlResponse(
-      "<html><body><h1>Unsubscribed</h1><p>You have been unsubscribed from email notifications.</p></body></html>",
+      brandedPage(
+        '<h1 style="font-size: 20px; margin: 0 0 8px;">Unsubscribed</h1><p>You have been unsubscribed from email notifications.</p>'
+      ),
       200
     );
   } catch (error: unknown) {

@@ -22,9 +22,12 @@ describe("BASE_DIRECTIVES", () => {
     );
   });
 
-  it("includes PowerSync in connect-src", () => {
+  it("includes PowerSync in connect-src (HTTPS and WSS)", () => {
     expect(BASE_DIRECTIVES["connect-src"]).toContain(
       "https://*.powersync.journeyapps.com"
+    );
+    expect(BASE_DIRECTIVES["connect-src"]).toContain(
+      "wss://*.powersync.journeyapps.com"
     );
   });
 
@@ -57,7 +60,7 @@ describe("BASE_DIRECTIVES", () => {
 
 describe("DEV_EXTENSIONS", () => {
   it("adds WebSocket source for HMR", () => {
-    expect(DEV_EXTENSIONS["connect-src"]).toContain("ws://localhost:*");
+    expect(DEV_EXTENSIONS["connect-src"]).toContain("wss://localhost:*");
   });
 
   it("adds Drizzle Studio frame source", () => {
@@ -72,7 +75,7 @@ describe("mergeDirectives", () => {
     const result = mergeDirectives(BASE_DIRECTIVES, DEV_EXTENSIONS);
 
     expect(result["connect-src"]).toContain("'self'");
-    expect(result["connect-src"]).toContain("ws://localhost:*");
+    expect(result["connect-src"]).toContain("wss://localhost:*");
   });
 
   it("does not mutate the base directives", () => {
@@ -137,7 +140,7 @@ describe("buildCsp", () => {
 
   it("returns dev CSP with HMR and Drizzle Studio sources", () => {
     const csp = buildCsp({ isDev: true });
-    expect(csp).toContain("ws://localhost:*");
+    expect(csp).toContain("wss://localhost:*");
     expect(csp).toContain("https://local.drizzle.studio");
   });
 

@@ -15,6 +15,14 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("next/image", () => ({
+  default: ({ alt, ...props }: { alt: string } & Record<string, unknown>) => (
+    // biome-ignore lint/performance/noImgElement: test mock for next/image
+    // biome-ignore lint/correctness/useImageSize: test mock — dimensions passed via props spread
+    <img alt={alt} {...props} />
+  ),
+}));
+
 describe("AuthError", () => {
   beforeEach(() => {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: suppress console.error output during tests
@@ -59,11 +67,13 @@ describe("AuthError", () => {
     expect(reset).toHaveBeenCalledOnce();
   });
 
-  it("renders a link back to home", () => {
+  it("renders links back to home", () => {
     render(<AuthError error={new Error("test")} reset={vi.fn()} />);
-    const homeLink = screen.getByRole("link");
-    expect(homeLink).toBeInTheDocument();
-    expect(homeLink).toHaveAttribute("href", "/");
+    const homeLinks = screen.getAllByRole("link");
+    expect(homeLinks.length).toBeGreaterThanOrEqual(2);
+    for (const link of homeLinks) {
+      expect(link).toHaveAttribute("href", "/");
+    }
   });
 
   it("moves focus to the container on mount", () => {

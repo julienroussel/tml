@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
 import { authClient } from "@/auth/client";
+import { ServiceWorkerRegistration } from "@/components/sw-registration";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { DynamicIntlProvider } from "@/i18n/client-provider";
@@ -107,6 +108,7 @@ export default async function RootLayout({
             </DynamicIntlProvider>
           </NeonAuthUIProvider>
         </ThemeProvider>
+        <ServiceWorkerRegistration />
         <Analytics />
         <SpeedInsights />
       </body>

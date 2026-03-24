@@ -90,7 +90,11 @@ export function DynamicIntlProvider({
 
   return (
     <IntlContext.Provider value={stableContext.current}>
-      <NextIntlClientProvider locale={locale} messages={messages}>
+      <NextIntlClientProvider
+        locale={locale}
+        messages={messages}
+        timeZone="UTC"
+      >
         {children}
       </NextIntlClientProvider>
     </IntlContext.Provider>

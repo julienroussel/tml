@@ -199,6 +199,16 @@ async function sendAndProcessBatch(
   reportPermanentErrors(results, originalOps, onPermanentError);
 }
 
+/** Narrows an unknown JWT payload to an object with a numeric `exp` claim. */
+function hasNumericExp(value: unknown): value is { exp: number } {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "exp" in value &&
+    typeof value.exp === "number"
+  );
+}
+
 /**
  * Creates a PowerSync connector that uses Neon Auth tokens for authentication
  * and the batch endpoint for uploading mutations.
@@ -221,7 +231,29 @@ function createNeonConnector(
       return null;
     }
 
-    return { endpoint: powerSyncUrl, token };
+    // Extract expiry from JWT so PowerSync knows when to refresh credentials.
+    let expiresAt: Date | undefined;
+    try {
+      const parts = token.split(".");
+      const encoded = parts[1];
+      if (!encoded) {
+        throw new Error("Missing JWT payload segment");
+      }
+      // Normalize base64url to standard base64 before decoding.
+      const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64.padEnd(
+        base64.length + ((4 - (base64.length % 4)) % 4),
+        "="
+      );
+      const payload: unknown = JSON.parse(atob(padded));
+      if (hasNumericExp(payload)) {
+        expiresAt = new Date(payload.exp * 1000);
+      }
+    } catch {
+      // Malformed JWT — let PowerSync handle re-auth on 401.
+    }
+
+    return { endpoint: powerSyncUrl, token, expiresAt };
   }
 
   async function uploadData(
