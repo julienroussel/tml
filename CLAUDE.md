@@ -169,6 +169,7 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Locales**: `en` (default, American English), `fr` (France), `es` (Spain / Peninsular), `pt` (Portugal / European), `it`, `de`, `nl` (Netherlands)
 - **Key naming**: Namespaced — `"common.save"`, `"improve.logPractice"`, `"nav.dashboard"`, `"auth.SIGN_IN"`
 - **Auth namespace**: `auth.*` keys localize the Neon Auth UI (sign-in/sign-up forms). Keys use UPPER_SNAKE_CASE to match `AuthLocalization` from `@neondatabase/auth`. Extracted at runtime by `src/i18n/auth-localization.ts` and passed to `NeonAuthUIProvider` via `NeonAuthLocalizedProvider`.
+- **Email namespace**: `email.*` keys localize transactional emails and the unsubscribe page. Keys use camelCase with simple `{name}` placeholders (not ICU). Loaded server-side by `src/i18n/email-translations.ts` via `getEmailTranslations(locale)` — runs outside next-intl context (no `useTranslations`). Falls back to default locale if requested locale is incomplete.
 - **Marketing pages**: URL-based locale routing (`/fr`, `/es/faq`, `/en/privacy`). Bare paths redirect via proxy. Statically generated for all 7 locales.
 - **Auth pages**: Dynamic. Locale from `NEXT_LOCALE` cookie (no URL prefix). Locale toggle available on page.
 - **App routes**: Locale from user preferences + cookie (no URL prefix). Dynamic.

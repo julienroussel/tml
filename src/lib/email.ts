@@ -4,6 +4,9 @@ import { render } from "@react-email/render";
 import { createElement } from "react";
 import { Resend } from "resend";
 import WelcomeEmail from "@/emails/welcome";
+import type { Locale } from "@/i18n/config";
+import { defaultLocale } from "@/i18n/config";
+import { getEmailTranslations, interpolate } from "@/i18n/email-translations";
 
 let cachedClient: Resend | null = null;
 
@@ -121,6 +124,7 @@ function getAppUrl(): string {
 
 interface SendEmailOptions {
   html: string;
+  locale?: Locale;
   subject: string;
   to: string;
   userId?: string;
@@ -143,7 +147,10 @@ async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   if (options.userId) {
     const token = createUnsubscribeToken(options.userId);
     const appUrl = getAppUrl();
-    const unsubscribeUrl = `${appUrl}/api/email/unsubscribe?token=${encodeURIComponent(token)}`;
+    const localeSuffix = options.locale
+      ? `&locale=${encodeURIComponent(options.locale)}`
+      : "";
+    const unsubscribeUrl = `${appUrl}/api/email/unsubscribe?token=${encodeURIComponent(token)}${localeSuffix}`;
     headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
@@ -177,6 +184,7 @@ function escapeHtml(value: string): string {
 }
 
 interface SendWelcomeEmailOptions {
+  locale?: Locale;
   name?: string;
   to: string;
   userId: string;
@@ -185,17 +193,32 @@ interface SendWelcomeEmailOptions {
 async function sendWelcomeEmail(
   options: SendWelcomeEmailOptions
 ): Promise<SendEmailResult> {
+  const locale = options.locale ?? defaultLocale;
+  const t = await getEmailTranslations(locale);
+
+  const greeting = options.name
+    ? interpolate(t.welcomeGreeting, { name: options.name })
+    : t.welcomeGreetingAnonymous;
+
   const html = await render(
     createElement(WelcomeEmail, {
-      name: options.name,
       appUrl: getAppUrl(),
+      body: t.welcomeBody,
+      cta: t.welcomeCta,
+      featureImprove: t.welcomeFeatureImprove,
+      featurePlan: t.welcomeFeaturePlan,
+      featurePerform: t.welcomeFeaturePerform,
+      footerText: t.welcomeFooter,
+      greeting,
+      preview: t.welcomePreview,
     })
   );
 
   return sendEmail({
     to: options.to,
     userId: options.userId,
-    subject: "Welcome to The Magic Lab",
+    locale,
+    subject: t.welcomeSubject,
     html,
   });
 }

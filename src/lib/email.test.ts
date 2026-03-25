@@ -315,6 +315,54 @@ describe("email", () => {
       const callArgs = mockSend.mock.calls[0]![0];
       expect(callArgs.subject).toBe("Welcome to The Magic Lab");
     });
+
+    it("uses translated subject and body for French locale", async () => {
+      vi.stubEnv("RESEND_API_KEY", "re_test_key");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
+      vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
+      vi.stubEnv("VERCEL_ENV", "production");
+
+      mockSend.mockResolvedValue({
+        data: { id: "welcome-fr" },
+        error: null,
+      });
+
+      const { sendWelcomeEmail } = await import("@/lib/email");
+      await sendWelcomeEmail({
+        to: "magician@example.com",
+        userId: TEST_USER_ID,
+        name: "Houdini",
+        locale: "fr",
+      });
+
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
+      expect(callArgs.subject).toBe("Bienvenue sur The Magic Lab");
+      expect(callArgs.html).toContain("Bonjour Houdini");
+    });
+
+    it("includes locale in unsubscribe URL", async () => {
+      vi.stubEnv("RESEND_API_KEY", "re_test_key");
+      vi.stubEnv("EMAIL_HMAC_SECRET", "test-secret-that-is-at-least-32-chars!");
+      vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://themagiclab.app");
+      vi.stubEnv("VERCEL_ENV", "production");
+
+      mockSend.mockResolvedValue({
+        data: { id: "welcome-locale" },
+        error: null,
+      });
+
+      const { sendWelcomeEmail } = await import("@/lib/email");
+      await sendWelcomeEmail({
+        to: "magician@example.com",
+        userId: TEST_USER_ID,
+        locale: "fr",
+      });
+
+      expect(mockSend).toHaveBeenCalledOnce();
+      const callArgs = mockSend.mock.calls[0]![0];
+      expect(callArgs.headers["List-Unsubscribe"]).toContain("&locale=fr");
+    });
   });
 
   describe("sendEmail", () => {

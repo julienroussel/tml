@@ -1406,12 +1406,23 @@ messages/
     settings.json       # Settings
     marketing.json      # Landing page, about, FAQ
     auth.json           # Neon Auth UI strings (sign-in, sign-up, OTP, social login)
+    email.json          # Transactional email and unsubscribe page strings
   fr/
     common.json
     ...
 ```
 
 > **Note**: The `auth` namespace keys use UPPER_SNAKE_CASE (e.g., `SIGN_IN`, `EMAIL_OTP_SEND_ACTION`) to match the `AuthLocalization` type from `@neondatabase/auth`. These are extracted at runtime by `src/i18n/auth-localization.ts` and passed to `NeonAuthUIProvider`.
+
+### Email Namespace
+
+The `email` namespace localizes transactional emails (welcome email) and the unsubscribe page. Unlike other namespaces, email translations are loaded **server-side outside of next-intl's request context** (email rendering has no access to `useTranslations` or `getTranslations`).
+
+- **Helper**: `src/i18n/email-translations.ts` exports `getEmailTranslations(locale)` which dynamically imports the locale JSON and extracts the `email` namespace.
+- **Interpolation**: Uses simple `{name}` placeholder replacement via `interpolate()` — not ICU MessageFormat.
+- **Fallback**: If a locale's email namespace is incomplete or missing, falls back to the default locale (`en`).
+- **Keys** (21 total): `welcomeSubject`, `welcomePreview`, `welcomeGreeting`, `welcomeGreetingAnonymous`, `welcomeBody`, `welcomeFeature*`, `welcomeCta`, `welcomeFooter`, `unsubscribeTitle`, `unsubscribeDescription`, `unsubscribeButton`, `unsubscribeSuccess*`, `unsubscribeError*`, `errorTitle`.
+- **Locale seeding**: New users get their locale seeded from the `NEXT_LOCALE` cookie at registration time, so the welcome email is sent in the language they selected on the auth page.
 
 ### Message Format
 

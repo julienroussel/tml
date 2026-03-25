@@ -106,9 +106,53 @@ describe("ensureUserExists", () => {
       id: "user-1",
       email: "test@example.com",
       displayName: "Test User",
+      locale: "en",
     });
     expect(mockOnConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ target: "id" })
+    );
+  });
+
+  it("seeds locale from NEXT_LOCALE cookie on first login", async () => {
+    mockCookieGet.mockReturnValueOnce({ value: "fr" });
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "fr",
+        theme: "system",
+        bannedAt: null,
+        xmax: "0",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: "fr" })
+    );
+  });
+
+  it("falls back to default locale for invalid NEXT_LOCALE cookie", async () => {
+    mockCookieGet.mockReturnValueOnce({ value: "zz" });
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: "en" })
     );
   });
 
@@ -229,6 +273,7 @@ describe("ensureUserExists", () => {
       id: "user-1",
       email: "test@example.com",
       displayName: null,
+      locale: "en",
     });
   });
 
@@ -262,7 +307,37 @@ describe("ensureUserExists", () => {
       to: "test@example.com",
       name: "Test User",
       userId: "user-1",
+      locale: "en",
     });
+  });
+
+  it("passes the user locale to the welcome email", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "fr",
+        theme: "system",
+        bannedAt: null,
+        xmax: "0",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    expect(mockAfter).toHaveBeenCalled();
+    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    await afterCallback();
+
+    expect(mockSendWelcomeEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: "fr" })
+    );
   });
 
   it("does not throw when welcome email fails", async () => {
@@ -287,6 +362,13 @@ describe("ensureUserExists", () => {
     const result = await ensureUserExists();
 
     expect(result).toEqual({ locale: "en", theme: "system" });
+
+    // Invoke the after() callback to exercise the .catch() error handler
+    expect(mockAfter).toHaveBeenCalled();
+    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    await afterCallback();
+
+    expect(mockSendWelcomeEmail).toHaveBeenCalled();
   });
 
   it("re-throws when the database upsert fails", async () => {
