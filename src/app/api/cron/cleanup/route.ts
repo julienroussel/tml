@@ -42,10 +42,10 @@ function verifySecret(header: string | null, secret: string): boolean {
  *  owning user row is hard-deleted. */
 const TABLES_IN_ORDER = [
   "item_tricks",
-  "routine_tricks",
+  "setlist_tricks",
   "practice_session_tricks",
   "items",
-  "routines",
+  "setlists",
   "practice_sessions",
   "performances",
   "goals",
@@ -65,8 +65,8 @@ const USER_OWNED_TABLES = [
   "performances",
   "practice_session_tricks",
   "practice_sessions",
-  "routine_tricks",
-  "routines",
+  "setlist_tricks",
+  "setlists",
   "tricks",
 ] as const satisfies readonly SyncedTableName[];
 

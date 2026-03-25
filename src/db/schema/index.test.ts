@@ -6,8 +6,8 @@ describe("database schema exports", () => {
   it("exports all table definitions", () => {
     expect(schema.users).toBeDefined();
     expect(schema.tricks).toBeDefined();
-    expect(schema.routines).toBeDefined();
-    expect(schema.routineTricks).toBeDefined();
+    expect(schema.setlists).toBeDefined();
+    expect(schema.setlistTricks).toBeDefined();
     expect(schema.practiceSessions).toBeDefined();
     expect(schema.practiceSessionTricks).toBeDefined();
     expect(schema.performances).toBeDefined();

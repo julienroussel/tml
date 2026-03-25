@@ -430,8 +430,8 @@ describe("GET /api/cron/cleanup", () => {
         "performances",
         "practice_session_tricks",
         "practice_sessions",
-        "routine_tricks",
-        "routines",
+        "setlist_tricks",
+        "setlists",
         "tricks",
       ]) {
         expect(userDeleteQuery).toContain(`"${table}"`);

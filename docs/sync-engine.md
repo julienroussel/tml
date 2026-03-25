@@ -67,7 +67,7 @@ The sync engine uses **Last-Write-Wins (LWW)** with `updated_at` timestamps:
 
 ## FK Cascade and Sync
 
-When the hard-delete cleanup job permanently removes parent rows (routines, tricks), Postgres `ON DELETE SET NULL` cascades null out the FK columns on child rows (`performances.routine_id`, `goals.trick_id`). These cascades:
+When the hard-delete cleanup job permanently removes parent rows (setlists, tricks), Postgres `ON DELETE SET NULL` cascades null out the FK columns on child rows (`performances.setlist_id`, `goals.trick_id`). These cascades:
 
 1. **Are detected by PowerSync** via the Postgres WAL replication stream
 2. **Bump `updated_at`** via database triggers (`bump_updated_at_on_fk_null`) to ensure correct LWW conflict resolution

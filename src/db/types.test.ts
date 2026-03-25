@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { RoutineId, TrickId, UserId } from "./types";
+import type { SetlistId, TrickId, UserId } from "./types";
 
 describe("branded ID types", () => {
   it("allows creating branded IDs via assertion", () => {
@@ -15,12 +15,12 @@ describe("branded ID types", () => {
   it("branded types are not assignable to plain strings", () => {
     expectTypeOf<UserId>().not.toEqualTypeOf<string>();
     expectTypeOf<TrickId>().not.toEqualTypeOf<string>();
-    expectTypeOf<RoutineId>().not.toEqualTypeOf<string>();
+    expectTypeOf<SetlistId>().not.toEqualTypeOf<string>();
   });
 
   it("branded types are not assignable to each other", () => {
     expectTypeOf<UserId>().not.toEqualTypeOf<TrickId>();
-    expectTypeOf<TrickId>().not.toEqualTypeOf<RoutineId>();
-    expectTypeOf<RoutineId>().not.toEqualTypeOf<UserId>();
+    expectTypeOf<TrickId>().not.toEqualTypeOf<SetlistId>();
+    expectTypeOf<SetlistId>().not.toEqualTypeOf<UserId>();
   });
 });

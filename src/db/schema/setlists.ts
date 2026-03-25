@@ -11,8 +11,8 @@ import {
 import { tricks } from "./tricks";
 import { users } from "./users";
 
-export const routines = pgTable(
-  "routines",
+export const setlists = pgTable(
+  "setlists",
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid("user_id")
@@ -38,14 +38,14 @@ export const routines = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    index("routines_user_id_idx")
+    index("setlists_user_id_idx")
       .on(table.userId)
       .where(sql`deleted_at IS NULL`),
   ]
 );
 
-export const routineTricks = pgTable(
-  "routine_tricks",
+export const setlistTricks = pgTable(
+  "setlist_tricks",
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid("user_id")
@@ -57,9 +57,9 @@ export const routineTricks = pgTable(
     // user account deletion to cascade correctly through both user_id and
     // entity FK paths. The cleanup job must soft-delete junctions first
     // (creating sync tombstones), then hard-delete in the correct order.
-    routineId: uuid("routine_id")
+    setlistId: uuid("setlist_id")
       .notNull()
-      .references(() => routines.id, { onDelete: "no action" }),
+      .references(() => setlists.id, { onDelete: "no action" }),
     trickId: uuid("trick_id")
       .notNull()
       .references(() => tricks.id, { onDelete: "no action" }),
@@ -75,17 +75,17 @@ export const routineTricks = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    index("routine_tricks_user_id_idx")
+    index("setlist_tricks_user_id_idx")
       .on(table.userId)
       .where(sql`deleted_at IS NULL`),
-    index("routine_tricks_routine_id_idx")
-      .on(table.routineId)
+    index("setlist_tricks_setlist_id_idx")
+      .on(table.setlistId)
       .where(sql`deleted_at IS NULL`),
-    index("routine_tricks_trick_id_idx")
+    index("setlist_tricks_trick_id_idx")
       .on(table.trickId)
       .where(sql`deleted_at IS NULL`),
-    uniqueIndex("routine_tricks_routine_position_idx")
-      .on(table.routineId, table.position)
+    uniqueIndex("setlist_tricks_setlist_position_idx")
+      .on(table.setlistId, table.position)
       .where(sql`deleted_at IS NULL`),
   ]
 );

@@ -31,7 +31,7 @@ WelcomeEmail.PreviewProps = {
   body: "Your workspace is ready. Here's what you can do:",
   cta: "Go to your dashboard",
   featureImprove: "Log practice sessions and track progress",
-  featurePlan: "Build and organize routines",
+  featurePlan: "Build and organize setlists",
   featurePerform: "Record and review performances",
   footerText: "— The Magic Lab",
   greeting: "Hi Houdini, welcome to The Magic Lab!",

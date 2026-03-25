@@ -9,7 +9,7 @@ import type {
   NewUser,
   Performance,
   PracticeSession,
-  Routine,
+  Setlist,
   Trick,
   User,
 } from "@/db/types";
@@ -57,12 +57,12 @@ function createTestTrick(overrides?: Partial<NewTrick>): Trick {
   };
 }
 
-function createTestRoutine(overrides?: Partial<Routine>): Routine {
+function createTestSetlist(overrides?: Partial<Setlist>): Setlist {
   return {
     id: nextId(),
     userId: nextId(),
-    name: `Test Routine ${counter}`,
-    description: "A test routine",
+    name: `Test Setlist ${counter}`,
+    description: "A test setlist",
     estimatedDurationMinutes: 15,
     tags: null,
     language: null,
@@ -102,7 +102,7 @@ function createTestPerformance(
     date: new Date().toISOString().slice(0, 10),
     venue: "Test Venue",
     eventName: "Test Event",
-    routineId: null,
+    setlistId: null,
     audienceSize: 50,
     audienceType: null,
     durationMinutes: null,
@@ -159,7 +159,7 @@ export {
   createTestItem,
   createTestPerformance,
   createTestPracticeSession,
-  createTestRoutine,
+  createTestSetlist,
   createTestTrick,
   createTestUser,
 };

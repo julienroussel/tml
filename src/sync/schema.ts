@@ -17,7 +17,7 @@ const tricks = new Table({
   deleted_at: column.text,
 });
 
-const routines = new Table({
+const setlists = new Table({
   user_id: column.text,
   name: column.text,
   description: column.text,
@@ -36,9 +36,9 @@ const routines = new Table({
   deleted_at: column.text,
 });
 
-const routine_tricks = new Table({
+const setlist_tricks = new Table({
   user_id: column.text,
-  routine_id: column.text,
+  setlist_id: column.text,
   trick_id: column.text,
   position: column.integer,
   transition_notes: column.text,
@@ -75,7 +75,7 @@ const performances = new Table({
   date: column.text,
   venue: column.text,
   event_name: column.text,
-  routine_id: column.text,
+  setlist_id: column.text,
   audience_size: column.integer,
   audience_type: column.text,
   duration_minutes: column.integer,
@@ -134,8 +134,8 @@ const goals = new Table({
 // Web Push API respectively) and never need to sync to the client.
 export const appSchema = new Schema({
   tricks,
-  routines,
-  routine_tricks,
+  setlists,
+  setlist_tricks,
   practice_sessions,
   practice_session_tricks,
   performances,

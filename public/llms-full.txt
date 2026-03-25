@@ -1,7 +1,7 @@
 # The Magic Lab -- Complete Documentation
 
 > A free, open-source workspace for magicians to organize their repertoire,
-> plan routines, track practice sessions, and refine performances.
+> plan setlists, track practice sessions, and refine performances.
 > Production URL: https://themagiclab.app/
 > GitHub: https://github.com/julienroussel/tml
 
@@ -42,7 +42,7 @@ src/app/
     dashboard/page.tsx  # Home dashboard
     improve/page.tsx    # Practice session logging
     train/page.tsx      # Goal setting and drills
-    plan/page.tsx       # Routine and setlist builder
+    plan/page.tsx       # Setlist builder
     perform/page.tsx    # Performance tracking
     enhance/page.tsx    # Insights and suggestions
     collect/page.tsx    # Inventory management
@@ -441,13 +441,13 @@ A trick, sleight, move, or technique in the magician's repertoire.
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
 
-### routines
+### setlists
 
-An ordered collection of tricks forming a performable routine.
+An ordered collection of tricks forming a performable setlist.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | UUID (PK) | Branded as `RoutineId` |
+| id | UUID (PK) | Branded as `SetlistId` |
 | user_id | UUID (FK -> users) | NOT NULL, cascade delete |
 | name | text | NOT NULL |
 | description | text | |
@@ -461,7 +461,7 @@ An ordered collection of tricks forming a performable routine.
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
 
-#### Routine Requirements
+#### Setlist Requirements
 
 The `requirements` column stores structured constraint tags used for show planning and compatibility checks:
 
@@ -476,16 +476,16 @@ The `requirements` column stores structured constraint tags used for show planni
 | `needs_mic` | Patter-heavy, needs amplification for larger venues |
 | `reset_required` | Needs reset time between performances |
 
-### routine_tricks
+### setlist_tricks
 
-Join table linking tricks to routines with ordering.
+Join table linking tricks to setlists with ordering.
 
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID (PK) | |
-| routine_id | UUID (FK -> routines) | NOT NULL, cascade delete |
+| setlist_id | UUID (FK -> setlists) | NOT NULL, cascade delete |
 | trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
-| position | integer | NOT NULL, display order (unique per routine) |
+| position | integer | NOT NULL, display order (unique per setlist) |
 | transition_notes | text | Notes on transitioning into this trick |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
@@ -534,7 +534,7 @@ A logged performance or show.
 | date | date | NOT NULL |
 | venue | text | |
 | event_name | text | Show/event name |
-| routine_id | UUID (FK -> routines) | Optional, set null on routine delete (trigger bumps `updated_at`) |
+| setlist_id | UUID (FK -> setlists) | Optional, set null on setlist delete (trigger bumps `updated_at`) |
 | audience_size | integer | |
 | audience_type | text | `"birthday"`, `"corporate"`, `"other"`, `"private"`, `"street"`, `"theater"`, `"wedding"` |
 | duration_minutes | integer | |
@@ -637,8 +637,8 @@ Not all tables are synced to the client via PowerSync:
 | Table | Synced | Notes |
 |---|---|---|
 | tricks | Yes | Filtered by `user_id` |
-| routines | Yes | Filtered by `user_id` |
-| routine_tricks | Yes | Global bucket (no `user_id`) |
+| setlists | Yes | Filtered by `user_id` |
+| setlist_tricks | Yes | Global bucket (no `user_id`) |
 | practice_sessions | Yes | Filtered by `user_id` |
 | practice_session_tricks | Yes | Global bucket (no `user_id`) |
 | performances | Yes | Filtered by `user_id` |
@@ -658,14 +658,14 @@ See [diagrams/schema-er.md](./diagrams/schema-er.md) for the full Mermaid ER dia
 ```typescript
 type UserId = string & { readonly __brand: "UserId" };
 type TrickId = string & { readonly __brand: "TrickId" };
-type RoutineId = string & { readonly __brand: "RoutineId" };
+type SetlistId = string & { readonly __brand: "SetlistId" };
 type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
 type GoalId = string & { readonly __brand: "GoalId" };
 ```
 
-These types prevent accidentally passing a `TrickId` where a `RoutineId` is expected, catching errors at compile time rather than runtime.
+These types prevent accidentally passing a `TrickId` where a `SetlistId` is expected, catching errors at compile time rather than runtime.
 
 ---
 Source: docs/diagrams/infrastructure.md
@@ -757,7 +757,7 @@ graph TB
     subgraph Modules["Feature Modules"]
         Improve["Improve<br/>Practice Sessions"]
         Train["Train<br/>Goals & Drills"]
-        Plan["Plan<br/>Routines & Sets"]
+        Plan["Plan<br/>Setlists"]
         Perform["Perform<br/>Performances"]
         Enhance["Enhance<br/>Insights"]
         Collect["Collect<br/>Inventory"]
@@ -798,7 +798,7 @@ graph TB
     Improve -.->|"practice data"| Enhance
     Train -.->|"goal progress"| Enhance
     Perform -.->|"performance data"| Enhance
-    Plan -.->|"routines for shows"| Perform
+    Plan -.->|"setlists for shows"| Perform
     Collect -.->|"props used in"| Tricks
 
     %% i18n is used by everything
@@ -815,7 +815,7 @@ graph TB
 |---|---|---|
 | **Improve** | Log practice sessions, track skill progress | practice_sessions, practice_session_tricks |
 | **Train** | Set goals, create drills, build streaks | goals |
-| **Plan** | Build routines and setlists | routines, routine_tricks |
+| **Plan** | Build setlists for shows | setlists, setlist_tricks |
 | **Perform** | Log performances, review feedback | performances |
 | **Enhance** | Analytics, insights, improvement suggestions | Reads from all modules |
 | **Collect** | Manage inventory of props and materials | items, item_tricks |
@@ -826,8 +826,8 @@ The `tricks` table is the central entity shared across modules:
 
 - **Improve**: Practice sessions reference tricks being practiced
 - **Train**: Goals can target specific tricks
-- **Plan**: Routines are ordered collections of tricks
-- **Perform**: (Indirect) Performances use routines which contain tricks
+- **Plan**: Setlists are ordered collections of tricks
+- **Perform**: (Indirect) Performances use setlists which contain tricks
 - **Collect**: Items (props) are linked to tricks that use them
 
 ## Data Flow
@@ -836,7 +836,7 @@ The `tricks` table is the central entity shared across modules:
 Collect (items) --> Tricks <-- Improve (practice)
                       ^
                       |
-              Plan (routines) --> Perform (shows)
+              Plan (setlists) --> Perform (shows)
                       ^
                       |
                 Train (goals)
@@ -1022,7 +1022,7 @@ graph TD
 - `/dashboard` — Main dashboard
 - `/improve` — Practice session logging
 - `/train` — Goal setting and drills
-- `/plan` — Routine builder
+- `/plan` — Setlist builder
 - `/perform` — Performance tracking
 - `/enhance` — Insights and suggestions
 - `/collect` — Inventory management
@@ -1073,7 +1073,7 @@ erDiagram
         timestamptz deleted_at
     }
 
-    routines {
+    setlists {
         uuid id PK "default random"
         uuid user_id FK
         text name
@@ -1089,9 +1089,9 @@ erDiagram
         timestamptz deleted_at
     }
 
-    routine_tricks {
+    setlist_tricks {
         uuid id PK "default random"
-        uuid routine_id FK
+        uuid setlist_id FK
         uuid trick_id FK
         integer position
         text transition_notes
@@ -1130,7 +1130,7 @@ erDiagram
         date date
         text venue
         text event_name
-        uuid routine_id FK "nullable"
+        uuid setlist_id FK "nullable"
         integer audience_size
         text audience_type "birthday, corporate, other, private, street, theater, wedding"
         integer duration_minutes
@@ -1206,7 +1206,7 @@ erDiagram
     }
 
     users ||--o{ tricks : "owns"
-    users ||--o{ routines : "owns"
+    users ||--o{ setlists : "owns"
     users ||--o{ practice_sessions : "owns"
     users ||--o{ performances : "owns"
     users ||--o{ items : "owns"
@@ -1214,13 +1214,13 @@ erDiagram
     users ||--o{ push_subscriptions : "has"
     users ||--o| user_preferences : "has"
 
-    routines ||--o{ routine_tricks : "contains"
-    tricks ||--o{ routine_tricks : "used in"
+    setlists ||--o{ setlist_tricks : "contains"
+    tricks ||--o{ setlist_tricks : "used in"
 
     practice_sessions ||--o{ practice_session_tricks : "includes"
     tricks ||--o{ practice_session_tricks : "practiced in"
 
-    performances ||--o| routines : "performed"
+    performances ||--o| setlists : "performed"
 
     items ||--o{ item_tricks : "used for"
     tricks ||--o{ item_tricks : "requires"
@@ -1829,7 +1829,7 @@ The manifest is generated dynamically by `src/app/manifest.ts`:
 - **Icons**: 192x192 and 512x512 PNG icons with maskable variant
 - **Screenshots**: Desktop (1280x720) and mobile (390x844) for enhanced install prompt — regenerate with `pnpm screenshots`
 - **Theme color**: `#ffffff` (manifest uses a single value; viewport meta tag provides light/dark variants)
-- **Shortcuts**: "Log Practice" and "My Routines"
+- **Shortcuts**: "Log Practice" and "My Setlists"
 
 ### Service Worker
 
@@ -1980,7 +1980,7 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 | `/dashboard` | Dashboard | -- | Home with module grid and quick stats |
 | `/improve` | Improve | Improve | Practice session logging and history |
 | `/train` | Train | Train | Goal setting, drills, streaks |
-| `/plan` | Plan | Plan | Routine builder, setlist management |
+| `/plan` | Plan | Plan | Setlist builder |
 | `/perform` | Perform | Perform | Performance logging and review |
 | `/enhance` | Enhance | Enhance | Insights, suggestions, analytics |
 | `/collect` | Collect | Collect | Inventory of props, books, gimmicks |
@@ -2138,7 +2138,7 @@ The sync engine uses **Last-Write-Wins (LWW)** with `updated_at` timestamps:
 
 ## FK Cascade and Sync
 
-When the hard-delete cleanup job permanently removes parent rows (routines, tricks), Postgres `ON DELETE SET NULL` cascades null out the FK columns on child rows (`performances.routine_id`, `goals.trick_id`). These cascades:
+When the hard-delete cleanup job permanently removes parent rows (setlists, tricks), Postgres `ON DELETE SET NULL` cascades null out the FK columns on child rows (`performances.setlist_id`, `goals.trick_id`). These cascades:
 
 1. **Are detected by PowerSync** via the Postgres WAL replication stream
 2. **Bump `updated_at`** via database triggers (`bump_updated_at_on_fk_null`) to ensure correct LWW conflict resolution

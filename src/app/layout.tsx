@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     template: "%s | The Magic Lab",
   },
   description:
-    "A personal workspace for magicians to organize their repertoire, plan routines, track practice sessions, and refine performances.",
+    "A personal workspace for magicians to organize their repertoire, plan setlists, track practice sessions, and refine performances.",
   keywords: [
     "magic",
     "magician",
     "practice",
     "repertoire",
-    "routine",
+    "setlist",
     "performance",
     "training",
   ],
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     siteName: "The Magic Lab",
     description:
-      "A personal workspace for magicians to organize their repertoire, plan routines, track practice sessions, and refine performances.",
+      "A personal workspace for magicians to organize their repertoire, plan setlists, track practice sessions, and refine performances.",
   },
   twitter: {
     card: "summary_large_image",

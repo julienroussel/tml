@@ -32,7 +32,7 @@ src/app/
     dashboard/page.tsx  # Home dashboard
     improve/page.tsx    # Practice session logging
     train/page.tsx      # Goal setting and drills
-    plan/page.tsx       # Routine and setlist builder
+    plan/page.tsx       # Setlist builder
     perform/page.tsx    # Performance tracking
     enhance/page.tsx    # Insights and suggestions
     collect/page.tsx    # Inventory management

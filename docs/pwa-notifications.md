@@ -18,7 +18,7 @@ The manifest is generated dynamically by `src/app/manifest.ts`:
 - **Icons**: 192x192 and 512x512 PNG icons with maskable variant
 - **Screenshots**: Desktop (1280x720) and mobile (390x844) for enhanced install prompt — regenerate with `pnpm screenshots`
 - **Theme color**: `#ffffff` (manifest uses a single value; viewport meta tag provides light/dark variants)
-- **Shortcuts**: "Log Practice" and "My Routines"
+- **Shortcuts**: "Log Practice" and "My Setlists"
 
 ### Service Worker
 

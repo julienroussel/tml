@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 - **Tagline**: Train. Plan. Perform. Elevate your magic.
-- **Description**: A personal workspace built for magicians — whether you're just starting out or performing professionally. A single place to organize your repertoire, plan your routines, track your practice sessions, and refine your performance over time.
-- **Core features**: Practice logging, goal setting & drills, set/routine planning, performance tracking, continuous improvement tools, and inventory management (props, books, gimmicks, and other items).
+- **Description**: A personal workspace built for magicians — whether you're just starting out or performing professionally. A single place to organize your repertoire, plan your setlists, track your practice sessions, and refine your performance over time.
+- **Core features**: Practice logging, goal setting & drills, setlist planning, performance tracking, continuous improvement tools, and inventory management (props, books, gimmicks, and other items).
 - **Production URL**: https://themagiclab.app/
 - **Hosting**: Vercel
 
@@ -156,7 +156,7 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Co-located test files**: `foo.ts` → `foo.test.ts` (same directory)
 - **Coverage threshold**: 80% global (statements, branches, functions, lines)
 - **Test utilities** in `src/test/`:
-  - `factories.ts` — `createTestTrick()`, `createTestRoutine()`, `createTestUser()` etc.
+  - `factories.ts` — `createTestTrick()`, `createTestSetlist()`, `createTestUser()` etc.
   - `mocks.ts` — `mockNextNavigation()`, `mockNextImage()`, `mockNextLink()`
   - `render.tsx` — custom render wrapper with providers
 - **What NOT to test**: shadcn/ui primitives, layout wrappers, CSS, E2E flows, performance, third-party APIs
