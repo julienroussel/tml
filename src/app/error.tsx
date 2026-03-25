@@ -1,11 +1,13 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { type ReactElement, useEffect, useRef } from "react";
+import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { type ReactElement, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
+import { errorMessages } from "@/i18n/messages/errors-only";
 
-export default function ErrorPage({
+function ErrorContent({
   error,
   reset,
 }: {
@@ -22,11 +24,11 @@ export default function ErrorPage({
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = "Error | The Magic Lab";
+    document.title = t("pageTitle");
     return () => {
       document.title = previousTitle;
     };
-  }, []);
+  }, [t]);
 
   return (
     <main
@@ -43,5 +45,36 @@ export default function ErrorPage({
         {t("tryAgain")}
       </Button>
     </main>
+  );
+}
+
+/**
+ * Root error boundary. Provides its own NextIntlClientProvider since
+ * the root layout does not include one — intl providers live in the
+ * route-group sub-layouts which may have been the source of the error.
+ */
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}): ReactElement {
+  const [locale] = useState<Locale>(() => {
+    if (typeof document === "undefined") {
+      return defaultLocale;
+    }
+    const lang = document.documentElement.lang;
+    return isLocale(lang) ? lang : defaultLocale;
+  });
+
+  return (
+    <NextIntlClientProvider
+      locale={locale}
+      messages={errorMessages[locale]}
+      timeZone="UTC"
+    >
+      <ErrorContent error={error} reset={reset} />
+    </NextIntlClientProvider>
   );
 }

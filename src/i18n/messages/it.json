@@ -246,6 +246,7 @@
     "errorTitle": "Errore"
   },
   "errors": {
+    "pageTitle": "Errore | The Magic Lab",
     "notFound": "Pagina non trovata",
     "notFoundDesc": "La pagina che stai cercando non esiste.",
     "goHome": "Torna alla home",

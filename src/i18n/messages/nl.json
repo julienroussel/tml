@@ -246,6 +246,7 @@
     "errorTitle": "Fout"
   },
   "errors": {
+    "pageTitle": "Fout | The Magic Lab",
     "notFound": "Pagina niet gevonden",
     "notFoundDesc": "De pagina die je zoekt bestaat niet.",
     "goHome": "Ga naar de startpagina",

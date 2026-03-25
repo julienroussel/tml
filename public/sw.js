@@ -75,7 +75,11 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Cache-first for immutable static assets: Next.js content-hashed bundles
-  // and PowerSync WASM binaries / web workers required for offline SQLite access
+  // and PowerSync WASM binaries / web workers required for offline SQLite access.
+  // Only cache responses the server marks as immutable — production Next.js
+  // builds set `Cache-Control: immutable` on /_next/static/ chunks, while
+  // Turbopack dev reuses URLs with changing content (no immutable header).
+  // PowerSync WASM/worker assets are always cached regardless of headers.
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/@powersync/")
@@ -86,7 +90,12 @@ self.addEventListener("fetch", (event) => {
           (cached) =>
             cached ||
             fetch(event.request).then((response) => {
-              if (response.ok) {
+              const isSafeToCacheForever =
+                url.pathname.startsWith("/@powersync/") ||
+                (response.headers.get("cache-control") || "").includes(
+                  "immutable"
+                );
+              if (response.ok && isSafeToCacheForever) {
                 cache.put(event.request, response.clone());
                 trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
               }

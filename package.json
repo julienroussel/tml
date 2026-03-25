@@ -108,6 +108,13 @@
       "core-js",
       "esbuild",
       "lefthook"
-    ]
+    ],
+    "packageExtensions": {
+      "@neondatabase/auth": {
+        "peerDependencies": {
+          "lucide-react": "*"
+        }
+      }
+    }
   }
 }

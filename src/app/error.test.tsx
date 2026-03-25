@@ -3,6 +3,35 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ErrorPage from "./error";
 
+// Re-mock NextIntlClientProvider as a vi.fn() so locale detection tests
+// can assert on the props passed to the provider. The global mock in
+// vitest.setup.ts uses a plain function — this override adds spy
+// capabilities while preserving the same render behaviour for all hooks.
+const { providerMock } = vi.hoisted(() => ({
+  providerMock: vi.fn(({ children }: { children: unknown }) => children),
+}));
+vi.mock("next-intl", () => {
+  const useTranslations = (namespace?: string) => {
+    const t = (key: string, values?: Record<string, string | number>) => {
+      const fullKey = namespace ? `${namespace}.${key}` : key;
+      if (values) {
+        const parts = Object.entries(values).map(
+          ([k, v]) => `${k}: ${String(v)}`
+        );
+        return `${fullKey} (${parts.join(", ")})`;
+      }
+      return fullKey;
+    };
+    return Object.assign(t, { rich: t, raw: t, markup: t });
+  };
+  return {
+    useTranslations,
+    useLocale: () => "en",
+    useMessages: () => ({}),
+    NextIntlClientProvider: providerMock,
+  };
+});
+
 describe("ErrorPage", () => {
   beforeEach(() => {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: suppress console.error output during tests
@@ -62,7 +91,7 @@ describe("ErrorPage", () => {
 
   it("sets document.title on mount", () => {
     render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
-    expect(document.title).toBe("Error | The Magic Lab");
+    expect(document.title).toBe("errors.pageTitle");
   });
 
   it("restores document.title on unmount", () => {
@@ -70,7 +99,7 @@ describe("ErrorPage", () => {
     const { unmount } = render(
       <ErrorPage error={new Error("test")} reset={vi.fn()} />
     );
-    expect(document.title).toBe("Error | The Magic Lab");
+    expect(document.title).toBe("errors.pageTitle");
     unmount();
     expect(document.title).toBe("Previous Title");
   });
@@ -93,5 +122,37 @@ describe("ErrorPage", () => {
     expect(
       screen.getByRole("button", { name: "errors.tryAgain" })
     ).toBeInTheDocument();
+  });
+
+  describe("locale detection", () => {
+    afterEach(() => {
+      document.documentElement.lang = "";
+    });
+
+    it("detects a valid locale from document.documentElement.lang", () => {
+      document.documentElement.lang = "fr";
+      render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
+
+      expect(providerMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ locale: "fr" }),
+        undefined
+      );
+      expect(
+        screen.getByRole("heading", { name: "errors.somethingWrong" })
+      ).toBeInTheDocument();
+    });
+
+    it("falls back to default locale for an invalid lang attribute", () => {
+      document.documentElement.lang = "xx";
+      render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
+
+      expect(providerMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ locale: "en" }),
+        undefined
+      );
+      expect(
+        screen.getByRole("heading", { name: "errors.somethingWrong" })
+      ).toBeInTheDocument();
+    });
   });
 });
