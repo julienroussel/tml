@@ -13,7 +13,7 @@
     "url": "git+https://github.com/julienroussel/tml.git"
   },
   "author": "Julien Roussel",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": "24.x",
     "pnpm": ">=10"
@@ -71,7 +71,7 @@
     "web-push": "3.6.7"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.8",
+    "@biomejs/biome": "2.4.9",
     "@playwright/test": "1.58.2",
     "@react-email/preview-server": "5.2.10",
     "@tailwindcss/postcss": "4.2.2",
@@ -83,8 +83,8 @@
     "@types/react-dom": "19.2.3",
     "@types/web-push": "3.6.4",
     "@vitejs/plugin-react": "5.1.4",
-    "@vitest/coverage-v8": "4.1.0",
-    "@vitest/ui": "4.1.0",
+    "@vitest/coverage-v8": "4.1.1",
+    "@vitest/ui": "4.1.1",
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "17.3.1",
     "drizzle-kit": "0.31.10",
@@ -98,7 +98,7 @@
     "typescript": "6.0.2",
     "ultracite": "7.3.2",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.0"
+    "vitest": "4.1.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
