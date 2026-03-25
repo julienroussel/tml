@@ -154,3 +154,7 @@ Contributions are welcome. Please review the [documentation](docs/) to understan
 - **Documentation**: [docs/](docs/)
 - **MemDeck**: [memdeck.org](https://memdeck.org/) -- a companion project for memorized deck work
 - **GitHub**: [github.com/julienroussel/tml](https://github.com/julienroussel/tml)
+
+---
+
+<p align="center">Made with ❤ in Paris 🇫🇷</p>

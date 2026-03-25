@@ -190,7 +190,8 @@
     "memDeck": "MemDeck",
     "memDeckSrOnly": "(abre num novo separador)",
     "gitHub": "GitHub",
-    "gitHubSrOnly": "(abre num novo separador)"
+    "gitHubSrOnly": "(abre num novo separador)",
+    "madeIn": "Feito com ❤ em Paris 🇫🇷"
   },
   "auth": {
     "SIGN_IN": "Iniciar sessão",

@@ -79,6 +79,7 @@ export default async function MarketingLayout({
             <p className="text-muted-foreground text-sm">
               {tFooter("copyright", { year: new Date().getFullYear() })}
             </p>
+            <p className="text-muted-foreground text-sm">{tFooter("madeIn")}</p>
             <nav aria-label={tCommon("footerLinks")} className="flex gap-4">
               <Link
                 className="text-muted-foreground text-sm transition-colors hover:text-foreground"
