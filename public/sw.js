@@ -75,9 +75,14 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Cache-first for immutable static assets: Next.js content-hashed bundles
-  // and PowerSync WASM binaries / web workers required for offline SQLite access
+  // and PowerSync WASM binaries / web workers required for offline SQLite access.
+  // In development (Turbopack), /_next/static/ chunks are NOT content-hashed and
+  // change on every recompile — caching them causes stale module errors.
+  const isDev =
+    self.location.hostname === "localhost" ||
+    self.location.hostname === "127.0.0.1";
   if (
-    url.pathname.startsWith("/_next/static/") ||
+    (!isDev && url.pathname.startsWith("/_next/static/")) ||
     url.pathname.startsWith("/@powersync/")
   ) {
     event.respondWith(

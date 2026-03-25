@@ -137,7 +137,7 @@ describe("Dashboard error boundary integration", () => {
       </TestErrorBoundary>
     );
 
-    expect(document.title).toBe("Error | The Magic Lab");
+    expect(document.title).toBe("errors.pageTitle");
 
     flag.current = false;
     await userEvent.click(
@@ -171,7 +171,7 @@ describe("Dashboard error boundary integration", () => {
       </TestErrorBoundary>
     );
 
-    expect(document.title).toBe("Error | The Magic Lab");
+    expect(document.title).toBe("errors.pageTitle");
     unmount();
     expect(document.title).toBe("Dashboard | The Magic Lab");
   });
