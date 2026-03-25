@@ -89,6 +89,12 @@ describe("MarketingLayout", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the made-in line", async () => {
+    render(await MarketingLayout(defaultProps));
+
+    expect(screen.getByText("footer.madeIn")).toBeInTheDocument();
+  });
+
   it("renders the skip-to-content link", async () => {
     render(await MarketingLayout(defaultProps));
 
