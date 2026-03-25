@@ -3,28 +3,22 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Providers } from "./providers";
 
-const neonAuthSpy = vi.fn();
-vi.mock("@neondatabase/auth/react", () => ({
-  NeonAuthUIProvider: (props: Record<string, unknown>) => {
-    neonAuthSpy(props);
-    return <>{props.children as ReactNode}</>;
-  },
-}));
-
 const intlSpy = vi.fn();
 vi.mock("@/i18n/client-provider", () => ({
   DynamicIntlProvider: (props: Record<string, unknown>) => {
     intlSpy(props);
-    return <>{props.children as ReactNode}</>;
+    return <div data-testid="intl-provider">{props.children as ReactNode}</div>;
   },
+}));
+
+vi.mock("@/components/neon-auth-localized-provider", () => ({
+  NeonAuthLocalizedProvider: ({ children }: { children: ReactNode }) => (
+    <div data-testid="neon-auth-localized">{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/sonner", () => ({
   Toaster: () => <div data-testid="toaster" />,
-}));
-
-vi.mock("@/auth/client", () => ({
-  authClient: { fake: true },
 }));
 
 describe("Providers", () => {
@@ -73,12 +67,11 @@ describe("Providers", () => {
     );
   });
 
-  it("forwards authClient to NeonAuthUIProvider", () => {
-    neonAuthSpy.mockClear();
+  it("nests NeonAuthLocalizedProvider inside DynamicIntlProvider", () => {
     render(<Providers {...defaultProps}>content</Providers>);
 
-    expect(neonAuthSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ authClient: { fake: true } })
-    );
+    const intlProvider = screen.getByTestId("intl-provider");
+    const neonAuth = screen.getByTestId("neon-auth-localized");
+    expect(intlProvider.contains(neonAuth)).toBe(true);
   });
 });

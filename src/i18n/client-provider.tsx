@@ -80,15 +80,6 @@ export function DynamicIntlProvider({
     setMessages(newMessages);
   }
 
-  // Keep <html lang> in sync for app routes where locale comes from cookie,
-  // not from a URL segment. Marketing pages use <div lang={locale}> instead.
-  // Guard avoids unnecessary DOM mutation on marketing pages where lang already matches.
-  useEffect(() => {
-    if (document.documentElement.lang !== locale) {
-      document.documentElement.lang = locale;
-    }
-  }, [locale]);
-
   // Keep a ref to the latest switchLocale so the context value object is stable.
   // React Compiler cannot optimise Context.Provider values, so a new object
   // every render would force all useLocaleSwitch() consumers to re-render.
@@ -97,6 +88,15 @@ export function DynamicIntlProvider({
   const stableContext = useRef<IntlContextValue>({
     switchLocale: (newLocale: Locale) => switchLocaleRef.current(newLocale),
   });
+
+  // Keep <html lang> in sync for app routes where locale comes from cookie,
+  // not from a URL segment. Marketing pages use <div lang={locale}> instead.
+  // Guard avoids unnecessary DOM mutation on marketing pages where lang already matches.
+  useEffect(() => {
+    if (document.documentElement.lang !== locale) {
+      document.documentElement.lang = locale;
+    }
+  }, [locale]);
 
   return (
     <IntlContext.Provider value={stableContext.current}>

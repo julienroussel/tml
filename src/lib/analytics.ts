@@ -1,10 +1,12 @@
 import { track } from "@vercel/analytics";
+import type { Locale } from "@/i18n/config";
 
 /**
  * All tracked event names and their expected properties.
  * Centralised here so every call site is type-checked.
  */
 interface AnalyticsEventMap {
+  locale_changed: { locale: Locale };
   push_notifications_disabled: Record<string, never>;
   push_notifications_enabled: Record<string, never>;
   theme_changed: { theme: "dark" | "light" };

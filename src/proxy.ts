@@ -37,21 +37,6 @@ const PROTECTED_PREFIXES = [
 const MARKETING_PATHS = new Set(["/", "/faq", "/privacy"]);
 
 /**
- * Static routes are pre-rendered at build time — their inline scripts don't
- * carry a CSP nonce attribute. Adding a nonce to the CSP header would cause
- * CSP Level 2+ browsers to ignore 'unsafe-inline', blocking those scripts.
- * Marketing (locale-prefixed) and auth pages are static; app routes are dynamic
- * and DO receive a nonce (the app layout reads it via headers()).
- */
-function isStaticRoute(pathname: string): boolean {
-  const firstSegment = pathname.split("/")[1];
-  const hasLocalePrefix = firstSegment !== undefined && isLocale(firstSegment);
-  return (
-    hasLocalePrefix || pathname === "/auth" || pathname.startsWith("/auth/")
-  );
-}
-
-/**
  * Detect the user's preferred locale from cookie or Accept-Language header.
  * Falls back to defaultLocale ("en") when neither source provides a match.
  */
@@ -77,12 +62,6 @@ function detectLocale(request: NextRequest): Locale {
 // during local development, not in Vercel preview deployments.
 const isDev = process.env.NODE_ENV === "development";
 
-function generateNonce(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes));
-}
-
 function needsAuth(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -90,17 +69,17 @@ function needsAuth(pathname: string): boolean {
 }
 
 /**
- * Build CSP and (for dynamic routes) generate a nonce.
+ * Build CSP for the current route.
  *
- * Static routes (marketing, auth) are pre-rendered at build time — their inline
- * scripts don't carry nonce attributes. Adding a nonce to the CSP would cause
- * CSP Level 2+ browsers to ignore 'unsafe-inline', blocking those scripts.
- * Dynamic routes (app pages) read the nonce via `headers()` and pass it to
- * ThemeProvider, so the nonce is safe to include there.
+ * No per-request nonce is generated. The CSP relies on 'unsafe-inline' for
+ * inline scripts. A nonce-based approach would be more restrictive, but the
+ * root layout's ThemeProvider (next-themes) injects an inline <script> that
+ * cannot receive a nonce — the root layout must stay static for marketing
+ * pages and cannot call headers(). Including a nonce in the CSP would cause
+ * CSP Level 2+ browsers to ignore 'unsafe-inline', blocking that script.
  */
-function buildCspForRoute(pathname: string): { csp: string; nonce?: string } {
-  const nonce = isStaticRoute(pathname) ? undefined : generateNonce();
-  return { csp: buildCsp({ isDev, nonce }), nonce };
+function buildCspForRoute(): string {
+  return buildCsp({ isDev });
 }
 
 /** Redirect bare marketing paths (/, /faq, /privacy) to locale-prefixed versions. */
@@ -122,7 +101,7 @@ function redirectToLocalePath(
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
-  const { csp, nonce } = buildCspForRoute(pathname);
+  const csp = buildCspForRoute();
 
   // Redirect bare marketing paths to locale-prefixed versions.
   // Uses 302 (not 301) because the target depends on the user's locale
@@ -132,11 +111,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return localeRedirect;
   }
 
-  // Forward nonce to server components via request header (dynamic routes only)
   const requestHeaders = new Headers(request.headers);
-  if (nonce) {
-    requestHeaders.set("x-nonce", nonce);
-  }
 
   // Redirect authenticated users away from auth pages (validate session, not just cookie presence)
   if (AUTH_ROUTES.has(pathname) && request.cookies.has(SESSION_COOKIE_NAME)) {
@@ -158,7 +133,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // Protected routes: run auth middleware, then apply nonce + CSP
+  // Protected routes: run auth middleware, then apply CSP
   if (needsAuth(pathname)) {
     let authResponse: NextResponse;
     try {
@@ -188,7 +163,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       return authResponse;
     }
 
-    // Auth passed — create new response with nonce in request headers
+    // Auth passed — create new response with CSP
     const response = NextResponse.next({
       request: { headers: requestHeaders },
     });
@@ -202,7 +177,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return response;
   }
 
-  // Public routes: just apply nonce + CSP
+  // Public routes: apply CSP
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });

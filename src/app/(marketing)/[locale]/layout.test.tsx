@@ -26,6 +26,10 @@ vi.mock("@/components/marketing-auth-buttons", () => ({
   ),
 }));
 
+vi.mock("@/components/locale-toggle", () => ({
+  LocaleToggle: () => <div data-testid="locale-toggle">locale toggle</div>,
+}));
+
 vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">theme toggle</div>,
 }));
@@ -48,11 +52,11 @@ describe("MarketingLayout", () => {
     render(await MarketingLayout(defaultProps));
 
     expect(
-      screen.getByRole("navigation", { name: "Main navigation" })
+      screen.getByRole("navigation", { name: "common.mainNavigation" })
     ).toBeInTheDocument();
     expect(screen.getByText("page content")).toBeInTheDocument();
     expect(
-      screen.getByRole("navigation", { name: "Footer links" })
+      screen.getByRole("navigation", { name: "common.footerLinks" })
     ).toBeInTheDocument();
   });
 

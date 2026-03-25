@@ -4,13 +4,13 @@ The Magic Lab enforces a strict Content Security Policy (CSP) to prevent XSS, da
 
 ## Implementation
 
-CSP headers are constructed by the `buildCsp()` function in `src/lib/csp.ts` and applied dynamically per-request in `src/proxy.ts`. Each response gets a unique nonce generated via `crypto.getRandomValues()`.
+CSP headers are constructed by the `buildCsp()` function in `src/lib/csp.ts` and applied per-request in `src/proxy.ts`.
 
 ### Current Policy
 
 ```
 default-src 'self';
-script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'nonce-<per-request>' https://va.vercel-scripts.com;
+script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://va.vercel-scripts.com;
 style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob: https://lh3.googleusercontent.com;
 font-src 'self';
@@ -28,7 +28,7 @@ upgrade-insecure-requests
 | Directive | Value | Reason |
 |---|---|---|
 | `default-src` | `'self'` | Baseline: only same-origin resources |
-| `script-src` | `'self' 'unsafe-inline' 'nonce-...'` | `unsafe-inline` kept for CSP Level 1 fallback; Level 2+ browsers ignore it when a nonce is present. Nonce passed to next-themes via ThemeProvider. |
+| `script-src` | `'self' 'unsafe-inline'` | `unsafe-inline` required for next-themes' ThemeProvider anti-flicker script in the root layout. The root layout must stay static (no `headers()` call) so a per-request nonce cannot be passed to ThemeProvider. React's default output escaping provides XSS protection. |
 | | `'wasm-unsafe-eval'` | Required by PowerSync WASM module |
 | | `https://va.vercel-scripts.com` | Vercel Analytics script |
 | `style-src` | `'self' 'unsafe-inline'` | Inline styles from CSS-in-JS and component libraries |
@@ -57,7 +57,6 @@ The CSP is built programmatically via a typed builder function:
 // src/lib/csp.ts
 interface BuildCspOptions {
   isDev: boolean;
-  nonce?: string;
 }
 
 const BASE_DIRECTIVES: CspDirectives = {
@@ -82,19 +81,19 @@ const DEV_EXTENSIONS: Partial<CspDirectives> = {
 };
 
 function buildCsp(options: BuildCspOptions): string {
-  let directives = options.isDev
+  const directives = options.isDev
     ? mergeDirectives(BASE_DIRECTIVES, DEV_EXTENSIONS)
     : BASE_DIRECTIVES;
-
-  if (options.nonce !== undefined) {
-    directives = applyNonce(directives, options.nonce);
-  }
 
   return directivesToString(directives);
 }
 ```
 
-The `applyNonce` helper appends `'nonce-<value>'` to `script-src`. The existing `'unsafe-inline'` is retained for CSP Level 1 fallback — CSP Level 2+ browsers automatically ignore it when a nonce source is present.
+### Why No Nonce?
+
+A nonce-based CSP would be more restrictive than `'unsafe-inline'`, but the root layout's `ThemeProvider` (next-themes) injects an inline `<script>` for theme flash prevention. The root layout must stay static for marketing pages and cannot call `headers()` to read a per-request nonce. Including a nonce in the CSP would cause CSP Level 2+ browsers to ignore `'unsafe-inline'`, blocking the theme script on every page load.
+
+XSS protection relies on React's default output escaping rather than CSP nonces.
 
 ### Environment-Aware Directives
 
@@ -127,16 +126,6 @@ script-src 'self'
 ```
 
 This prevents the service worker from loading any external scripts.
-
-## Nonce-Based CSP
-
-Nonce-based CSP is implemented. Each request gets a unique 128-bit nonce generated in `proxy.ts`:
-
-1. `proxy.ts` generates a nonce via `crypto.getRandomValues()` and calls `buildCsp({ isDev, nonce })`
-2. The nonce is forwarded to server components via the `x-nonce` request header
-3. `script-src` includes `'nonce-<value>'` — CSP Level 2+ browsers use the nonce and ignore `'unsafe-inline'`
-4. `'unsafe-inline'` is retained in `script-src` as a CSP Level 1 fallback
-5. `'unsafe-inline'` remains in `style-src` (required by component libraries)
 
 ## See Also
 
