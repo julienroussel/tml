@@ -19,7 +19,7 @@ Ask the user what schema change is needed if not already clear. Review the curre
 Edit files in `src/db/schema/`. Follow these conventions:
 - UUID v7 primary keys (client-generated)
 - `created_at` / `updated_at` / `deleted_at` on all mutable tables
-- Branded ID types per entity (`TrickId`, `RoutineId`, etc.)
+- Branded ID types per entity (`TrickId`, `SetlistId`, etc.)
 - Foreign keys reference `users.id` for row-level security
 - Export new tables from `src/db/schema/index.ts`
 

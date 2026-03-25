@@ -38,23 +38,23 @@
   },
   "landing": {
     "tagline": "Trainieren. Planen. Auftreten. Hebe deine Magie auf ein neues Level.",
-    "description": "Ein persönlicher Arbeitsbereich für Zauberkünstler — organisiere dein Repertoire, plane Routinen, verfolge Übungseinheiten und verfeinere deine Auftritte.",
+    "description": "Ein persönlicher Arbeitsbereich für Zauberkünstler — organisiere dein Repertoire, plane Setlisten, verfolge Übungseinheiten und verfeinere deine Auftritte.",
     "freeForever": "Für immer kostenlos",
     "openSource": "Open Source",
     "worksOffline": "Funktioniert offline",
     "builtForMagicians": "Von einem Zauberkünstler für Zauberkünstler",
     "howItWorks": "So funktioniert es",
     "buildRepertoire": "Baue dein Repertoire auf",
-    "buildRepertoireDesc": "Füge deine Tricks, Grifftechniken und Routinen hinzu. Organisiere sie nach Kategorie, Schwierigkeit und Status.",
+    "buildRepertoireDesc": "Füge deine Tricks und Grifftechniken hinzu. Erstelle Setlisten. Organisiere alles nach Kategorie, Schwierigkeit und Status.",
     "planSets": "Plane deine Sets",
-    "planSetsDesc": "Stelle Routinen zu bühnenfertigen Setlisten zusammen. Ordne um, notiere Übergänge und schätze die Dauer.",
+    "planSetsDesc": "Stelle deine Tricks zu bühnenfertigen Setlisten zusammen. Ordne um, notiere Übergänge und schätze die Dauer.",
     "trackImprove": "Verfolge und verbessere",
     "trackImproveDesc": "Protokolliere Übungseinheiten, überprüfe Auftritte und setze Ziele, um dein Können kontinuierlich zu steigern.",
     "features": "Alles, was du brauchst, um besser zu werden",
     "openSourceTitle": "Open Source, offene Magie",
     "openSourceDesc": "The Magic Lab ist kostenlos und Open Source unter der GPL-3.0-Lizenz. Deine Daten gehören dir. Mitwirken, forken oder selbst hosten — du entscheidest.",
     "ctaTitle": "Bereit, deine Magie auf ein neues Level zu heben?",
-    "ctaDesc": "Beginne dein Repertoire zu organisieren, Routinen zu planen und deinen Fortschritt zu verfolgen — alles kostenlos.",
+    "ctaDesc": "Beginne dein Repertoire zu organisieren, Setlisten zu planen und deinen Fortschritt zu verfolgen — alles kostenlos.",
     "viewOnGitHub": "Auf GitHub ansehen"
   },
   "dashboard": {
@@ -73,7 +73,7 @@
   },
   "plan": {
     "title": "Planen",
-    "description": "Gestalte Sets, Routinen und Showabläufe."
+    "description": "Gestalte Setlisten und Showabläufe."
   },
   "perform": {
     "title": "Auftreten",
@@ -107,13 +107,13 @@
   "faq": {
     "title": "Häufig gestellte Fragen",
     "q1": "What is The Magic Lab?",
-    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan routines, track practice sessions, log performances, and manage your props and inventory — all in one place.",
+    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan setlists, track practice sessions, log performances, and manage your props and inventory — all in one place.",
     "q2": "How do I organize my magic repertoire?",
     "a2": "Add your tricks to The Magic Lab with details like category (card, coin, mentalism, stage), difficulty level, current status (learning, performance-ready, mastered), and where you learned it. Filter, search, and sort to find exactly what you need.",
     "q3": "What's the best way to track magic practice?",
     "a3": "Use the Improve module to log practice sessions. Record what you practiced, for how long, and rate your performance. Over time, you'll see trends, identify gaps, and maintain practice streaks.",
     "q4": "How do I plan a magic show setlist?",
-    "a4": "The Plan module lets you assemble tricks into routines with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
+    "a4": "The Plan module lets you assemble tricks into setlists with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
     "q5": "Does The Magic Lab work offline?",
     "a5": "Yes. The Magic Lab is a Progressive Web App (PWA) with offline-first sync. Your data is stored locally on your device and syncs when you're online. Practice backstage without signal — your data is always available.",
     "q6": "Is The Magic Lab really free?",
@@ -129,7 +129,7 @@
     "title": "Datenschutzerklärung",
     "intro": "The Magic Lab is a free, open-source application. Your privacy is important to us.",
     "dataCollectTitle": "Data we collect",
-    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, routines, practice sessions, etc.).",
+    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, setlists, practice sessions, etc.).",
     "dataUseTitle": "How we use your data",
     "dataUseDesc": "Your data is used solely to provide the app's functionality. We do not sell, share, or use your data for advertising. Anonymous analytics (page views, performance metrics) help us improve the app.",
     "dataStorageTitle": "Data storage",
@@ -162,7 +162,7 @@
   },
   "marketing": {
     "tagline": "Trainieren. Planen. Auftreten. Hebe deine Magie auf ein neues Level.",
-    "description": "Ein persönlicher Arbeitsbereich für Zauberkünstler — organisiere dein Repertoire, plane Routinen, verfolge Übungseinheiten und verfeinere deine Auftritte.",
+    "description": "Ein persönlicher Arbeitsbereich für Zauberkünstler — organisiere dein Repertoire, plane Setlisten, verfolge Übungseinheiten und verfeinere deine Auftritte.",
     "getStarted": "Loslegen",
     "viewOnGitHub": "Auf GitHub ansehen",
     "freeForever": "Für immer kostenlos",
@@ -171,9 +171,9 @@
     "builtByMagician": "Von einem Zauberkünstler für Zauberkünstler",
     "howItWorks": "So funktioniert es",
     "step1Title": "Baue dein Repertoire auf",
-    "step1Desc": "Füge deine Tricks, Grifftechniken und Routinen hinzu. Organisiere sie nach Kategorie, Schwierigkeit und Status.",
+    "step1Desc": "Füge deine Tricks und Grifftechniken hinzu. Erstelle Setlisten. Organisiere alles nach Kategorie, Schwierigkeit und Status.",
     "step2Title": "Plane deine Sets",
-    "step2Desc": "Stelle Routinen zu bühnenfertigen Setlisten zusammen. Ordne um, notiere Übergänge und schätze die Dauer.",
+    "step2Desc": "Stelle deine Tricks zu bühnenfertigen Setlisten zusammen. Ordne um, notiere Übergänge und schätze die Dauer.",
     "step3Title": "Verfolge und verbessere",
     "step3Desc": "Protokolliere Übungseinheiten, überprüfe Auftritte und setze Ziele, um dein Können kontinuierlich zu steigern.",
     "features": "Alles, was du brauchst, um besser zu werden",
@@ -181,7 +181,7 @@
     "openSourceTitle": "Open Source, offene Magie",
     "openSourceDesc": "The Magic Lab ist kostenlos und Open Source unter der GPL-3.0-Lizenz. Deine Daten gehören dir. Mitwirken, forken oder selbst hosten — du entscheidest.",
     "ctaTitle": "Bereit, deine Magie auf ein neues Level zu heben?",
-    "ctaDesc": "Beginne dein Repertoire zu organisieren, Routinen zu planen und deinen Fortschritt zu verfolgen — alles kostenlos."
+    "ctaDesc": "Beginne dein Repertoire zu organisieren, Setlisten zu planen und deinen Fortschritt zu verfolgen — alles kostenlos."
   },
   "footer": {
     "copyright": "© {year} The Magic Lab",
@@ -229,7 +229,7 @@
     "welcomeGreetingAnonymous": "Hallo, willkommen bei The Magic Lab!",
     "welcomeBody": "Dein Arbeitsbereich ist bereit. Das kannst du tun:",
     "welcomeFeatureImprove": "Übungseinheiten protokollieren und Fortschritte verfolgen",
-    "welcomeFeaturePlan": "Routinen erstellen und organisieren",
+    "welcomeFeaturePlan": "Setlisten erstellen und organisieren",
     "welcomeFeaturePerform": "Auftritte aufzeichnen und auswerten",
     "welcomeCta": "Zum Dashboard",
     "welcomeFooter": "— The Magic Lab",

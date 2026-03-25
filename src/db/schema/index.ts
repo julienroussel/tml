@@ -7,7 +7,7 @@ export {
   practiceSessionTricks,
 } from "./practice-sessions";
 export { pushSubscriptions } from "./push-subscriptions";
-export { routines, routineTricks } from "./routines";
+export { setlists, setlistTricks } from "./setlists";
 export { tricks } from "./tricks";
 export { userPreferences } from "./user-preferences";
 export { users } from "./users";

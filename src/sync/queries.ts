@@ -15,8 +15,8 @@ const SYNCED_TABLE_NAMES = [
   "performances",
   "practice_session_tricks",
   "practice_sessions",
-  "routine_tricks",
-  "routines",
+  "setlist_tricks",
+  "setlists",
   "tricks",
 ] as const;
 
@@ -71,7 +71,7 @@ const SYNCED_COLUMNS = {
     "date",
     "venue",
     "event_name",
-    "routine_id",
+    "setlist_id",
     "audience_size",
     "audience_type",
     "duration_minutes",
@@ -104,10 +104,10 @@ const SYNCED_COLUMNS = {
     "updated_at",
     "deleted_at",
   ]),
-  routine_tricks: new Set([
+  setlist_tricks: new Set([
     "id",
     "user_id",
-    "routine_id",
+    "setlist_id",
     "trick_id",
     "position",
     "transition_notes",
@@ -115,7 +115,7 @@ const SYNCED_COLUMNS = {
     "updated_at",
     "deleted_at",
   ]),
-  routines: new Set([
+  setlists: new Set([
     "id",
     "user_id",
     "name",

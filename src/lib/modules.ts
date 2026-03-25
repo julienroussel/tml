@@ -40,7 +40,7 @@ const APP_MODULES = [
   {
     slug: "plan",
     label: "Plan",
-    description: "Design sets, routines, and show running orders.",
+    description: "Design setlists and show running orders.",
     icon: BookOpen,
     enabled: false,
     group: "main",

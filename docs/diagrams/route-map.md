@@ -66,7 +66,7 @@ graph TD
 - `/dashboard` — Main dashboard
 - `/improve` — Practice session logging
 - `/train` — Goal setting and drills
-- `/plan` — Routine builder
+- `/plan` — Setlist builder
 - `/perform` — Performance tracking
 - `/enhance` — Insights and suggestions
 - `/collect` — Inventory management

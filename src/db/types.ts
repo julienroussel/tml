@@ -7,7 +7,7 @@ import type {
   practiceSessionTricks,
 } from "./schema/practice-sessions";
 import type { pushSubscriptions } from "./schema/push-subscriptions";
-import type { routines, routineTricks } from "./schema/routines";
+import type { setlists, setlistTricks } from "./schema/setlists";
 import type { tricks } from "./schema/tricks";
 import type { userPreferences } from "./schema/user-preferences";
 import type { users } from "./schema/users";
@@ -26,7 +26,7 @@ import type { users } from "./schema/users";
  */
 type UserId = string & { readonly __brand: "UserId" };
 type TrickId = string & { readonly __brand: "TrickId" };
-type RoutineId = string & { readonly __brand: "RoutineId" };
+type SetlistId = string & { readonly __brand: "SetlistId" };
 type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
@@ -35,8 +35,8 @@ type GoalId = string & { readonly __brand: "GoalId" };
 // Select types (read from DB)
 type User = InferSelectModel<typeof users>;
 type Trick = InferSelectModel<typeof tricks>;
-type Routine = InferSelectModel<typeof routines>;
-type RoutineTrick = InferSelectModel<typeof routineTricks>;
+type Setlist = InferSelectModel<typeof setlists>;
+type SetlistTrick = InferSelectModel<typeof setlistTricks>;
 type PracticeSession = InferSelectModel<typeof practiceSessions>;
 type PracticeSessionTrick = InferSelectModel<typeof practiceSessionTricks>;
 type Performance = InferSelectModel<typeof performances>;
@@ -49,7 +49,7 @@ type UserPreference = InferSelectModel<typeof userPreferences>;
 // Insert types (write to DB)
 type NewUser = InferInsertModel<typeof users>;
 type NewTrick = InferInsertModel<typeof tricks>;
-type NewRoutine = InferInsertModel<typeof routines>;
+type NewSetlist = InferInsertModel<typeof setlists>;
 type NewPracticeSession = InferInsertModel<typeof practiceSessions>;
 type NewPerformance = InferInsertModel<typeof performances>;
 type NewItem = InferInsertModel<typeof items>;
@@ -65,7 +65,7 @@ export type {
   NewItem,
   NewPerformance,
   NewPracticeSession,
-  NewRoutine,
+  NewSetlist,
   NewTrick,
   NewUser,
   Performance,
@@ -74,9 +74,9 @@ export type {
   PracticeSessionId,
   PracticeSessionTrick,
   PushSubscription,
-  Routine,
-  RoutineId,
-  RoutineTrick,
+  Setlist,
+  SetlistId,
+  SetlistTrick,
   Trick,
   TrickId,
   User,

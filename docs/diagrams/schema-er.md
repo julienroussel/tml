@@ -31,7 +31,7 @@ erDiagram
         timestamptz deleted_at
     }
 
-    routines {
+    setlists {
         uuid id PK "default random"
         uuid user_id FK
         text name
@@ -47,9 +47,9 @@ erDiagram
         timestamptz deleted_at
     }
 
-    routine_tricks {
+    setlist_tricks {
         uuid id PK "default random"
-        uuid routine_id FK
+        uuid setlist_id FK
         uuid trick_id FK
         integer position
         text transition_notes
@@ -88,7 +88,7 @@ erDiagram
         date date
         text venue
         text event_name
-        uuid routine_id FK "nullable"
+        uuid setlist_id FK "nullable"
         integer audience_size
         text audience_type "birthday, corporate, other, private, street, theater, wedding"
         integer duration_minutes
@@ -164,7 +164,7 @@ erDiagram
     }
 
     users ||--o{ tricks : "owns"
-    users ||--o{ routines : "owns"
+    users ||--o{ setlists : "owns"
     users ||--o{ practice_sessions : "owns"
     users ||--o{ performances : "owns"
     users ||--o{ items : "owns"
@@ -172,13 +172,13 @@ erDiagram
     users ||--o{ push_subscriptions : "has"
     users ||--o| user_preferences : "has"
 
-    routines ||--o{ routine_tricks : "contains"
-    tricks ||--o{ routine_tricks : "used in"
+    setlists ||--o{ setlist_tricks : "contains"
+    tricks ||--o{ setlist_tricks : "used in"
 
     practice_sessions ||--o{ practice_session_tricks : "includes"
     tricks ||--o{ practice_session_tricks : "practiced in"
 
-    performances ||--o| routines : "performed"
+    performances ||--o| setlists : "performed"
 
     items ||--o{ item_tricks : "used for"
     tricks ||--o{ item_tricks : "requires"

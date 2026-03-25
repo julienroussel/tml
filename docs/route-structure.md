@@ -37,7 +37,7 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 | `/dashboard` | Dashboard | -- | Home with module grid and quick stats |
 | `/improve` | Improve | Improve | Practice session logging and history |
 | `/train` | Train | Train | Goal setting, drills, streaks |
-| `/plan` | Plan | Plan | Routine builder, setlist management |
+| `/plan` | Plan | Plan | Setlist builder |
 | `/perform` | Perform | Perform | Performance logging and review |
 | `/enhance` | Enhance | Enhance | Insights, suggestions, analytics |
 | `/collect` | Collect | Collect | Inventory of props, books, gimmicks |

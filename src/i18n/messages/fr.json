@@ -38,23 +38,23 @@
   },
   "landing": {
     "tagline": "S'entraîner. Planifier. Performer. Sublimer sa magie.",
-    "description": "Un espace personnel conçu pour les magiciens — organisez votre répertoire, planifiez vos routines, suivez vos séances de pratique et perfectionnez vos performances.",
+    "description": "Un espace personnel conçu pour les magiciens — organisez votre répertoire, planifiez vos programmes, suivez vos séances de pratique et perfectionnez vos performances.",
     "freeForever": "Gratuit pour toujours",
     "openSource": "Open source",
     "worksOffline": "Fonctionne hors ligne",
     "builtForMagicians": "Conçu pour les magiciens, par un magicien",
     "howItWorks": "Comment ça marche",
     "buildRepertoire": "Construisez votre répertoire",
-    "buildRepertoireDesc": "Ajoutez vos tours, vos manipulations et vos routines. Organisez-les par catégorie, difficulté et statut.",
+    "buildRepertoireDesc": "Ajoutez vos tours et vos manipulations. Créez vos programmes. Organisez le tout par catégorie, difficulté et statut.",
     "planSets": "Planifiez vos spectacles",
-    "planSetsDesc": "Assemblez vos routines en programmes prêts pour la scène. Réorganisez, annotez les transitions et estimez la durée.",
+    "planSetsDesc": "Assemblez vos numéros en programmes prêts pour la scène. Réorganisez, annotez les transitions et estimez la durée.",
     "trackImprove": "Suivez et progressez",
     "trackImproveDesc": "Enregistrez vos séances de pratique, passez en revue vos performances et fixez-vous des objectifs pour perfectionner votre art en continu.",
     "features": "Tout ce qu'il vous faut pour progresser",
     "openSourceTitle": "Open source, magie ouverte",
     "openSourceDesc": "The Magic Lab est gratuit et open source sous licence GPL-3.0. Vos données restent les vôtres. Contribuez, forkez ou auto-hébergez — c'est votre choix.",
     "ctaTitle": "Prêt à sublimer votre magie\u00a0?",
-    "ctaDesc": "Organisez votre répertoire, planifiez vos routines et suivez vos progrès — le tout gratuitement.",
+    "ctaDesc": "Organisez votre répertoire, planifiez vos programmes et suivez vos progrès — le tout gratuitement.",
     "viewOnGitHub": "Voir sur GitHub"
   },
   "dashboard": {
@@ -73,7 +73,7 @@
   },
   "plan": {
     "title": "Planifier",
-    "description": "Concevez vos spectacles, routines et conduites de spectacle."
+    "description": "Concevez vos programmes et conduites de spectacle."
   },
   "perform": {
     "title": "Performer",
@@ -107,13 +107,13 @@
   "faq": {
     "title": "Questions fréquentes",
     "q1": "What is The Magic Lab?",
-    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan routines, track practice sessions, log performances, and manage your props and inventory — all in one place.",
+    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan setlists, track practice sessions, log performances, and manage your props and inventory — all in one place.",
     "q2": "How do I organize my magic repertoire?",
     "a2": "Add your tricks to The Magic Lab with details like category (card, coin, mentalism, stage), difficulty level, current status (learning, performance-ready, mastered), and where you learned it. Filter, search, and sort to find exactly what you need.",
     "q3": "What's the best way to track magic practice?",
     "a3": "Use the Improve module to log practice sessions. Record what you practiced, for how long, and rate your performance. Over time, you'll see trends, identify gaps, and maintain practice streaks.",
     "q4": "How do I plan a magic show setlist?",
-    "a4": "The Plan module lets you assemble tricks into routines with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
+    "a4": "The Plan module lets you assemble tricks into setlists with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
     "q5": "Does The Magic Lab work offline?",
     "a5": "Yes. The Magic Lab is a Progressive Web App (PWA) with offline-first sync. Your data is stored locally on your device and syncs when you're online. Practice backstage without signal — your data is always available.",
     "q6": "Is The Magic Lab really free?",
@@ -129,7 +129,7 @@
     "title": "Politique de confidentialité",
     "intro": "The Magic Lab is a free, open-source application. Your privacy is important to us.",
     "dataCollectTitle": "Data we collect",
-    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, routines, practice sessions, etc.).",
+    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, setlists, practice sessions, etc.).",
     "dataUseTitle": "How we use your data",
     "dataUseDesc": "Your data is used solely to provide the app's functionality. We do not sell, share, or use your data for advertising. Anonymous analytics (page views, performance metrics) help us improve the app.",
     "dataStorageTitle": "Data storage",
@@ -162,7 +162,7 @@
   },
   "marketing": {
     "tagline": "S'entraîner. Planifier. Performer. Sublimer sa magie.",
-    "description": "Un espace personnel conçu pour les magiciens — organisez votre répertoire, planifiez vos routines, suivez vos séances de pratique et perfectionnez vos performances.",
+    "description": "Un espace personnel conçu pour les magiciens — organisez votre répertoire, planifiez vos programmes, suivez vos séances de pratique et perfectionnez vos performances.",
     "getStarted": "Commencer",
     "viewOnGitHub": "Voir sur GitHub",
     "freeForever": "Gratuit pour toujours",
@@ -171,9 +171,9 @@
     "builtByMagician": "Conçu pour les magiciens, par un magicien",
     "howItWorks": "Comment ça marche",
     "step1Title": "Construisez votre répertoire",
-    "step1Desc": "Ajoutez vos tours, vos manipulations et vos routines. Organisez-les par catégorie, difficulté et statut.",
+    "step1Desc": "Ajoutez vos tours et vos manipulations. Créez vos programmes. Organisez le tout par catégorie, difficulté et statut.",
     "step2Title": "Planifiez vos spectacles",
-    "step2Desc": "Assemblez vos routines en programmes prêts pour la scène. Réorganisez, annotez les transitions et estimez la durée.",
+    "step2Desc": "Assemblez vos numéros en programmes prêts pour la scène. Réorganisez, annotez les transitions et estimez la durée.",
     "step3Title": "Suivez et progressez",
     "step3Desc": "Enregistrez vos séances de pratique, passez en revue vos performances et fixez-vous des objectifs pour perfectionner votre art en continu.",
     "features": "Tout ce qu'il vous faut pour progresser",
@@ -181,7 +181,7 @@
     "openSourceTitle": "Open source, magie ouverte",
     "openSourceDesc": "The Magic Lab est gratuit et open source sous licence GPL-3.0. Vos données restent les vôtres. Contribuez, forkez ou auto-hébergez — c'est votre choix.",
     "ctaTitle": "Prêt à sublimer votre magie\u00a0?",
-    "ctaDesc": "Organisez votre répertoire, planifiez vos routines et suivez vos progrès — le tout gratuitement."
+    "ctaDesc": "Organisez votre répertoire, planifiez vos programmes et suivez vos progrès — le tout gratuitement."
   },
   "footer": {
     "copyright": "© {year} The Magic Lab",
@@ -229,7 +229,7 @@
     "welcomeGreetingAnonymous": "Bonjour, bienvenue sur The Magic Lab\u00a0!",
     "welcomeBody": "Votre espace de travail est prêt. Voici ce que vous pouvez faire\u00a0:",
     "welcomeFeatureImprove": "Enregistrez vos séances de pratique et suivez vos progrès",
-    "welcomeFeaturePlan": "Créez et organisez vos routines",
+    "welcomeFeaturePlan": "Créez et organisez vos programmes",
     "welcomeFeaturePerform": "Enregistrez et analysez vos performances",
     "welcomeCta": "Accéder au tableau de bord",
     "welcomeFooter": "— The Magic Lab",

@@ -47,13 +47,13 @@ A trick, sleight, move, or technique in the magician's repertoire.
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
 
-### routines
+### setlists
 
-An ordered collection of tricks forming a performable routine.
+An ordered collection of tricks forming a performable setlist.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | UUID (PK) | Branded as `RoutineId` |
+| id | UUID (PK) | Branded as `SetlistId` |
 | user_id | UUID (FK -> users) | NOT NULL, cascade delete |
 | name | text | NOT NULL |
 | description | text | |
@@ -67,7 +67,7 @@ An ordered collection of tricks forming a performable routine.
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
 
-#### Routine Requirements
+#### Setlist Requirements
 
 The `requirements` column stores structured constraint tags used for show planning and compatibility checks:
 
@@ -82,16 +82,16 @@ The `requirements` column stores structured constraint tags used for show planni
 | `needs_mic` | Patter-heavy, needs amplification for larger venues |
 | `reset_required` | Needs reset time between performances |
 
-### routine_tricks
+### setlist_tricks
 
-Join table linking tricks to routines with ordering.
+Join table linking tricks to setlists with ordering.
 
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID (PK) | |
-| routine_id | UUID (FK -> routines) | NOT NULL, cascade delete |
+| setlist_id | UUID (FK -> setlists) | NOT NULL, cascade delete |
 | trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
-| position | integer | NOT NULL, display order (unique per routine) |
+| position | integer | NOT NULL, display order (unique per setlist) |
 | transition_notes | text | Notes on transitioning into this trick |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
@@ -140,7 +140,7 @@ A logged performance or show.
 | date | date | NOT NULL |
 | venue | text | |
 | event_name | text | Show/event name |
-| routine_id | UUID (FK -> routines) | Optional, set null on routine delete (trigger bumps `updated_at`) |
+| setlist_id | UUID (FK -> setlists) | Optional, set null on setlist delete (trigger bumps `updated_at`) |
 | audience_size | integer | |
 | audience_type | text | `"birthday"`, `"corporate"`, `"other"`, `"private"`, `"street"`, `"theater"`, `"wedding"` |
 | duration_minutes | integer | |
@@ -243,8 +243,8 @@ Not all tables are synced to the client via PowerSync:
 | Table | Synced | Notes |
 |---|---|---|
 | tricks | Yes | Filtered by `user_id` |
-| routines | Yes | Filtered by `user_id` |
-| routine_tricks | Yes | Global bucket (no `user_id`) |
+| setlists | Yes | Filtered by `user_id` |
+| setlist_tricks | Yes | Global bucket (no `user_id`) |
 | practice_sessions | Yes | Filtered by `user_id` |
 | practice_session_tricks | Yes | Global bucket (no `user_id`) |
 | performances | Yes | Filtered by `user_id` |
@@ -264,11 +264,11 @@ See [diagrams/schema-er.md](./diagrams/schema-er.md) for the full Mermaid ER dia
 ```typescript
 type UserId = string & { readonly __brand: "UserId" };
 type TrickId = string & { readonly __brand: "TrickId" };
-type RoutineId = string & { readonly __brand: "RoutineId" };
+type SetlistId = string & { readonly __brand: "SetlistId" };
 type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
 type GoalId = string & { readonly __brand: "GoalId" };
 ```
 
-These types prevent accidentally passing a `TrickId` where a `RoutineId` is expected, catching errors at compile time rather than runtime.
+These types prevent accidentally passing a `TrickId` where a `SetlistId` is expected, catching errors at compile time rather than runtime.

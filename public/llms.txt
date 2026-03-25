@@ -1,7 +1,7 @@
 # The Magic Lab
 
 > A free, open-source workspace for magicians to organize their repertoire,
-> plan routines, track practice sessions, and refine performances.
+> plan setlists, track practice sessions, and refine performances.
 
 ## Docs
 

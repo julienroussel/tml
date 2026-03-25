@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "The Magic Lab",
     short_name: "Magic Lab",
     description:
-      "A personal workspace for magicians to organize your repertoire, plan routines, track practice sessions, and refine performances.",
+      "A personal workspace for magicians to organize your repertoire, plan setlists, track practice sessions, and refine performances.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
@@ -57,9 +57,9 @@ export default function manifest(): MetadataRoute.Manifest {
         description: "Log a practice session",
       },
       {
-        name: "My Routines",
+        name: "My Setlists",
         url: "/plan",
-        description: "View and manage your routines",
+        description: "View and manage your setlists",
       },
     ],
   };

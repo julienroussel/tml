@@ -4,7 +4,7 @@ import { goals } from "./goals";
 import { itemTricks } from "./items";
 import { performances } from "./performances";
 import { practiceSessionTricks } from "./practice-sessions";
-import { routineTricks } from "./routines";
+import { setlistTricks } from "./setlists";
 
 /**
  * Regression test for issue #46: Junction table FK constraints must use
@@ -47,10 +47,10 @@ describe("junction table FK constraints (#46)", () => {
       ] satisfies FkExpectation[],
     },
     {
-      name: "routine_tricks",
-      table: routineTricks,
+      name: "setlist_tricks",
+      table: setlistTricks,
       entityFks: [
-        { columnName: "routine_id", expectedAction: "no action" },
+        { columnName: "setlist_id", expectedAction: "no action" },
         { columnName: "trick_id", expectedAction: "no action" },
       ] satisfies FkExpectation[],
     },
@@ -84,9 +84,9 @@ describe("junction table FK constraints (#46)", () => {
 });
 
 describe("entity FK SET NULL constraints (#81)", () => {
-  it("uses SET NULL on performances.routine_id FK", () => {
+  it("uses SET NULL on performances.setlist_id FK", () => {
     const { foreignKeys } = getTableConfig(performances);
-    const action = getFkAction("performances", foreignKeys, "routine_id");
+    const action = getFkAction("performances", foreignKeys, "setlist_id");
     expect(action).toBe("set null");
   });
 

@@ -49,7 +49,7 @@ describe("SyncErrorToaster", () => {
     render(<SyncErrorToaster />);
 
     dispatchError({ table: "tricks" });
-    dispatchError({ table: "routines" });
+    dispatchError({ table: "setlists" });
     dispatchError({ table: "items" });
 
     vi.advanceTimersByTime(500);

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  A free, open-source workspace for magicians — organize your repertoire, plan routines, track practice sessions, and refine performances. Works offline, syncs across devices.
+  A free, open-source workspace for magicians — organize your repertoire, plan setlists, track practice sessions, and refine performances. Works offline, syncs across devices.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 - **Improve** -- Log practice sessions and track your progress on individual sleights, moves, and techniques.
 - **Train** -- Set goals, build drills, and stay consistent with structured practice.
-- **Plan** -- Assemble and fine-tune your sets, from a quick close-up routine to a full stage show.
+- **Plan** -- Assemble and fine-tune your setlists, from a quick close-up set to a full stage show.
 - **Perform** -- Keep notes on your performances, track audience reactions, and learn from every show.
 - **Enhance** -- Discover insights, revisit what works, and continuously raise the bar.
 - **Collect** -- Register and organize your props, books, gimmicks, and other items.

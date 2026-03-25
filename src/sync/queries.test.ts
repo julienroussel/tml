@@ -92,8 +92,8 @@ describe("coerceOpRecord", () => {
   });
 
   it("includes the table and id in the error message for missing opData", () => {
-    expect(() => coerceOpRecord(undefined, "abc-123", "routines")).toThrow(
-      'Missing opData for table "routines" (id: abc-123)'
+    expect(() => coerceOpRecord(undefined, "abc-123", "setlists")).toThrow(
+      'Missing opData for table "setlists" (id: abc-123)'
     );
   });
 
@@ -379,12 +379,12 @@ describe("buildQuery", () => {
     it("includes user_id clause for junction tables", () => {
       const result = buildQuery(
         OpType.PUT,
-        "routine_tricks",
+        "setlist_tricks",
         "abc",
         {
           id: "abc",
           user_id: "user-1",
-          routine_id: "r1",
+          setlist_id: "r1",
           trick_id: "t1",
           position: 1,
         },

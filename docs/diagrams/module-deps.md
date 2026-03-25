@@ -15,7 +15,7 @@ graph TB
     subgraph Modules["Feature Modules"]
         Improve["Improve<br/>Practice Sessions"]
         Train["Train<br/>Goals & Drills"]
-        Plan["Plan<br/>Routines & Sets"]
+        Plan["Plan<br/>Setlists"]
         Perform["Perform<br/>Performances"]
         Enhance["Enhance<br/>Insights"]
         Collect["Collect<br/>Inventory"]
@@ -56,7 +56,7 @@ graph TB
     Improve -.->|"practice data"| Enhance
     Train -.->|"goal progress"| Enhance
     Perform -.->|"performance data"| Enhance
-    Plan -.->|"routines for shows"| Perform
+    Plan -.->|"setlists for shows"| Perform
     Collect -.->|"props used in"| Tricks
 
     %% i18n is used by everything
@@ -73,7 +73,7 @@ graph TB
 |---|---|---|
 | **Improve** | Log practice sessions, track skill progress | practice_sessions, practice_session_tricks |
 | **Train** | Set goals, create drills, build streaks | goals |
-| **Plan** | Build routines and setlists | routines, routine_tricks |
+| **Plan** | Build setlists for shows | setlists, setlist_tricks |
 | **Perform** | Log performances, review feedback | performances |
 | **Enhance** | Analytics, insights, improvement suggestions | Reads from all modules |
 | **Collect** | Manage inventory of props and materials | items, item_tricks |
@@ -84,8 +84,8 @@ The `tricks` table is the central entity shared across modules:
 
 - **Improve**: Practice sessions reference tricks being practiced
 - **Train**: Goals can target specific tricks
-- **Plan**: Routines are ordered collections of tricks
-- **Perform**: (Indirect) Performances use routines which contain tricks
+- **Plan**: Setlists are ordered collections of tricks
+- **Perform**: (Indirect) Performances use setlists which contain tricks
 - **Collect**: Items (props) are linked to tricks that use them
 
 ## Data Flow
@@ -94,7 +94,7 @@ The `tricks` table is the central entity shared across modules:
 Collect (items) --> Tricks <-- Improve (practice)
                       ^
                       |
-              Plan (routines) --> Perform (shows)
+              Plan (setlists) --> Perform (shows)
                       ^
                       |
                 Train (goals)

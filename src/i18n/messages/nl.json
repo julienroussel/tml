@@ -38,23 +38,23 @@
   },
   "landing": {
     "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",
-    "description": "Een persoonlijke werkruimte voor goochelaars — organiseer je repertoire, plan routines, registreer oefensessies en verfijn je optredens.",
+    "description": "Een persoonlijke werkruimte voor goochelaars — organiseer je repertoire, plan setlists, registreer oefensessies en verfijn je optredens.",
     "freeForever": "Voor altijd gratis",
     "openSource": "Open source",
     "worksOffline": "Werkt offline",
     "builtForMagicians": "Gemaakt voor goochelaars, door een goochelaar",
     "howItWorks": "Hoe het werkt",
     "buildRepertoire": "Bouw je repertoire op",
-    "buildRepertoireDesc": "Voeg je trucs, handgrepen en routines toe. Organiseer ze op categorie, moeilijkheid en status.",
+    "buildRepertoireDesc": "Voeg je trucs en handgrepen toe. Maak setlists. Organiseer alles op categorie, moeilijkheid en status.",
     "planSets": "Plan je sets",
-    "planSetsDesc": "Stel routines samen tot podiumklare programma's. Herorden, annoteer overgangen en schat de timing in.",
+    "planSetsDesc": "Stel trucs samen tot podiumklare setlists. Herorden, annoteer overgangen en schat de timing in.",
     "trackImprove": "Registreer en verbeter",
     "trackImproveDesc": "Registreer oefensessies, bekijk optredens en stel doelen om jezelf continu te verbeteren.",
     "features": "Alles wat je nodig hebt om te groeien",
     "openSourceTitle": "Open source, open magie",
     "openSourceDesc": "The Magic Lab is gratis en open source onder de GPL-3.0-licentie. Je gegevens blijven van jou. Draag bij, fork of host zelf — jij beslist.",
     "ctaTitle": "Klaar om je magie naar een hoger niveau te tillen?",
-    "ctaDesc": "Begin met het organiseren van je repertoire, het plannen van routines en het bijhouden van je voortgang — helemaal gratis.",
+    "ctaDesc": "Begin met het organiseren van je repertoire, het plannen van setlists en het bijhouden van je voortgang — helemaal gratis.",
     "viewOnGitHub": "Bekijk op GitHub"
   },
   "dashboard": {
@@ -73,7 +73,7 @@
   },
   "plan": {
     "title": "Plannen",
-    "description": "Ontwerp sets, routines en draaiboeken."
+    "description": "Ontwerp setlists en draaiboeken."
   },
   "perform": {
     "title": "Optreden",
@@ -107,13 +107,13 @@
   "faq": {
     "title": "Veelgestelde vragen",
     "q1": "What is The Magic Lab?",
-    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan routines, track practice sessions, log performances, and manage your props and inventory — all in one place.",
+    "a1": "The Magic Lab is a free, open-source workspace built for magicians. It helps you organize your repertoire, plan setlists, track practice sessions, log performances, and manage your props and inventory — all in one place.",
     "q2": "How do I organize my magic repertoire?",
     "a2": "Add your tricks to The Magic Lab with details like category (card, coin, mentalism, stage), difficulty level, current status (learning, performance-ready, mastered), and where you learned it. Filter, search, and sort to find exactly what you need.",
     "q3": "What's the best way to track magic practice?",
     "a3": "Use the Improve module to log practice sessions. Record what you practiced, for how long, and rate your performance. Over time, you'll see trends, identify gaps, and maintain practice streaks.",
     "q4": "How do I plan a magic show setlist?",
-    "a4": "The Plan module lets you assemble tricks into routines with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
+    "a4": "The Plan module lets you assemble tricks into setlists with a specific order. Add transition notes between effects, estimate total duration, and keep multiple versions ready for different venues.",
     "q5": "Does The Magic Lab work offline?",
     "a5": "Yes. The Magic Lab is a Progressive Web App (PWA) with offline-first sync. Your data is stored locally on your device and syncs when you're online. Practice backstage without signal — your data is always available.",
     "q6": "Is The Magic Lab really free?",
@@ -129,7 +129,7 @@
     "title": "Privacybeleid",
     "intro": "The Magic Lab is a free, open-source application. Your privacy is important to us.",
     "dataCollectTitle": "Data we collect",
-    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, routines, practice sessions, etc.).",
+    "dataCollectDesc": "We collect the minimum data necessary to provide the service: your account information (email, display name) from your OAuth provider, and the data you create within the app (tricks, setlists, practice sessions, etc.).",
     "dataUseTitle": "How we use your data",
     "dataUseDesc": "Your data is used solely to provide the app's functionality. We do not sell, share, or use your data for advertising. Anonymous analytics (page views, performance metrics) help us improve the app.",
     "dataStorageTitle": "Data storage",
@@ -162,7 +162,7 @@
   },
   "marketing": {
     "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",
-    "description": "Een persoonlijke werkruimte voor goochelaars — organiseer je repertoire, plan routines, registreer oefensessies en verfijn je optredens.",
+    "description": "Een persoonlijke werkruimte voor goochelaars — organiseer je repertoire, plan setlists, registreer oefensessies en verfijn je optredens.",
     "getStarted": "Aan de slag",
     "viewOnGitHub": "Bekijk op GitHub",
     "freeForever": "Voor altijd gratis",
@@ -171,9 +171,9 @@
     "builtByMagician": "Gemaakt voor goochelaars, door een goochelaar",
     "howItWorks": "Hoe het werkt",
     "step1Title": "Bouw je repertoire op",
-    "step1Desc": "Voeg je trucs, handgrepen en routines toe. Organiseer ze op categorie, moeilijkheid en status.",
+    "step1Desc": "Voeg je trucs en handgrepen toe. Maak setlists. Organiseer alles op categorie, moeilijkheid en status.",
     "step2Title": "Plan je sets",
-    "step2Desc": "Stel routines samen tot podiumklare programma's. Herorden, annoteer overgangen en schat de timing in.",
+    "step2Desc": "Stel trucs samen tot podiumklare setlists. Herorden, annoteer overgangen en schat de timing in.",
     "step3Title": "Registreer en verbeter",
     "step3Desc": "Registreer oefensessies, bekijk optredens en stel doelen om jezelf continu te verbeteren.",
     "features": "Alles wat je nodig hebt om te groeien",
@@ -181,7 +181,7 @@
     "openSourceTitle": "Open source, open magie",
     "openSourceDesc": "The Magic Lab is gratis en open source onder de GPL-3.0-licentie. Je gegevens blijven van jou. Draag bij, fork of host zelf — jij beslist.",
     "ctaTitle": "Klaar om je magie naar een hoger niveau te tillen?",
-    "ctaDesc": "Begin met het organiseren van je repertoire, het plannen van routines en het bijhouden van je voortgang — helemaal gratis."
+    "ctaDesc": "Begin met het organiseren van je repertoire, het plannen van setlists en het bijhouden van je voortgang — helemaal gratis."
   },
   "footer": {
     "copyright": "© {year} The Magic Lab",
@@ -229,7 +229,7 @@
     "welcomeGreetingAnonymous": "Hoi, welkom bij The Magic Lab!",
     "welcomeBody": "Je werkruimte is klaar. Dit kun je doen:",
     "welcomeFeatureImprove": "Oefensessies bijhouden en voortgang volgen",
-    "welcomeFeaturePlan": "Routines maken en organiseren",
+    "welcomeFeaturePlan": "Setlists maken en organiseren",
     "welcomeFeaturePerform": "Optredens opnemen en bekijken",
     "welcomeCta": "Naar je dashboard",
     "welcomeFooter": "— The Magic Lab",

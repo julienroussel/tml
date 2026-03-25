@@ -8,7 +8,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { routines } from "./routines";
+import { setlists } from "./setlists";
 import { users } from "./users";
 
 export const performances = pgTable(
@@ -22,7 +22,7 @@ export const performances = pgTable(
     venue: text(),
     eventName: text("event_name"),
     // FK cascade SET NULL bumps updated_at via DB trigger (migration 0007).
-    routineId: uuid("routine_id").references(() => routines.id, {
+    setlistId: uuid("setlist_id").references(() => setlists.id, {
       onDelete: "set null",
     }),
     audienceSize: integer("audience_size"),
@@ -53,8 +53,8 @@ export const performances = pgTable(
     index("performances_user_id_idx")
       .on(table.userId)
       .where(sql`deleted_at IS NULL`),
-    index("performances_routine_id_idx")
-      .on(table.routineId)
+    index("performances_setlist_id_idx")
+      .on(table.setlistId)
       .where(sql`deleted_at IS NULL`),
     index("performances_user_id_date_idx")
       .on(table.userId, table.date)

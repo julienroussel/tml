@@ -241,7 +241,7 @@ export default async function Home({
             "@type": "SoftwareApplication",
             name: "The Magic Lab",
             description:
-              "A free, open-source workspace for magicians to organize their repertoire, plan routines, track practice sessions, and refine performances.",
+              "A free, open-source workspace for magicians to organize their repertoire, plan setlists, track practice sessions, and refine performances.",
             applicationCategory: "UtilityApplication",
             operatingSystem: "Web",
             offers: {
