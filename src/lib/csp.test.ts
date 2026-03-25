@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyNonce,
   BASE_DIRECTIVES,
   buildCsp,
   DEV_EXTENSIONS,
@@ -106,31 +105,6 @@ describe("directivesToString", () => {
   });
 });
 
-describe("applyNonce", () => {
-  it("adds nonce to script-src", () => {
-    const result = applyNonce(BASE_DIRECTIVES, "abc123");
-    expect(result["script-src"]).toContain("'nonce-abc123'");
-  });
-
-  it("preserves existing script-src values", () => {
-    const result = applyNonce(BASE_DIRECTIVES, "abc123");
-    expect(result["script-src"]).toContain("'self'");
-    expect(result["script-src"]).toContain("'unsafe-inline'");
-    expect(result["script-src"]).toContain("https://va.vercel-scripts.com");
-  });
-
-  it("does not mutate the input directives", () => {
-    const original = [...BASE_DIRECTIVES["script-src"]];
-    applyNonce(BASE_DIRECTIVES, "test");
-    expect(BASE_DIRECTIVES["script-src"]).toEqual(original);
-  });
-
-  it("does not add nonce to style-src", () => {
-    const result = applyNonce(BASE_DIRECTIVES, "abc123");
-    expect(result["style-src"]).toEqual(BASE_DIRECTIVES["style-src"]);
-  });
-});
-
 describe("buildCsp", () => {
   it("returns production CSP without dev sources", () => {
     const csp = buildCsp({ isDev: false });
@@ -153,26 +127,13 @@ describe("buildCsp", () => {
     }
   });
 
-  it("includes nonce in script-src when provided", () => {
-    const csp = buildCsp({ isDev: false, nonce: "dGVzdA==" });
-    expect(csp).toContain("'nonce-dGVzdA=='");
-  });
-
-  it("keeps unsafe-inline alongside nonce for CSP Level 1 fallback", () => {
-    const csp = buildCsp({ isDev: false, nonce: "dGVzdA==" });
-    expect(csp).toContain("'unsafe-inline'");
-    expect(csp).toContain("'nonce-dGVzdA=='");
-  });
-
-  it("does not include nonce when omitted", () => {
+  it("includes unsafe-inline in script-src for ThemeProvider compatibility", () => {
     const csp = buildCsp({ isDev: false });
-    expect(csp).not.toContain("nonce-");
+    expect(csp).toContain("'unsafe-inline'");
   });
 
-  it("does not add nonce to style-src", () => {
-    const csp = buildCsp({ isDev: false, nonce: "dGVzdA==" });
-    const styleSrc = csp.split("; ").find((d) => d.startsWith("style-src"));
-    expect(styleSrc).toBeDefined();
-    expect(styleSrc).not.toContain("nonce");
+  it("does not include nonce (root layout ThemeProvider cannot receive one)", () => {
+    const csp = buildCsp({ isDev: false });
+    expect(csp).not.toContain("nonce");
   });
 });

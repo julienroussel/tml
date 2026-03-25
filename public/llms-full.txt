@@ -261,13 +261,13 @@ The Magic Lab enforces a strict Content Security Policy (CSP) to prevent XSS, da
 
 ## Implementation
 
-CSP headers are constructed by the `buildCsp()` function in `src/lib/csp.ts` and applied dynamically per-request in `src/proxy.ts`. Each response gets a unique nonce generated via `crypto.getRandomValues()`.
+CSP headers are constructed by the `buildCsp()` function in `src/lib/csp.ts` and applied per-request in `src/proxy.ts`.
 
 ### Current Policy
 
 ```
 default-src 'self';
-script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'nonce-<per-request>' https://va.vercel-scripts.com;
+script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://va.vercel-scripts.com;
 style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob: https://lh3.googleusercontent.com;
 font-src 'self';
@@ -285,7 +285,7 @@ upgrade-insecure-requests
 | Directive | Value | Reason |
 |---|---|---|
 | `default-src` | `'self'` | Baseline: only same-origin resources |
-| `script-src` | `'self' 'unsafe-inline' 'nonce-...'` | `unsafe-inline` kept for CSP Level 1 fallback; Level 2+ browsers ignore it when a nonce is present. Nonce passed to next-themes via ThemeProvider. |
+| `script-src` | `'self' 'unsafe-inline'` | `unsafe-inline` required for next-themes' ThemeProvider anti-flicker script in the root layout. The root layout must stay static (no `headers()` call) so a per-request nonce cannot be passed to ThemeProvider. React's default output escaping provides XSS protection. |
 | | `'wasm-unsafe-eval'` | Required by PowerSync WASM module |
 | | `https://va.vercel-scripts.com` | Vercel Analytics script |
 | `style-src` | `'self' 'unsafe-inline'` | Inline styles from CSS-in-JS and component libraries |
@@ -314,7 +314,6 @@ The CSP is built programmatically via a typed builder function:
 // src/lib/csp.ts
 interface BuildCspOptions {
   isDev: boolean;
-  nonce?: string;
 }
 
 const BASE_DIRECTIVES: CspDirectives = {
@@ -339,19 +338,19 @@ const DEV_EXTENSIONS: Partial<CspDirectives> = {
 };
 
 function buildCsp(options: BuildCspOptions): string {
-  let directives = options.isDev
+  const directives = options.isDev
     ? mergeDirectives(BASE_DIRECTIVES, DEV_EXTENSIONS)
     : BASE_DIRECTIVES;
-
-  if (options.nonce !== undefined) {
-    directives = applyNonce(directives, options.nonce);
-  }
 
   return directivesToString(directives);
 }
 ```
 
-The `applyNonce` helper appends `'nonce-<value>'` to `script-src`. The existing `'unsafe-inline'` is retained for CSP Level 1 fallback — CSP Level 2+ browsers automatically ignore it when a nonce source is present.
+### Why No Nonce?
+
+A nonce-based CSP would be more restrictive than `'unsafe-inline'`, but the root layout's `ThemeProvider` (next-themes) injects an inline `<script>` for theme flash prevention. The root layout must stay static for marketing pages and cannot call `headers()` to read a per-request nonce. Including a nonce in the CSP would cause CSP Level 2+ browsers to ignore `'unsafe-inline'`, blocking the theme script on every page load.
+
+XSS protection relies on React's default output escaping rather than CSP nonces.
 
 ### Environment-Aware Directives
 
@@ -384,16 +383,6 @@ script-src 'self'
 ```
 
 This prevents the service worker from loading any external scripts.
-
-## Nonce-Based CSP
-
-Nonce-based CSP is implemented. Each request gets a unique 128-bit nonce generated in `proxy.ts`:
-
-1. `proxy.ts` generates a nonce via `crypto.getRandomValues()` and calls `buildCsp({ isDev, nonce })`
-2. The nonce is forwarded to server components via the `x-nonce` request header
-3. `script-src` includes `'nonce-<value>'` — CSP Level 2+ browsers use the nonce and ignore `'unsafe-inline'`
-4. `'unsafe-inline'` is retained in `script-src` as a CSP Level 1 fallback
-5. `'unsafe-inline'` remains in `style-src` (required by component libraries)
 
 ## See Also
 
@@ -967,7 +956,7 @@ Source: docs/diagrams/route-map.md
 
 # Route Map
 
-<!-- Last verified: 2026-03-24 -->
+<!-- Last verified: 2026-03-25 -->
 
 ## Route Structure
 
@@ -1384,9 +1373,13 @@ Public marketing pages use a `[locale]` URL segment for locale. Bare paths (`/`,
 
 All 7 locales × 3 pages = 21 statically generated pages at build time (`● SSG` in build output). This approach is SEO-friendly: each locale has its own URL, enabling proper `hreflang` tags and search engine indexing.
 
-### App Pages -- Cookie-Based
+### Auth Pages -- Cookie-Based (Dynamic)
 
-Authenticated app pages use a cookie-based locale preference:
+Auth pages (sign-in, sign-up) use the `NEXT_LOCALE` cookie for locale detection. They are server-rendered dynamically (not statically generated) so the server can read the cookie and render the Neon Auth form in the user's chosen language. A locale toggle and theme toggle are available in the page header.
+
+The Neon Auth UI is localized via the `auth` namespace in the message files. The `NeonAuthLocalizedProvider` component extracts these keys and passes them to `NeonAuthUIProvider` as its `localization` prop.
+
+### App Pages -- Cookie-Based
 
 ```
 /dashboard  --> Locale from user_preferences.locale or cookie
@@ -1412,10 +1405,13 @@ messages/
     collect.json        # Collect module
     settings.json       # Settings
     marketing.json      # Landing page, about, FAQ
+    auth.json           # Neon Auth UI strings (sign-in, sign-up, OTP, social login)
   fr/
     common.json
     ...
 ```
+
+> **Note**: The `auth` namespace keys use UPPER_SNAKE_CASE (e.g., `SIGN_IN`, `EMAIL_OTP_SEND_ACTION`) to match the `AuthLocalization` type from `@neondatabase/auth`. These are extracted at runtime by `src/i18n/auth-localization.ts` and passed to `NeonAuthUIProvider`.
 
 ### Message Format
 
@@ -1944,7 +1940,7 @@ The Magic Lab uses Next.js App Router with route groups to separate public marke
 src/app/
   (marketing)/[locale]/    # Public, SEO-optimized, statically generated (7 locales)
   (app)/                   # Authenticated application (dynamic)
-  auth/                    # Auth pages (statically generated)
+  auth/                    # Auth pages (dynamic, locale-aware via cookie)
 ```
 
 ### Why Route Groups?
@@ -1952,7 +1948,7 @@ src/app/
 - **Separate layouts**: Marketing pages use a minimal layout (no sidebar). The app uses a full sidebar + header layout.
 - **Auth boundaries**: The proxy (`src/proxy.ts`) redirects unauthenticated users away from `(app)/` routes.
 - **SEO isolation**: Marketing pages have full metadata, Open Graph tags, structured data, and hreflang alternates. App pages use `noindex`.
-- **Static generation**: Marketing and auth pages are statically generated at build time. App pages are server-rendered on demand (require auth).
+- **Static generation**: Marketing pages are statically generated at build time. Auth and app pages are server-rendered on demand (auth pages read the `NEXT_LOCALE` cookie for locale-aware rendering; app pages require auth).
 
 ## Full Route Tree
 
@@ -1985,7 +1981,7 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 
 | Path | Description |
 |---|---|
-| `/auth/[path]` | Auth pages (sign-in, sign-up) — redirects to `/dashboard` if already authenticated |
+| `/auth/[path]` | Auth pages (sign-in, sign-up) — dynamic, locale-aware. Locale toggle + theme toggle in header. Neon Auth UI localized via `auth` i18n namespace. Redirects to `/dashboard` if already authenticated |
 
 ### API Routes
 
@@ -2039,15 +2035,16 @@ RootLayout (src/app/layout.tsx)
   |     +-- privacy/page.tsx
   |
   +-- (app)/layout.tsx
-  |     |-- Providers with nonce + locale from cookies/headers
+  |     |-- Providers with locale from cookies/headers
   |     |-- Dynamic (auth.getSession)
   |     +-- dashboard/page.tsx
   |     +-- improve/page.tsx
   |     +-- ...
   |
   +-- auth/layout.tsx
-  |     |-- Providers (static, default locale)
-  |     +-- auth/[path]/page.tsx (Neon Auth UI)
+  |     |-- Providers (dynamic, locale from NEXT_LOCALE cookie)
+  |     |-- DynamicIntlProvider > NeonAuthLocalizedProvider > children
+  |     +-- auth/[path]/page.tsx (Neon Auth UI, localized)
   |
   +-- account/[path]/page.tsx (Neon Auth account management)
 ```

@@ -111,7 +111,7 @@ src/
   app/                    # Next.js App Router
     (marketing)/[locale]/ # Public pages (landing, FAQ, privacy) — statically generated per locale
     (app)/                # Authenticated app (dashboard, modules)
-    auth/                 # Sign-in / sign-up
+    auth/                 # Sign-in / sign-up (dynamic, locale-aware)
     api/                  # API routes (auth, sync, email, cron)
   features/               # Feature modules (improve, train, plan, ...)
     <module>/components/  # Module-specific components

@@ -8,7 +8,7 @@ The Magic Lab uses Next.js App Router with route groups to separate public marke
 src/app/
   (marketing)/[locale]/    # Public, SEO-optimized, statically generated (7 locales)
   (app)/                   # Authenticated application (dynamic)
-  auth/                    # Auth pages (statically generated)
+  auth/                    # Auth pages (dynamic, locale-aware via cookie)
 ```
 
 ### Why Route Groups?
@@ -16,7 +16,7 @@ src/app/
 - **Separate layouts**: Marketing pages use a minimal layout (no sidebar). The app uses a full sidebar + header layout.
 - **Auth boundaries**: The proxy (`src/proxy.ts`) redirects unauthenticated users away from `(app)/` routes.
 - **SEO isolation**: Marketing pages have full metadata, Open Graph tags, structured data, and hreflang alternates. App pages use `noindex`.
-- **Static generation**: Marketing and auth pages are statically generated at build time. App pages are server-rendered on demand (require auth).
+- **Static generation**: Marketing pages are statically generated at build time. Auth and app pages are server-rendered on demand (auth pages read the `NEXT_LOCALE` cookie for locale-aware rendering; app pages require auth).
 
 ## Full Route Tree
 
@@ -49,7 +49,7 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 
 | Path | Description |
 |---|---|
-| `/auth/[path]` | Auth pages (sign-in, sign-up) — redirects to `/dashboard` if already authenticated |
+| `/auth/[path]` | Auth pages (sign-in, sign-up) — dynamic, locale-aware. Locale toggle + theme toggle in header. Neon Auth UI localized via `auth` i18n namespace. Redirects to `/dashboard` if already authenticated |
 
 ### API Routes
 
@@ -103,15 +103,16 @@ RootLayout (src/app/layout.tsx)
   |     +-- privacy/page.tsx
   |
   +-- (app)/layout.tsx
-  |     |-- Providers with nonce + locale from cookies/headers
+  |     |-- Providers with locale from cookies/headers
   |     |-- Dynamic (auth.getSession)
   |     +-- dashboard/page.tsx
   |     +-- improve/page.tsx
   |     +-- ...
   |
   +-- auth/layout.tsx
-  |     |-- Providers (static, default locale)
-  |     +-- auth/[path]/page.tsx (Neon Auth UI)
+  |     |-- Providers (dynamic, locale from NEXT_LOCALE cookie)
+  |     |-- DynamicIntlProvider > NeonAuthLocalizedProvider > children
+  |     +-- auth/[path]/page.tsx (Neon Auth UI, localized)
   |
   +-- account/[path]/page.tsx (Neon Auth account management)
 ```

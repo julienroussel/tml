@@ -47,10 +47,11 @@ function cspDirectiveNames(
 
 const BASE_DIRECTIVES: CspDirectives = {
   "default-src": ["'self'"],
-  // 'unsafe-inline' is kept alongside the nonce for CSP Level 1 fallback.
-  // CSP Level 2+ browsers automatically ignore 'unsafe-inline' when a nonce
-  // is present. The nonce is generated per-request in proxy.ts and passed to
-  // next-themes via the ThemeProvider nonce prop.
+  // 'unsafe-inline' allows inline scripts (e.g., next-themes' ThemeProvider
+  // anti-flicker script injected in the root layout). A nonce-based policy
+  // would be more restrictive, but the root layout must stay static (no
+  // headers() call) for marketing pages, so ThemeProvider cannot receive a
+  // per-request nonce. React's default output escaping provides XSS protection.
   "script-src": [
     "'self'",
     "'unsafe-inline'",
@@ -129,36 +130,14 @@ function directivesToString(
   return parts.join("; ");
 }
 
-const NONCE_PATTERN = /^[A-Za-z0-9+/=]+$/;
-
 interface BuildCspOptions {
   isDev: boolean;
-  nonce?: string;
-}
-
-/**
- * Appends a nonce source to `script-src`. The existing `'unsafe-inline'` is
- * kept for CSP Level 1 fallback — CSP Level 2+ browsers automatically ignore
- * `'unsafe-inline'` when a nonce or hash source is present.
- */
-function applyNonce(directives: CspDirectives, nonce: string): CspDirectives {
-  return {
-    ...directives,
-    "script-src": [...directives["script-src"], `'nonce-${nonce}'`],
-  };
 }
 
 function buildCsp(options: BuildCspOptions): string {
-  let directives = options.isDev
+  const directives = options.isDev
     ? mergeDirectives(BASE_DIRECTIVES, DEV_EXTENSIONS)
     : BASE_DIRECTIVES;
-
-  if (options.nonce !== undefined) {
-    if (!NONCE_PATTERN.test(options.nonce)) {
-      throw new Error("Invalid CSP nonce format");
-    }
-    directives = applyNonce(directives, options.nonce);
-  }
 
   // upgrade-insecure-requests tells the browser to upgrade all HTTP requests
   // to HTTPS. In dev mode (HTTP localhost), this breaks server action fetches,
@@ -172,7 +151,6 @@ function buildCsp(options: BuildCspOptions): string {
 
 export type { BuildCspOptions, CspDirectiveName, CspDirectives };
 export {
-  applyNonce,
   BASE_DIRECTIVES,
   buildCsp,
   DEV_EXTENSIONS,

@@ -5,6 +5,7 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
+import { LocaleToggle } from "@/components/locale-toggle";
 import { Logo } from "@/components/logo";
 import { MarketingAuthButtons } from "@/components/marketing-auth-buttons";
 import { Providers } from "@/components/providers";
@@ -53,7 +54,7 @@ export default async function MarketingLayout({
       <div className="relative flex min-h-screen flex-col" lang={locale}>
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <nav
-            aria-label="Main navigation"
+            aria-label={tCommon("mainNavigation")}
             className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6"
           >
             <Logo
@@ -64,6 +65,7 @@ export default async function MarketingLayout({
               width={96}
             />
             <div className="flex items-center gap-2">
+              <LocaleToggle />
               <ThemeToggle />
               <MarketingAuthButtons />
             </div>
@@ -77,7 +79,7 @@ export default async function MarketingLayout({
             <p className="text-muted-foreground text-sm">
               {tFooter("copyright", { year: new Date().getFullYear() })}
             </p>
-            <nav aria-label="Footer links" className="flex gap-4">
+            <nav aria-label={tCommon("footerLinks")} className="flex gap-4">
               <Link
                 className="text-muted-foreground text-sm transition-colors hover:text-foreground"
                 href={`/${locale}/privacy`}

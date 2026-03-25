@@ -64,7 +64,7 @@ Requires Node 24.x and pnpm >= 10.
 
 - `src/app/(app)/` — authenticated routes (dashboard, settings, feature modules). Protected by `proxy.ts`. Dynamic (server-rendered on demand).
 - `src/app/(marketing)/[locale]/` — public pages (landing, FAQ, privacy). URL-based locale routing with `generateStaticParams` for all 7 locales. Statically generated at build time (21 pages). Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions.
-- `src/app/auth/` — sign-in / sign-up pages. Statically generated. Authenticated users are redirected to `/dashboard`.
+- `src/app/auth/` — sign-in / sign-up pages. Dynamic (reads `NEXT_LOCALE` cookie for locale-aware rendering). Authenticated users are redirected to `/dashboard`.
 - `src/app/api/` — API route handlers (PowerSync upload, auth, unsubscribe, etc.).
 
 ### Server Actions
@@ -167,8 +167,10 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Library**: next-intl
 - **Message files**: `src/i18n/messages/<locale>.json`
 - **Locales**: `en` (default, American English), `fr` (France), `es` (Spain / Peninsular), `pt` (Portugal / European), `it`, `de`, `nl` (Netherlands)
-- **Key naming**: Namespaced — `"common.save"`, `"improve.logPractice"`, `"nav.dashboard"`
+- **Key naming**: Namespaced — `"common.save"`, `"improve.logPractice"`, `"nav.dashboard"`, `"auth.SIGN_IN"`
+- **Auth namespace**: `auth.*` keys localize the Neon Auth UI (sign-in/sign-up forms). Keys use UPPER_SNAKE_CASE to match `AuthLocalization` from `@neondatabase/auth`. Extracted at runtime by `src/i18n/auth-localization.ts` and passed to `NeonAuthUIProvider` via `NeonAuthLocalizedProvider`.
 - **Marketing pages**: URL-based locale routing (`/fr`, `/es/faq`, `/en/privacy`). Bare paths redirect via proxy. Statically generated for all 7 locales.
+- **Auth pages**: Dynamic. Locale from `NEXT_LOCALE` cookie (no URL prefix). Locale toggle available on page.
 - **App routes**: Locale from user preferences + cookie (no URL prefix). Dynamic.
 - **Completeness check**: `pnpm i18n:check` validates all locales have matching keys
 

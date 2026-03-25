@@ -7,17 +7,7 @@ import { updateLocale } from "@/app/(app)/settings/actions";
 import { setLocaleCookie } from "@/features/settings/locale-cookie";
 import { useLocaleSwitch } from "@/i18n/client-provider";
 import { isLocale, type Locale, locales } from "@/i18n/config";
-
-/** Locale autonyms — displayed in their own language so users can always find theirs. */
-const LOCALE_LABELS: Record<Locale, string> = {
-  en: "English",
-  fr: "Français",
-  es: "Español",
-  pt: "Português",
-  it: "Italiano",
-  de: "Deutsch",
-  nl: "Nederlands",
-};
+import { LOCALE_LABELS } from "@/i18n/locale-labels";
 
 interface LocaleSelectorProps {
   currentLocale: Locale;

@@ -1,28 +1,24 @@
-import {
-  getMessages,
-  getTranslations,
-  setRequestLocale,
-} from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactElement, ReactNode } from "react";
 import { Providers } from "@/components/providers";
-import { defaultLocale } from "@/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 
-export const dynamic = "force-static";
-
-// Auth pages are statically generated — locale detection requires cookies/headers
-// which aren't available at build time. Default to English; the DynamicIntlProvider's
-// useEffect will sync the correct locale on the client after hydration.
+// Auth pages are dynamic (not force-static) so the server can read the
+// NEXT_LOCALE cookie and render the correct locale on the first frame.
+// This avoids hydration mismatches when the user's preferred locale
+// differs from the default.
 export default async function AuthLayout({
   children,
 }: Readonly<{ children: ReactNode }>): Promise<ReactElement> {
-  setRequestLocale(defaultLocale);
+  const rawLocale = await getLocale();
+  const locale: Locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const [tCommon, messages] = await Promise.all([
-    getTranslations({ locale: defaultLocale, namespace: "common" }),
-    getMessages({ locale: defaultLocale }),
+    getTranslations({ locale, namespace: "common" }),
+    getMessages({ locale }),
   ]);
 
   return (
-    <Providers locale={defaultLocale} messages={messages}>
+    <Providers locale={locale} messages={messages}>
       <a
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
         href="#main-content"

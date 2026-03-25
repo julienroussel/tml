@@ -18,12 +18,7 @@ const nullUserSession: MockSession = {
 const mockMiddleware = vi.fn();
 
 vi.mock("next/headers", () => ({
-  headers: () =>
-    Promise.resolve(
-      new Headers({
-        "x-nonce": "test-nonce",
-      })
-    ),
+  headers: () => Promise.resolve(new Headers()),
   cookies: () =>
     Promise.resolve({
       get: () => undefined,
@@ -40,7 +35,9 @@ vi.mock("@/auth/server", () => ({
 }));
 
 vi.mock("@/lib/csp", () => ({
-  buildCsp: vi.fn(() => "default-src 'self'; script-src 'self' 'nonce-test'"),
+  buildCsp: vi.fn(
+    () => "default-src 'self'; script-src 'self' 'unsafe-inline'"
+  ),
 }));
 
 const SESSION_COOKIE_NAME = "__Secure-neon-auth.session_token";
@@ -241,19 +238,15 @@ describe("proxy", () => {
     );
   });
 
-  it("calls buildCsp with a nonce argument", async () => {
+  it("calls buildCsp with isDev option", async () => {
     const { buildCsp } = await import("@/lib/csp");
     const { proxy } = await import("./proxy");
 
-    // Use a dynamic (non-static) route — static routes skip nonce
     await proxy(createRequest("/about", false));
 
     expect(buildCsp).toHaveBeenCalledWith(
-      expect.objectContaining({ nonce: expect.any(String) })
+      expect.objectContaining({ isDev: expect.any(Boolean) })
     );
-    const { nonce } = vi.mocked(buildCsp).mock.calls[0]?.[0] ?? {};
-    expect(nonce).toBeTruthy();
-    expect(typeof nonce).toBe("string");
   });
 
   it("sets CSP header on auth redirect response", async () => {
@@ -281,52 +274,13 @@ describe("proxy", () => {
     expect(response.cookies.get("refresh-token")?.value).toBe("xyz789");
   });
 
-  it("forwards x-nonce in request headers for server components", async () => {
+  it("does not include nonce in CSP (unsafe-inline covers all inline scripts)", async () => {
     const { proxy } = await import("./proxy");
-    // Use a dynamic (non-static) route — static routes skip nonce
-    const request = createRequest("/about", false);
-    await proxy(request);
-    // The nonce should be present in request headers passed to NextResponse.next()
-    // We verify via the buildCsp mock which receives the nonce
-    const { buildCsp } = await import("@/lib/csp");
-    const { nonce } = vi.mocked(buildCsp).mock.calls[0]?.[0] ?? {};
-    expect(nonce).toBeTruthy();
-    // Also verify the response has CSP with the nonce
+
     const response = await proxy(createRequest("/about", false));
-    expect(response.headers.get("Content-Security-Policy")).toContain("nonce");
-  });
-
-  it("skips nonce for static routes (locale-prefixed and auth)", async () => {
-    const { buildCsp } = await import("@/lib/csp");
-    const { proxy } = await import("./proxy");
-
-    // Locale-prefixed homepage
-    await proxy(createRequest("/en", false));
-    expect(buildCsp).toHaveBeenCalledWith(
-      expect.objectContaining({ nonce: undefined })
-    );
-
-    // Locale-prefixed subpath
-    vi.mocked(buildCsp).mockClear();
-    await proxy(createRequest("/fr/privacy", false));
-    expect(buildCsp).toHaveBeenCalledWith(
-      expect.objectContaining({ nonce: undefined })
-    );
-
-    // Auth route
-    vi.mocked(buildCsp).mockClear();
-    mockMiddleware.mockReturnValueOnce(createAuthResponse(200));
-    await proxy(createRequest("/auth/sign-in", false));
-    expect(buildCsp).toHaveBeenCalledWith(
-      expect.objectContaining({ nonce: undefined })
-    );
-
-    // Non-locale path that starts with a locale-like prefix should get nonce
-    vi.mocked(buildCsp).mockClear();
-    await proxy(createRequest("/english", false));
-    expect(buildCsp).toHaveBeenCalledWith(
-      expect.objectContaining({ nonce: expect.any(String) })
-    );
+    const csp = response.headers.get("Content-Security-Policy");
+    expect(csp).toBeTruthy();
+    expect(csp).not.toContain("nonce");
   });
 
   it("applies CSP header to auth middleware redirect", async () => {
