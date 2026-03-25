@@ -2,6 +2,10 @@ import { sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { userPreferences } from "@/db/schema";
+import type { Locale } from "@/i18n/config";
+import { defaultLocale, isLocale } from "@/i18n/config";
+import type { EmailTranslations } from "@/i18n/email-translations";
+import { getEmailTranslations } from "@/i18n/email-translations";
 import { escapeHtml, verifyUnsubscribeToken } from "@/lib/email";
 
 const TRAILING_SLASHES = /\/+$/;
@@ -25,9 +29,9 @@ function htmlResponse(body: string, status: number): NextResponse {
   });
 }
 
-function brandedPage(content: string): string {
+function brandedPage(content: string, lang: Locale = defaultLocale): string {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>The Magic Lab</title></head>
 <body style="${BODY_STYLE}">
   ${BRAND_HEADER}
@@ -36,10 +40,17 @@ function brandedPage(content: string): string {
 </html>`;
 }
 
-function errorResponse(message: string, status: number): NextResponse {
+function errorResponse(
+  message: string,
+  status: number,
+  t?: EmailTranslations,
+  lang?: Locale
+): NextResponse {
+  const title = t ? escapeHtml(t.errorTitle) : "Error";
   return htmlResponse(
     brandedPage(
-      `<h1 style="font-size: 20px; margin: 0 0 8px;">Error</h1><p>${message}</p>`
+      `<h1 style="font-size: 20px; margin: 0 0 8px;">${title}</h1><p>${escapeHtml(message)}</p>`,
+      lang
     ),
     status
   );
@@ -62,14 +73,22 @@ function hasPostgresCode(error: unknown): error is Error & { code: string } {
 const normalize = (url: string): string =>
   url.replace(TRAILING_SLASHES, "").toLowerCase();
 
+function resolveLocale(raw: string | null): Locale {
+  return raw && isLocale(raw) ? raw : defaultLocale;
+}
+
 /**
  * Validates the request origin against the expected app URL and Vercel preview URLs.
  * Requires the Origin header — browsers always send it on POST requests.
  * Returns the validated source origin, or a 403 NextResponse if validation fails.
  */
-function validateOrigin(origin: string | null): string | NextResponse {
+function validateOrigin(
+  origin: string | null,
+  t: EmailTranslations,
+  lang: Locale
+): string | NextResponse {
   if (!origin) {
-    return errorResponse("Invalid request origin.", 403);
+    return errorResponse(t.unsubscribeErrorOrigin, 403, t, lang);
   }
 
   return normalize(origin);
@@ -79,22 +98,34 @@ function validateOrigin(origin: string | null): string | NextResponse {
  * GET renders an HTML confirmation page with a form that POSTs
  * to perform the actual unsubscribe.
  */
-export function GET(request: NextRequest): NextResponse {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   const token = request.nextUrl.searchParams.get("token");
+  const locale = resolveLocale(request.nextUrl.searchParams.get("locale"));
+
+  let t: EmailTranslations;
+  try {
+    t = await getEmailTranslations(locale);
+  } catch {
+    return errorResponse("Something went wrong.", 500);
+  }
 
   if (!token) {
-    return errorResponse("Missing unsubscribe token.", 400);
+    return errorResponse(t.unsubscribeErrorMissing, 400, t, locale);
   }
 
   const escapedToken = escapeHtml(token);
 
   return htmlResponse(
-    brandedPage(`<h1 style="font-size: 20px; margin: 0 0 8px;">Unsubscribe from email notifications</h1>
-  <p>Click the button below to confirm you want to unsubscribe.</p>
-  <form method="POST" action="/api/email/unsubscribe">
+    brandedPage(
+      `<h1 style="font-size: 20px; margin: 0 0 8px;">${escapeHtml(t.unsubscribeTitle)}</h1>
+  <p>${escapeHtml(t.unsubscribeDescription)}</p>
+  <form method="POST" action="/api/email/unsubscribe?locale=${locale}">
     <input type="hidden" name="token" value="${escapedToken}" />
-    <button type="submit" style="background-color: #7c3aed; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; min-height: 44px; min-width: 44px; font-size: 16px; cursor: pointer;">Unsubscribe</button>
-  </form>`),
+    <input type="hidden" name="locale" value="${locale}" />
+    <button type="submit" style="background-color: #7c3aed; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; min-height: 44px; min-width: 44px; font-size: 16px; cursor: pointer;">${escapeHtml(t.unsubscribeButton)}</button>
+  </form>`,
+      locale
+    ),
     200
   );
 }
@@ -103,8 +134,23 @@ export function GET(request: NextRequest): NextResponse {
  * POST performs the actual unsubscribe (database update).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Resolve locale early from query param for origin validation errors.
+  // The form data locale (hidden field) will be used once available.
+  const queryLocale = resolveLocale(request.nextUrl.searchParams.get("locale"));
+
+  let queryT: EmailTranslations;
+  try {
+    queryT = await getEmailTranslations(queryLocale);
+  } catch {
+    return errorResponse("Something went wrong.", 500);
+  }
+
   // Validate origin to prevent CSRF
-  const originResult = validateOrigin(request.headers.get("origin"));
+  const originResult = validateOrigin(
+    request.headers.get("origin"),
+    queryT,
+    queryLocale
+  );
   if (originResult instanceof NextResponse) {
     return originResult;
   }
@@ -116,20 +162,38 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const isVercelPreview =
     previewOrigin !== null && normalize(previewOrigin) === originResult;
   if (originResult !== expectedOrigin && !isVercelPreview) {
-    return errorResponse("Invalid request origin.", 403);
+    return errorResponse(
+      queryT.unsubscribeErrorOrigin,
+      403,
+      queryT,
+      queryLocale
+    );
   }
+
+  // Hoist so the catch block can use the form-resolved locale/translations
+  // when available, falling back to query-param values if form parsing failed.
+  let locale = queryLocale;
+  let t = queryT;
 
   try {
     const formData = await request.formData();
     const token = formData.get("token");
 
+    // Prefer locale from form data (hidden field), fall back to query param
+    const formLocaleRaw = formData.get("locale");
+    locale =
+      typeof formLocaleRaw === "string" && isLocale(formLocaleRaw)
+        ? formLocaleRaw
+        : queryLocale;
+    t = locale === queryLocale ? queryT : await getEmailTranslations(locale);
+
     if (typeof token !== "string" || !token) {
-      return errorResponse("Missing unsubscribe token.", 400);
+      return errorResponse(t.unsubscribeErrorMissing, 400, t, locale);
     }
 
     const userId = verifyUnsubscribeToken(token);
     if (!userId) {
-      return errorResponse("Invalid token.", 400);
+      return errorResponse(t.unsubscribeErrorInvalid, 400, t, locale);
     }
 
     const db = getDb();
@@ -143,20 +207,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return htmlResponse(
       brandedPage(
-        '<h1 style="font-size: 20px; margin: 0 0 8px;">Unsubscribed</h1><p>You have been unsubscribed from email notifications.</p>'
+        `<h1 style="font-size: 20px; margin: 0 0 8px;">${escapeHtml(t.unsubscribeSuccess)}</h1><p>${escapeHtml(t.unsubscribeSuccessDescription)}</p>`,
+        locale
       ),
       200
     );
   } catch (error: unknown) {
     // FK constraint violation (23503) means the user doesn't exist
     if (hasPostgresCode(error) && error.code === "23503") {
-      return errorResponse("Invalid or expired token.", 404);
+      return errorResponse(t.unsubscribeErrorExpired, 404, t, locale);
     }
 
     console.error(
       "Unsubscribe failed:",
       error instanceof Error ? error.message : String(error)
     );
-    return errorResponse("Failed to unsubscribe. Please try again later.", 500);
+    return errorResponse(t.unsubscribeErrorGeneric, 500, t, locale);
   }
 }

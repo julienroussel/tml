@@ -13,7 +13,14 @@ import {
 
 interface WelcomeEmailProps {
   appUrl?: string;
-  name?: string;
+  body: string;
+  cta: string;
+  featureImprove: string;
+  featurePerform: string;
+  featurePlan: string;
+  footerText: string;
+  greeting: string;
+  preview: string;
 }
 
 const DEFAULT_APP_URL = "https://themagiclab.app";
@@ -21,20 +28,32 @@ const DEFAULT_APP_URL = "https://themagiclab.app";
 /** Default props shown in the React Email preview UI. */
 WelcomeEmail.PreviewProps = {
   appUrl: DEFAULT_APP_URL,
-  name: "Houdini",
+  body: "Your workspace is ready. Here's what you can do:",
+  cta: "Go to your dashboard",
+  featureImprove: "Log practice sessions and track progress",
+  featurePlan: "Build and organize routines",
+  featurePerform: "Record and review performances",
+  footerText: "— The Magic Lab",
+  greeting: "Hi Houdini, welcome to The Magic Lab!",
+  preview: "Your workspace is ready — start organizing your magic.",
 } satisfies WelcomeEmailProps;
 
 export default function WelcomeEmail({
   appUrl = DEFAULT_APP_URL,
-  name,
+  body,
+  cta,
+  featureImprove,
+  featurePlan,
+  featurePerform,
+  footerText,
+  greeting,
+  preview,
 }: WelcomeEmailProps): React.JSX.Element {
-  const greeting = name ? `Hi ${name}` : "Hi";
-
   return (
     <Html>
       <Head />
-      <Preview>Your workspace is ready — start organizing your magic.</Preview>
-      <Body style={body}>
+      <Preview>{preview}</Preview>
+      <Body style={bodyStyle}>
         <Container style={container}>
           <Section style={logoSection}>
             <Link href={appUrl}>
@@ -47,25 +66,21 @@ export default function WelcomeEmail({
               />
             </Link>
           </Section>
-          <Heading style={heading}>
-            {greeting}, welcome to The Magic Lab!
-          </Heading>
-          <Text style={text}>
-            Your workspace is ready. Here&apos;s what you can do:
+          <Heading style={headingStyle}>{greeting}</Heading>
+          <Text style={textStyle}>{body}</Text>
+          <Text style={listItem}>
+            <strong>Improve</strong> — {featureImprove}
           </Text>
           <Text style={listItem}>
-            <strong>Improve</strong> — Log practice sessions and track progress
+            <strong>Plan</strong> — {featurePlan}
           </Text>
           <Text style={listItem}>
-            <strong>Plan</strong> — Build and organize routines
+            <strong>Perform</strong> — {featurePerform}
           </Text>
-          <Text style={listItem}>
-            <strong>Perform</strong> — Record and review performances
-          </Text>
-          <Link href={`${appUrl}/dashboard`} style={button}>
-            Go to your dashboard
+          <Link href={`${appUrl}/dashboard`} style={buttonStyle}>
+            {cta}
           </Link>
-          <Text style={footer}>— The Magic Lab</Text>
+          <Text style={footerStyle}>{footerText}</Text>
         </Container>
       </Body>
     </Html>
@@ -81,7 +96,7 @@ const logoImg: React.CSSProperties = {
   display: "inline-block",
 };
 
-const body: React.CSSProperties = {
+const bodyStyle: React.CSSProperties = {
   backgroundColor: "#f9fafb",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -97,7 +112,7 @@ const container: React.CSSProperties = {
   padding: "32px 24px",
 };
 
-const heading: React.CSSProperties = {
+const headingStyle: React.CSSProperties = {
   color: "#111827",
   fontSize: "24px",
   fontWeight: "600",
@@ -105,7 +120,7 @@ const heading: React.CSSProperties = {
   margin: "0 0 16px",
 };
 
-const text: React.CSSProperties = {
+const textStyle: React.CSSProperties = {
   color: "#374151",
   fontSize: "16px",
   lineHeight: "1.5",
@@ -120,7 +135,7 @@ const listItem: React.CSSProperties = {
   paddingLeft: "8px",
 };
 
-const button: React.CSSProperties = {
+const buttonStyle: React.CSSProperties = {
   backgroundColor: "#7c3aed",
   borderRadius: "6px",
   color: "#ffffff",
@@ -132,7 +147,7 @@ const button: React.CSSProperties = {
   textDecoration: "none",
 };
 
-const footer: React.CSSProperties = {
+const footerStyle: React.CSSProperties = {
   color: "#6b7280",
   fontSize: "14px",
   marginTop: "24px",

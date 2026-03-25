@@ -65,6 +65,16 @@ export async function ensureUserExists(
     return null;
   }
 
+  // Read the user's locale preference from the NEXT_LOCALE cookie so the
+  // initial INSERT seeds the DB with the correct locale (e.g., when the user
+  // selected a language on the auth page before signing up). For existing
+  // users the ON CONFLICT DO UPDATE set clause doesn't touch locale, so this
+  // value is only used on first insert.
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value;
+  const initialLocale =
+    cookieLocale && isLocale(cookieLocale) ? cookieLocale : defaultLocale;
+
   let result: UpsertResult[];
 
   try {
@@ -76,6 +86,7 @@ export async function ensureUserExists(
         id,
         email,
         displayName,
+        locale: initialLocale,
       })
       // The DO UPDATE is unconditional so RETURNING always provides
       // locale/theme for settings restoration. updated_at is only
@@ -157,6 +168,7 @@ export async function ensureUserExists(
         to: email,
         name: displayName ?? undefined,
         userId: id,
+        locale: isLocale(row.locale) ? row.locale : defaultLocale,
       }).catch((error: unknown) => {
         console.error("Failed to send welcome email:", {
           userId: id,
