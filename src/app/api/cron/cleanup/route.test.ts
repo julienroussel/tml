@@ -125,7 +125,7 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // 9 pre-pass UPDATEs + 9 main DELETEs + 1 user DELETE = 19 queries
+      // 11 pre-pass UPDATEs + 11 main DELETEs + 1 user DELETE = 23 queries
       mockQuery.mockResolvedValue({ rowCount: 2 });
 
       const response = await GET(createRequest("Bearer test-cron-secret"));
@@ -133,16 +133,16 @@ describe("GET /api/cron/cleanup", () => {
       expect(response.status).toBe(200);
       const body = await response.json();
       expect(body.success).toBe(true);
-      // 9 main tables + 1 user delete = 10 results, each with rowCount 2
-      expect(body.totalDeleted).toBe(20);
+      // 11 main tables + 1 user delete = 12 results, each with rowCount 2
+      expect(body.totalDeleted).toBe(24);
 
       expect(body.errorsCount).toBe(0);
       // No internal table names should be exposed
       expect(body.deleted).toBeUndefined();
       expect(body.errors).toBeUndefined();
 
-      // 9 pre-pass UPDATEs + 9 main DELETEs + 1 user DELETE
-      expect(mockQuery).toHaveBeenCalledTimes(19);
+      // 11 pre-pass UPDATEs + 11 main DELETEs + 1 user DELETE
+      expect(mockQuery).toHaveBeenCalledTimes(23);
     });
 
     it("handles tables with zero deleted rows", async () => {
@@ -229,7 +229,7 @@ describe("GET /api/cron/cleanup", () => {
 
       const calls = mockQuery.mock.calls.map((call) => call[0] as string);
       const updateCalls = calls.filter((q) => q.startsWith("UPDATE"));
-      expect(updateCalls).toHaveLength(9);
+      expect(updateCalls).toHaveLength(11);
       for (const sql of updateCalls) {
         expect(sql).toContain("SET deleted_at = NOW()");
         expect(sql).toContain("INTERVAL '1 day' * $1");
@@ -329,8 +329,8 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // 9 pre-pass UPDATEs succeed, first main DELETE fails, rest succeed
-      for (let i = 0; i < 9; i++) {
+      // 11 pre-pass UPDATEs succeed, first main DELETE fails, rest succeed
+      for (let i = 0; i < 11; i++) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 }); // pre-pass
       }
       mockQuery
@@ -342,8 +342,8 @@ describe("GET /api/cron/cleanup", () => {
       expect(response.status).toBe(200);
       const body = await response.json();
       expect(body.success).toBe(true);
-      // First main table failed, 8 main + 1 user succeeded with 1 row each
-      expect(body.totalDeleted).toBe(9);
+      // First main table failed, 10 main + 1 user succeeded with 1 row each
+      expect(body.totalDeleted).toBe(11);
       expect(body.errorsCount).toBe(1);
       // No internal table names should be exposed
       expect(body.deleted).toBeUndefined();
@@ -356,8 +356,8 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // 9 pre-pass UPDATEs succeed, then first main DELETE throws a string
-      for (let i = 0; i < 9; i++) {
+      // 11 pre-pass UPDATEs succeed, then first main DELETE throws a string
+      for (let i = 0; i < 11; i++) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery
@@ -394,8 +394,8 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // 9 pre-pass UPDATEs succeed, then first main DELETE fails
-      for (let i = 0; i < 9; i++) {
+      // 11 pre-pass UPDATEs succeed, then first main DELETE fails
+      for (let i = 0; i < 11; i++) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery
@@ -432,6 +432,8 @@ describe("GET /api/cron/cleanup", () => {
         "practice_sessions",
         "setlist_tricks",
         "setlists",
+        "tags",
+        "trick_tags",
         "tricks",
       ]) {
         expect(userDeleteQuery).toContain(`"${table}"`);
@@ -444,8 +446,8 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // All pre-pass (9) + main DELETEs (9) succeed, user DELETE fails
-      for (let i = 0; i < 18; i++) {
+      // All pre-pass (11) + main DELETEs (11) succeed, user DELETE fails
+      for (let i = 0; i < 22; i++) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery.mockRejectedValueOnce(new Error("FK violation"));
@@ -480,9 +482,9 @@ describe("GET /api/cron/cleanup", () => {
       vi.resetModules();
       const { GET } = await import("./route");
 
-      // 9 pre-pass UPDATEs succeed, first main DELETE succeeds,
+      // 11 pre-pass UPDATEs succeed, first main DELETE succeeds,
       // second fails, rest succeed
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 11; i++) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery
@@ -493,8 +495,8 @@ describe("GET /api/cron/cleanup", () => {
       const response = await GET(createRequest("Bearer test-cron-secret"));
 
       expect(response.status).toBe(200);
-      // 9 pre-pass + 9 main DELETEs + 1 user DELETE = 19 total queries
-      expect(mockQuery).toHaveBeenCalledTimes(19);
+      // 11 pre-pass + 11 main DELETEs + 1 user DELETE = 23 total queries
+      expect(mockQuery).toHaveBeenCalledTimes(23);
     });
   });
 });

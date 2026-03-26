@@ -1,5 +1,5 @@
 import { UserButton } from "@neondatabase/auth/react";
-import { LayoutDashboard, UserCog } from "lucide-react";
+import { LayoutDashboard, UserCog, WandSparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
 import { Logo } from "@/components/logo";
@@ -39,6 +39,9 @@ export async function AppSidebar(): Promise<ReactElement> {
             <SidebarMenu>
               <SidebarNavItem href="/dashboard" label={t("dashboard")}>
                 <LayoutDashboard />
+              </SidebarNavItem>
+              <SidebarNavItem href="/repertoire" label={t("repertoire")}>
+                <WandSparkles />
               </SidebarNavItem>
             </SidebarMenu>
           </SidebarGroupContent>

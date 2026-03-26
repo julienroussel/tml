@@ -8,6 +8,7 @@ export {
 } from "./practice-sessions";
 export { pushSubscriptions } from "./push-subscriptions";
 export { setlists, setlistTricks } from "./setlists";
+export { tags, trickTags } from "./tags";
 export { tricks } from "./tricks";
 export { userPreferences } from "./user-preferences";
 export { users } from "./users";

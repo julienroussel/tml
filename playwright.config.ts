@@ -60,16 +60,17 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /settings-.*\.spec\.ts|pwa-offline\.spec\.ts/,
+      testIgnore:
+        /settings-.*\.spec\.ts|repertoire\.spec\.ts|pwa-offline\.spec\.ts/,
     },
-    // Authenticated tests — settings, locale, theme
+    // Authenticated tests — settings, locale, theme, repertoire
     {
       name: "authenticated",
       use: {
         ...devices["Desktop Chrome"],
         storageState: AUTH_STATE_PATH,
       },
-      testMatch: /settings-.*\.spec\.ts/,
+      testMatch: /settings-.*\.spec\.ts|repertoire\.spec\.ts/,
       dependencies: ["setup"],
     },
     // PWA tests — SW registration, activation, cache verification.

@@ -44,11 +44,13 @@ const TABLES_IN_ORDER = [
   "item_tricks",
   "setlist_tricks",
   "practice_session_tricks",
+  "trick_tags",
   "items",
   "setlists",
   "practice_sessions",
   "performances",
   "goals",
+  "tags",
   "tricks",
 ] as const satisfies readonly SyncedTableName[];
 
@@ -67,6 +69,8 @@ const USER_OWNED_TABLES = [
   "practice_sessions",
   "setlist_tricks",
   "setlists",
+  "tags",
+  "trick_tags",
   "tricks",
 ] as const satisfies readonly SyncedTableName[];
 

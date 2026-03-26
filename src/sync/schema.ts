@@ -5,13 +5,42 @@ const tricks = new Table({
   name: column.text,
   description: column.text,
   category: column.text,
+  effect_type: column.text,
   difficulty: column.integer,
   status: column.text,
+  duration: column.integer,
+  performance_type: column.text,
+  angle_sensitivity: column.text,
+  props: column.text,
+  music: column.text,
   // PostgreSQL text[] arrays are serialized as JSON strings by PowerSync.
   // Client code must JSON.parse() this value to get the array.
-  tags: column.text,
+  languages: column.text,
+  // PostgreSQL booleans are stored as integers (0/1) in SQLite.
+  // Client code must convert to/from boolean.
+  is_camera_friendly: column.integer,
+  is_silent: column.integer,
   notes: column.text,
   source: column.text,
+  video_url: column.text,
+  created_at: column.text,
+  updated_at: column.text,
+  deleted_at: column.text,
+});
+
+const tags = new Table({
+  user_id: column.text,
+  name: column.text,
+  color: column.text,
+  created_at: column.text,
+  updated_at: column.text,
+  deleted_at: column.text,
+});
+
+const trick_tags = new Table({
+  user_id: column.text,
+  trick_id: column.text,
+  tag_id: column.text,
   created_at: column.text,
   updated_at: column.text,
   deleted_at: column.text,
@@ -134,6 +163,8 @@ const goals = new Table({
 // Web Push API respectively) and never need to sync to the client.
 export const appSchema = new Schema({
   tricks,
+  tags,
+  trick_tags,
   setlists,
   setlist_tricks,
   practice_sessions,

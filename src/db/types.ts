@@ -8,6 +8,7 @@ import type {
 } from "./schema/practice-sessions";
 import type { pushSubscriptions } from "./schema/push-subscriptions";
 import type { setlists, setlistTricks } from "./schema/setlists";
+import type { tags, trickTags } from "./schema/tags";
 import type { tricks } from "./schema/tricks";
 import type { userPreferences } from "./schema/user-preferences";
 import type { users } from "./schema/users";
@@ -31,6 +32,7 @@ type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
 type GoalId = string & { readonly __brand: "GoalId" };
+type TagId = string & { readonly __brand: "TagId" };
 
 // Select types (read from DB)
 type User = InferSelectModel<typeof users>;
@@ -43,6 +45,8 @@ type Performance = InferSelectModel<typeof performances>;
 type Item = InferSelectModel<typeof items>;
 type ItemTrick = InferSelectModel<typeof itemTricks>;
 type Goal = InferSelectModel<typeof goals>;
+type Tag = InferSelectModel<typeof tags>;
+type TrickTag = InferSelectModel<typeof trickTags>;
 type PushSubscription = InferSelectModel<typeof pushSubscriptions>;
 type UserPreference = InferSelectModel<typeof userPreferences>;
 
@@ -54,6 +58,7 @@ type NewPracticeSession = InferInsertModel<typeof practiceSessions>;
 type NewPerformance = InferInsertModel<typeof performances>;
 type NewItem = InferInsertModel<typeof items>;
 type NewGoal = InferInsertModel<typeof goals>;
+type NewTag = InferInsertModel<typeof tags>;
 
 export type {
   Goal,
@@ -66,6 +71,7 @@ export type {
   NewPerformance,
   NewPracticeSession,
   NewSetlist,
+  NewTag,
   NewTrick,
   NewUser,
   Performance,
@@ -77,8 +83,11 @@ export type {
   Setlist,
   SetlistId,
   SetlistTrick,
+  Tag,
+  TagId,
   Trick,
   TrickId,
+  TrickTag,
   User,
   UserId,
   UserPreference,
