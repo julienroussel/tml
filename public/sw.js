@@ -42,6 +42,13 @@ function shouldBypass(url) {
   return false;
 }
 
+function isSafeToCacheForever(url, response) {
+  if (url.pathname.startsWith("/@powersync/")) {
+    return true;
+  }
+  return (response.headers.get("cache-control") || "").includes("immutable");
+}
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
@@ -86,22 +93,49 @@ self.addEventListener("fetch", (event) => {
   ) {
     event.respondWith(
       caches.open(STATIC_CACHE).then((cache) =>
-        cache.match(event.request).then(
-          (cached) =>
-            cached ||
-            fetch(event.request).then((response) => {
-              const isSafeToCacheForever =
-                url.pathname.startsWith("/@powersync/") ||
-                (response.headers.get("cache-control") || "").includes(
-                  "immutable"
-                );
-              if (response.ok && isSafeToCacheForever) {
+        cache.match(event.request).then((cached) => {
+          // Only serve from cache if the entry is a PowerSync asset
+          // (always cached) or the original response was immutable
+          // (production Next.js content-hashed bundles). Stale
+          // non-immutable entries (e.g. from Turbopack dev) are
+          // bypassed and cleaned up.
+          if (cached) {
+            const isPowerSync = url.pathname.startsWith("/@powersync/");
+            const isImmutable = (
+              cached.headers.get("cache-control") || ""
+            ).includes("immutable");
+            if (isPowerSync || isImmutable) {
+              return cached;
+            }
+            // Stale non-immutable entry (e.g. from Turbopack dev):
+            // try network first, fall back to stale cache if offline.
+            if (self.location.hostname !== "localhost") {
+              console.warn("[SW] Non-immutable cache hit:", url.pathname);
+            }
+            return fetch(event.request)
+              .then((response) => {
+                if (response.ok && isSafeToCacheForever(url, response)) {
+                  cache.put(event.request, response.clone());
+                  trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
+                } else if (response.ok) {
+                  cache.delete(event.request);
+                }
+                return response;
+              })
+              .catch(() => cached);
+          }
+          return fetch(event.request)
+            .then((response) => {
+              if (response.ok && isSafeToCacheForever(url, response)) {
                 cache.put(event.request, response.clone());
                 trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
               }
               return response;
             })
-        )
+            .catch(
+              () => new Response("", { status: 503, statusText: "Offline" })
+            );
+        })
       )
     );
     return;
