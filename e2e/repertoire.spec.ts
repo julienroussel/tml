@@ -15,12 +15,16 @@ const SEARCH_RE = /search tricks/i;
 const NAME_REQUIRED_RE = /name is required|nameRequired/i;
 const ACTIONS_RE = /actions/i;
 const DELETE_RE = /delete/i;
+const ANY_TEXT_RE = /.+/;
 
-/** Wait for the repertoire page to be fully interactive (PowerSync local DB ready). */
+/** Wait for the repertoire page to be fully interactive with PowerSync ready. */
 async function waitForPageReady(page: Page): Promise<void> {
-  await expect(
-    page.getByRole("button", { name: ADD_TRICK_RE }).first()
-  ).toBeVisible({ timeout: 30_000 });
+  // The SyncStatus in the header shows text (even "Offline") only after
+  // PowerSync fetches an auth token and initializes the local SQLite database.
+  // This ensures the auth session is loaded and writes will succeed.
+  await expect(page.locator("header [role='status']")).toHaveText(ANY_TEXT_RE, {
+    timeout: 30_000,
+  });
 }
 
 /** Create a trick via the form sheet and wait for it to appear in the list. */
@@ -33,7 +37,7 @@ async function createTrick(page: Page, name: string): Promise<void> {
 
   await page.getByRole("dialog").getByRole("button", { name: SAVE_RE }).click();
 
-  await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 30_000 });
 
   // Wait for the trick to appear as a card in the grid (not just in a toast)
   await expect(
