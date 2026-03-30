@@ -16,10 +16,10 @@ const NAME_REQUIRED_RE = /name is required|nameRequired/i;
 const ACTIONS_RE = /actions/i;
 const DELETE_RE = /delete/i;
 
-/** Wait for PowerSync to connect (status changes from "Offline"). */
-async function waitForSync(page: Page): Promise<void> {
+/** Wait for the repertoire page to be fully interactive (PowerSync local DB ready). */
+async function waitForPageReady(page: Page): Promise<void> {
   await expect(
-    page.locator("[role='status']").filter({ hasNotText: "Offline" })
+    page.getByRole("button", { name: ADD_TRICK_RE }).first()
   ).toBeVisible({ timeout: 30_000 });
 }
 
@@ -56,7 +56,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test("can create a trick", async ({ page }) => {
     const name = `E2E Create ${Date.now().toString()}`;
     await page.goto("/repertoire");
-    await waitForSync(page);
+    await waitForPageReady(page);
 
     await createTrick(page, name);
 
@@ -85,7 +85,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test("can search for a trick", async ({ page }) => {
     const name = `E2E Search ${Date.now().toString()}`;
     await page.goto("/repertoire");
-    await waitForSync(page);
+    await waitForPageReady(page);
 
     // Create a trick first (same page — no sync needed)
     await createTrick(page, name);
@@ -106,7 +106,7 @@ test.describe("Repertoire — Trick CRUD", () => {
     const name = `E2E Edit ${Date.now().toString()}`;
     const updatedName = `${name} (edited)`;
     await page.goto("/repertoire");
-    await waitForSync(page);
+    await waitForPageReady(page);
 
     // Create a trick first
     await createTrick(page, name);
@@ -134,7 +134,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test.fixme("can delete a trick", async ({ page }) => {
     const name = `E2E Delete ${Date.now().toString()}`;
     await page.goto("/repertoire");
-    await waitForSync(page);
+    await waitForPageReady(page);
 
     // Create a trick first
     await createTrick(page, name);

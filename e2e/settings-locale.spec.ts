@@ -62,6 +62,7 @@ test.describe("Settings — Language change", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       "Paramètres"
     );
+    await expect(page.locator("#locale-select")).toHaveCount(1);
     await expect(page.locator("#locale-select")).toHaveValue("fr");
   });
 
