@@ -17,14 +17,15 @@ const ACTIONS_RE = /actions/i;
 const DELETE_RE = /delete/i;
 const ANY_TEXT_RE = /.+/;
 
-/** Wait for the repertoire page to be fully interactive with PowerSync ready. */
+/** Wait for PowerSync to finish initializing (local SQLite ready for writes). */
 async function waitForPageReady(page: Page): Promise<void> {
   // The SyncStatus in the header shows text (even "Offline") only after
-  // PowerSync fetches an auth token and initializes the local SQLite database.
-  // This ensures the auth session is loaded and writes will succeed.
-  await expect(page.locator("header [role='status']")).toHaveText(ANY_TEXT_RE, {
-    timeout: 30_000,
-  });
+  // connect() fetches an auth token and initializes the local SQLite database.
+  // Filter for non-empty text to skip the Suspense fallback (empty span) that
+  // can briefly coexist with the real status during hydration.
+  await expect(
+    page.locator("header [role='status']").filter({ hasText: ANY_TEXT_RE })
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 /** Create a trick via the form sheet and wait for it to appear in the list. */
