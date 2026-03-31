@@ -30,20 +30,51 @@ async function waitForPageReady(page: Page): Promise<void> {
 
 /** Create a trick via the form sheet and wait for it to appear in the list. */
 async function createTrick(page: Page, name: string): Promise<void> {
+  // Capture browser errors for diagnostics if save fails
+  const errors: string[] = [];
+  const onError = (error: Error): void => {
+    errors.push(error.message);
+  };
+  const onConsole = (msg: { type: () => string; text: () => string }): void => {
+    if (msg.type() === "error") {
+      errors.push(msg.text());
+    }
+  };
+  page.on("pageerror", onError);
+  page.on("console", onConsole);
+
   await page.getByRole("button", { name: ADD_TRICK_RE }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 
   const nameInput = page.getByLabel(NAME_RE).first();
   await nameInput.fill(name);
 
-  await page.getByRole("dialog").getByRole("button", { name: SAVE_RE }).click();
+  // Submit the form via requestSubmit() — more reliable than the external
+  // submit button's form= attribute in Radix portal contexts.
+  await page.locator("#trick-form").evaluate((el) => {
+    (el as HTMLFormElement).requestSubmit();
+  });
 
-  await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 30_000 });
+  // If the dialog stays open, report captured browser errors for diagnostics
+  try {
+    await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 30_000 });
+  } catch {
+    const toastText = await page
+      .locator("[data-sonner-toast]")
+      .allTextContents()
+      .catch(() => []);
+    throw new Error(
+      `Sheet stayed open after save. Browser errors: [${errors.join(" | ")}] Toast: [${toastText.join(" | ")}]`
+    );
+  }
 
   // Wait for the trick to appear as a card in the grid (not just in a toast)
   await expect(
     page.locator("[data-slot='card']", { hasText: name })
   ).toBeVisible({ timeout: 30_000 });
+
+  page.removeListener("pageerror", onError);
+  page.removeListener("console", onConsole);
 }
 
 test.describe("Repertoire — Trick CRUD", () => {
