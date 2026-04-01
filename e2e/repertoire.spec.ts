@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Response, test } from "@playwright/test";
 import { hasAuthSession } from "./helpers";
 
 /**
@@ -9,23 +9,34 @@ import { hasAuthSession } from "./helpers";
  */
 
 const ADD_TRICK_RE = /add trick/i;
-const SAVE_RE = /save/i;
 const NAME_RE = /^name$/i;
 const SEARCH_RE = /search tricks/i;
 const NAME_REQUIRED_RE = /name is required|nameRequired/i;
 const ACTIONS_RE = /actions/i;
 const DELETE_RE = /delete/i;
-const ANY_TEXT_RE = /.+/;
+const AUTH_TOKEN_RE = /\/api\/auth\/token/;
 
-/** Wait for PowerSync to finish initializing (local SQLite ready for writes). */
-async function waitForPageReady(page: Page): Promise<void> {
-  // The SyncStatus in the header shows text (even "Offline") only after
-  // connect() fetches an auth token and initializes the local SQLite database.
-  // Filter for non-empty text to skip the Suspense fallback (empty span) that
-  // can briefly coexist with the real status during hydration.
-  await expect(
-    page.locator("header [role='status']").filter({ hasText: ANY_TEXT_RE })
-  ).toBeVisible({ timeout: 30_000 });
+/**
+ * Navigate to /repertoire and wait for PowerSync's local SQLite database to be
+ * fully initialized and ready for writes.
+ *
+ * PowerSync's `writeTransaction()` calls `waitForReady()` which hangs until the
+ * WASM workers finish loading and the DB schema is created. The SyncStatus
+ * "Offline" text is useless as a readiness signal — it comes from the
+ * constructor default, before any init.
+ *
+ * The reliable signal: PowerSync's `connect()` fetches `/api/auth/token` only
+ * AFTER `waitForReady()` resolves. So a successful token response proves the
+ * database is ready.
+ */
+async function gotoRepertoireReady(page: Page): Promise<void> {
+  // Start listening BEFORE navigation so we don't miss the response
+  const tokenFetched = page.waitForResponse(
+    (r: Response) => AUTH_TOKEN_RE.test(r.url()) && r.ok(),
+    { timeout: 30_000 }
+  );
+  await page.goto("/repertoire");
+  await tokenFetched;
 }
 
 /** Create a trick via the form sheet and wait for it to appear in the list. */
@@ -37,8 +48,7 @@ async function createTrick(page: Page, name: string): Promise<void> {
   await nameInput.fill(name);
 
   // Use requestSubmit() to bypass the Next.js dev overlay that blocks pointer
-  // events on the Save button in dev mode.  In production (CI), this also
-  // avoids potential Radix-portal form-attribute issues.
+  // events on the Save button in dev mode.
   await page.locator("#trick-form").evaluate((el) => {
     (el as HTMLFormElement).requestSubmit();
   });
@@ -86,8 +96,7 @@ test.describe("Repertoire — Trick CRUD", () => {
 
   test("can create a trick", async ({ page }) => {
     const name = `E2E Create ${Date.now().toString()}`;
-    await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await gotoRepertoireReady(page);
 
     await createTrick(page, name);
 
@@ -115,8 +124,7 @@ test.describe("Repertoire — Trick CRUD", () => {
 
   test("can search for a trick", async ({ page }) => {
     const name = `E2E Search ${Date.now().toString()}`;
-    await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await gotoRepertoireReady(page);
 
     // Create a trick first (same page — no sync needed)
     await createTrick(page, name);
@@ -136,8 +144,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test.fixme("can edit a trick", async ({ page }) => {
     const name = `E2E Edit ${Date.now().toString()}`;
     const updatedName = `${name} (edited)`;
-    await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await gotoRepertoireReady(page);
 
     // Create a trick first
     await createTrick(page, name);
@@ -155,7 +162,7 @@ test.describe("Repertoire — Trick CRUD", () => {
     // Save
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: SAVE_RE })
+      .getByRole("button", { name: DELETE_RE })
       .click();
 
     await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 5000 });
@@ -164,8 +171,7 @@ test.describe("Repertoire — Trick CRUD", () => {
 
   test.fixme("can delete a trick", async ({ page }) => {
     const name = `E2E Delete ${Date.now().toString()}`;
-    await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await gotoRepertoireReady(page);
 
     // Create a trick first
     await createTrick(page, name);
