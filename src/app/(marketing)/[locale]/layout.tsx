@@ -47,10 +47,10 @@ export default async function MarketingLayout({
       >
         {tCommon("skipToContent")}
       </a>
-      {/* lang={locale} provides correct language context for this subtree.
-          The root <html lang="en"> is a trade-off for static generation —
-          the DynamicIntlProvider's useEffect syncs the correct lang on hydration
-          for app routes. Marketing pages use this div-level override instead. */}
+      {/* lang={locale} provides correct language context for non-JS crawlers
+          that don't execute the root layout's blocking lang script. The script
+          handles browser-based AT; this div-level attribute is a fallback for
+          pure-HTML consumers (e.g., RSS readers, search engine preview). */}
       <div className="relative flex min-h-screen flex-col" lang={locale}>
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <nav

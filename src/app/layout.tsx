@@ -5,6 +5,7 @@ import { Geist } from "next/font/google";
 import type { ReactElement, ReactNode } from "react";
 import { ServiceWorkerRegistration } from "@/components/sw-registration";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LANG_SCRIPT } from "@/lib/lang-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -64,6 +65,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased`}>
+        {/* Sync <html lang> with the user's locale before first paint.
+            See src/lib/lang-script.ts for detection logic. */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: blocking inline script for a11y — same pattern as next-themes anti-flicker */}
+        <script dangerouslySetInnerHTML={{ __html: LANG_SCRIPT }} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>

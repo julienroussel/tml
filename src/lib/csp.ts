@@ -48,7 +48,7 @@ function cspDirectiveNames(
 const BASE_DIRECTIVES: CspDirectives = {
   "default-src": ["'self'"],
   // 'unsafe-inline' allows inline scripts (e.g., next-themes' ThemeProvider
-  // anti-flicker script injected in the root layout). A nonce-based policy
+  // anti-flicker script and the lang-detection script in the root layout). A nonce-based policy
   // would be more restrictive, but the root layout must stay static (no
   // headers() call) for marketing pages, so ThemeProvider cannot receive a
   // per-request nonce. React's default output escaping provides XSS protection.
