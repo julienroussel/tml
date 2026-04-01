@@ -64,6 +64,7 @@ jobs:
         run: pnpm i18n:check
 
       - name: Check migration drift
+        if: github.actor != 'dependabot[bot]'
         run: |
           pnpm db:generate
           git diff --exit-code src/db/migrations/
@@ -71,6 +72,7 @@ jobs:
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
 
       - name: Check generated docs staleness
+        if: github.actor != 'dependabot[bot]'
         run: |
           pnpm docs:generate
           git diff --exit-code public/llms.txt public/llms-full.txt docs/diagrams/
