@@ -30,41 +30,39 @@ async function waitForPageReady(page: Page): Promise<void> {
 
 /** Create a trick via the form sheet and wait for it to appear in the list. */
 async function createTrick(page: Page, name: string): Promise<void> {
-  // Capture browser errors for diagnostics if save fails
-  const errors: string[] = [];
-  const onError = (error: Error): void => {
-    errors.push(error.message);
-  };
-  const onConsole = (msg: { type: () => string; text: () => string }): void => {
-    if (msg.type() === "error") {
-      errors.push(msg.text());
-    }
-  };
-  page.on("pageerror", onError);
-  page.on("console", onConsole);
-
   await page.getByRole("button", { name: ADD_TRICK_RE }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 
   const nameInput = page.getByLabel(NAME_RE).first();
   await nameInput.fill(name);
 
-  // Submit the form via requestSubmit() — more reliable than the external
-  // submit button's form= attribute in Radix portal contexts.
+  // Use requestSubmit() to bypass the Next.js dev overlay that blocks pointer
+  // events on the Save button in dev mode.  In production (CI), this also
+  // avoids potential Radix-portal form-attribute issues.
   await page.locator("#trick-form").evaluate((el) => {
     (el as HTMLFormElement).requestSubmit();
   });
 
-  // If the dialog stays open, report captured browser errors for diagnostics
+  // If the dialog stays open, collect diagnostics before failing
   try {
     await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 30_000 });
   } catch {
-    const toastText = await page
+    const formErrors = await page
+      .locator("#trick-form [data-slot='form-message']")
+      .allTextContents()
+      .catch(() => []);
+    const toasts = await page
       .locator("[data-sonner-toast]")
       .allTextContents()
       .catch(() => []);
+    const nameValue = await nameInput.inputValue().catch(() => "???");
     throw new Error(
-      `Sheet stayed open after save. Browser errors: [${errors.join(" | ")}] Toast: [${toastText.join(" | ")}]`
+      [
+        "Sheet stayed open after save.",
+        `Name value: "${nameValue}"`,
+        `Form validation errors: [${formErrors.join(" | ")}]`,
+        `Toasts: [${toasts.join(" | ")}]`,
+      ].join("\n")
     );
   }
 
@@ -72,9 +70,6 @@ async function createTrick(page: Page, name: string): Promise<void> {
   await expect(
     page.locator("[data-slot='card']", { hasText: name })
   ).toBeVisible({ timeout: 30_000 });
-
-  page.removeListener("pageerror", onError);
-  page.removeListener("console", onConsole);
 }
 
 test.describe("Repertoire — Trick CRUD", () => {
@@ -106,11 +101,11 @@ test.describe("Repertoire — Trick CRUD", () => {
     await page.getByRole("button", { name: ADD_TRICK_RE }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 
-    // Submit without filling the name
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: SAVE_RE })
-      .click();
+    // Submit without filling the name — use requestSubmit() to avoid
+    // Next.js dev overlay blocking button clicks in dev mode.
+    await page.locator("#trick-form").evaluate((el) => {
+      (el as HTMLFormElement).requestSubmit();
+    });
 
     // Validation error should appear
     await expect(page.getByText(NAME_REQUIRED_RE)).toBeVisible({
