@@ -66,43 +66,23 @@ The following are excluded from coverage metrics (configured in `vitest.config.m
 
 ## Test Utilities
 
-### Test Factories (Planned)
+### Test Factories
 
-```typescript
-// src/test/factories.ts
-function createTrick(overrides?: Partial<Trick>): Trick {
-  return {
-    id: crypto.randomUUID() as TrickId,
-    name: "Ambitious Card",
-    category: "card",
-    difficulty: 3,
-    ...overrides,
-  };
-}
-```
+`src/test/factories.ts` provides `createTestUser()`, `createTestTrick()`, `createTestSetlist()`, `createTestTag()`, `createTestTrickTag()`, `createTestPracticeSession()`, `createTestPerformance()`, `createTestItem()`, `createTestGoal()`, and more. Each returns a fully-typed entity with sensible defaults and deterministic IDs.
 
-### Mock Providers (Planned)
+### Mock Providers
 
-```typescript
-// src/test/render.tsx
-function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
-  return render(ui, {
-    wrapper: ({ children }) => (
-      <ThemeProvider>
-        <PowerSyncProvider>{children}</PowerSyncProvider>
-      </ThemeProvider>
-    ),
-    ...options,
-  });
-}
-```
+`src/test/render.tsx` exports a custom `renderWithProviders()` wrapper that includes `NextIntlClientProvider` (locale `"en"`, UTC timezone). ThemeProvider and PowerSync are omitted by default — add them per-test when needed.
 
-### Common Mocks (Planned)
+### Common Mocks
 
-- `next/navigation` (useRouter, usePathname, useSearchParams)
-- `next/image` (renders as plain img)
-- PowerSync hooks (useQuery, useStatus)
-- Better Auth hooks (useSession)
+`src/test/mocks.tsx` activates mocks for:
+
+- `next/navigation` (useRouter, usePathname, useSearchParams, useParams, redirect, notFound)
+- `next/image` (renders as plain `<img>`)
+- `next/link` (renders as plain `<a>`)
+
+Importing the file activates all mocks via hoisted `vi.mock()` calls.
 
 ## Test Patterns
 

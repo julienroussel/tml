@@ -30,6 +30,7 @@ pnpm db:migrate     # Apply pending migrations to Neon
 pnpm db:studio      # Open Drizzle Studio GUI
 pnpm i18n:check     # Validate all locales have matching keys
 pnpm docs:generate  # Regenerate llms.txt files from docs/
+pnpm email:dev      # Start React Email dev server (port 3030)
 pnpm screenshots    # Regenerate PWA manifest screenshots (dev server must be running)
 pnpm setup          # Initial project setup
 ```
@@ -62,7 +63,7 @@ Requires Node 24.x and pnpm >= 10.
 
 ### Route Groups
 
-- `src/app/(app)/` — authenticated routes (dashboard, settings, feature modules). Protected by `proxy.ts`. Dynamic (server-rendered on demand).
+- `src/app/(app)/` — authenticated routes (dashboard, repertoire, settings, account, feature modules). Protected by `proxy.ts`. Dynamic (server-rendered on demand). Notable non-module routes: `/repertoire` (trick CRUD — fully implemented, lives outside the module registry), `/account/[path]` (Neon Auth account management via `AccountView`).
 - `src/app/(marketing)/[locale]/` — public pages (landing, FAQ, privacy). URL-based locale routing with `generateStaticParams` for all 7 locales. Statically generated at build time (21 pages). Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions.
 - `src/app/auth/` — sign-in / sign-up pages. Dynamic (reads `NEXT_LOCALE` cookie for locale-aware rendering). Authenticated users are redirected to `/dashboard`.
 - `src/app/api/` — API route handlers (PowerSync upload, auth, unsubscribe, etc.).
@@ -185,7 +186,7 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Read path**: Neon → PowerSync Cloud → client SQLite → `useQuery()` → React component
 - **Conflict resolution**: Last-write-wins with `updated_at` timestamps
 - **Deletion**: Soft-delete with `deleted_at` tombstone, 30-day hard-delete cleanup
-- **Connector allowlists**: New synced tables MUST be added to `SYNCED_TABLE_NAMES` and `SYNCED_COLUMNS` in `src/sync/connector.ts` — unlisted tables/columns are silently rejected
+- **Connector allowlists**: New synced tables MUST be added to `SYNCED_TABLE_NAMES` and `SYNCED_COLUMNS` in `src/sync/queries.ts` — unlisted tables/columns are silently rejected
 - **Mutation scoping**: The connector forces the authenticated `user_id` on all writes server-side — never trusted from the client
 - **Error semantics**: 4xx responses are permanent (mutation dropped); 5xx/network errors trigger PowerSync retry
 
