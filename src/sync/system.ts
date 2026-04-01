@@ -5,7 +5,7 @@ import { appSchema } from "./schema";
 
 const factory = new WASQLiteOpenFactory({
   dbFilename: "themagiclab.db",
-  worker: "/@powersync/worker/WASQLiteDB.umd.js",
+  worker: "/powersync/worker/WASQLiteDB.umd.js",
 });
 
 export const powerSyncDb = new PowerSyncDatabase({
@@ -15,6 +15,6 @@ export const powerSyncDb = new PowerSyncDatabase({
     disableSSRWarning: true,
   },
   sync: {
-    worker: "/@powersync/worker/SharedSyncImplementation.umd.js",
+    worker: "/powersync/worker/SharedSyncImplementation.umd.js",
   },
 });

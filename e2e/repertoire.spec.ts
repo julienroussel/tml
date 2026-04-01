@@ -1,4 +1,4 @@
-import { expect, type Page, type Response, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { hasAuthSession } from "./helpers";
 
 /**
@@ -14,29 +14,12 @@ const SEARCH_RE = /search tricks/i;
 const NAME_REQUIRED_RE = /name is required|nameRequired/i;
 const ACTIONS_RE = /actions/i;
 const DELETE_RE = /delete/i;
-const AUTH_TOKEN_RE = /\/api\/auth\/token/;
 
-/**
- * Navigate to /repertoire and wait for PowerSync's local SQLite database to be
- * fully initialized and ready for writes.
- *
- * PowerSync's `writeTransaction()` calls `waitForReady()` which hangs until the
- * WASM workers finish loading and the DB schema is created. The SyncStatus
- * "Offline" text is useless as a readiness signal — it comes from the
- * constructor default, before any init.
- *
- * The reliable signal: PowerSync's `connect()` fetches `/api/auth/token` only
- * AFTER `waitForReady()` resolves. So a successful token response proves the
- * database is ready.
- */
-async function gotoRepertoireReady(page: Page): Promise<void> {
-  // Start listening BEFORE navigation so we don't miss the response
-  const tokenFetched = page.waitForResponse(
-    (r: Response) => AUTH_TOKEN_RE.test(r.url()) && r.ok(),
-    { timeout: 30_000 }
-  );
-  await page.goto("/repertoire");
-  await tokenFetched;
+/** Wait for the repertoire page to be interactive. */
+async function waitForPageReady(page: Page): Promise<void> {
+  await expect(
+    page.getByRole("button", { name: ADD_TRICK_RE }).first()
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 /** Create a trick via the form sheet and wait for it to appear in the list. */
@@ -96,7 +79,8 @@ test.describe("Repertoire — Trick CRUD", () => {
 
   test("can create a trick", async ({ page }) => {
     const name = `E2E Create ${Date.now().toString()}`;
-    await gotoRepertoireReady(page);
+    await page.goto("/repertoire");
+    await waitForPageReady(page);
 
     await createTrick(page, name);
 
@@ -124,7 +108,8 @@ test.describe("Repertoire — Trick CRUD", () => {
 
   test("can search for a trick", async ({ page }) => {
     const name = `E2E Search ${Date.now().toString()}`;
-    await gotoRepertoireReady(page);
+    await page.goto("/repertoire");
+    await waitForPageReady(page);
 
     // Create a trick first (same page — no sync needed)
     await createTrick(page, name);
@@ -144,7 +129,8 @@ test.describe("Repertoire — Trick CRUD", () => {
   test.fixme("can edit a trick", async ({ page }) => {
     const name = `E2E Edit ${Date.now().toString()}`;
     const updatedName = `${name} (edited)`;
-    await gotoRepertoireReady(page);
+    await page.goto("/repertoire");
+    await waitForPageReady(page);
 
     // Create a trick first
     await createTrick(page, name);
@@ -171,7 +157,8 @@ test.describe("Repertoire — Trick CRUD", () => {
 
   test.fixme("can delete a trick", async ({ page }) => {
     const name = `E2E Delete ${Date.now().toString()}`;
-    await gotoRepertoireReady(page);
+    await page.goto("/repertoire");
+    await waitForPageReady(page);
 
     // Create a trick first
     await createTrick(page, name);

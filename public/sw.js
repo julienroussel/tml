@@ -43,7 +43,7 @@ function shouldBypass(url) {
 }
 
 function isSafeToCacheForever(url, response) {
-  if (url.pathname.startsWith("/@powersync/")) {
+  if (url.pathname.startsWith("/powersync/")) {
     return true;
   }
   return (response.headers.get("cache-control") || "").includes("immutable");
@@ -89,7 +89,7 @@ self.addEventListener("fetch", (event) => {
   // PowerSync WASM/worker assets are always cached regardless of headers.
   if (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/@powersync/")
+    url.pathname.startsWith("/powersync/")
   ) {
     event.respondWith(
       caches.open(STATIC_CACHE).then((cache) =>
@@ -100,7 +100,7 @@ self.addEventListener("fetch", (event) => {
           // non-immutable entries (e.g. from Turbopack dev) are
           // bypassed and cleaned up.
           if (cached) {
-            const isPowerSync = url.pathname.startsWith("/@powersync/");
+            const isPowerSync = url.pathname.startsWith("/powersync/");
             const isImmutable = (
               cached.headers.get("cache-control") || ""
             ).includes("immutable");
