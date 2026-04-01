@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Tagline**: Train. Plan. Perform. Elevate your magic.
 - **Description**: A personal workspace built for magicians — whether you're just starting out or performing professionally. A single place to organize your repertoire, plan your setlists, track your practice sessions, and refine your performance over time.
-- **Core features**: Practice logging, goal setting & drills, setlist planning, performance tracking, continuous improvement tools, and inventory management (props, books, gimmicks, and other items).
+- **Core features**: Repertoire management (trick CRUD with tags), practice logging, goal setting & drills, setlist planning, performance tracking, continuous improvement tools, and inventory management (props, books, gimmicks, and other items).
 - **Production URL**: https://themagiclab.app/
 - **Hosting**: Vercel
 

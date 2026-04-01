@@ -432,14 +432,55 @@ A trick, sleight, move, or technique in the magician's repertoire.
 | name | text | NOT NULL |
 | description | text | |
 | category | text | e.g. "card", "coin", "mentalism" |
+| effect_type | text | The magical effect: vanish, production, transformation, etc. |
 | difficulty | integer | 1-5 scale |
 | status | text | `"new"`, `"learning"`, `"performance_ready"`, `"mastered"`, `"shelved"`, default `"new"` |
-| tags | text[] | Free-form tags |
+| duration | integer | Estimated performance time in seconds |
+| performance_type | text | `"close_up"`, `"parlor"`, `"stage"`, `"street"`, `"virtual"` |
+| angle_sensitivity | text | `"none"`, `"slight"`, `"moderate"`, `"high"` |
+| props | text | Quick-note for materials/equipment needed |
+| music | text | Track name/description, null = no music |
+| languages | text[] | Languages the trick can be performed in |
+| is_camera_friendly | boolean | Can be performed on camera |
+| is_silent | boolean | Can be performed without speaking |
 | notes | text | Personal notes |
 | source | text | Where the trick was learned |
+| video_url | text | Reference video URL |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
+
+### tags
+
+User-defined tags for organizing tricks (and future entities). Shared across the whole app.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `TagId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| name | text | NOT NULL, normalized (trimmed, lowercased) |
+| color | text | Hex color (e.g. `"#7c3aed"`) for visual grouping |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+Unique constraint on `(user_id, lower(name))` where `deleted_at IS NULL`.
+
+### trick_tags
+
+Join table linking tags to tricks (many-to-many).
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| tag_id | UUID (FK -> tags) | NOT NULL, cascade delete |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+Unique constraint on `(trick_id, tag_id)` where `deleted_at IS NULL`.
 
 ### setlists
 
@@ -637,6 +678,8 @@ Not all tables are synced to the client via PowerSync:
 | Table | Synced | Notes |
 |---|---|---|
 | tricks | Yes | Filtered by `user_id` |
+| tags | Yes | Filtered by `user_id` |
+| trick_tags | Yes | Filtered by `user_id` |
 | setlists | Yes | Filtered by `user_id` |
 | setlist_tricks | Yes | Global bucket (no `user_id`) |
 | practice_sessions | Yes | Filtered by `user_id` |
@@ -663,6 +706,7 @@ type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
 type GoalId = string & { readonly __brand: "GoalId" };
+type TagId = string & { readonly __brand: "TagId" };
 ```
 
 These types prevent accidentally passing a `TrickId` where a `SetlistId` is expected, catching errors at compile time rather than runtime.
@@ -956,7 +1000,7 @@ Source: docs/diagrams/route-map.md
 
 # Route Map
 
-<!-- Last verified: 2026-03-30 -->
+<!-- Last verified: 2026-04-01 -->
 
 ## Route Structure
 
@@ -981,33 +1025,35 @@ graph TD
   n15 --> n16(["page.tsx"])
   n0 --> n17["plan"]
   n17 --> n18(["page.tsx"])
-  n0 --> n19["settings"]
+  n0 --> n19["repertoire"]
   n19 --> n20(["page.tsx"])
-  n0 --> n21["train"]
+  n0 --> n21["settings"]
   n21 --> n22(["page.tsx"])
-  root --> n23["(marketing)"]
-  n23 --> n24["[locale]"]
-  n24 --> n25["faq"]
-  n25 --> n26(["page.tsx"])
-  n24 --> n28(["page.tsx"])
-  n24 --> n29["privacy"]
-  n29 --> n30(["page.tsx"])
-  root --> n31["api"]
-  n31 --> n32["auth"]
-  n32 --> n33["[...path]"]
-  n33 --> n34(["API: route.ts"])
-  n31 --> n35["cron"]
-  n35 --> n36["cleanup"]
-  n36 --> n37(["API: route.ts"])
-  n31 --> n38["email"]
-  n38 --> n39["unsubscribe"]
-  n39 --> n40(["API: route.ts"])
-  n31 --> n41["powersync"]
-  n41 --> n42["batch"]
-  n42 --> n43(["API: route.ts"])
-  root --> n44["auth"]
-  n44 --> n45["[path]"]
-  n45 --> n46(["page.tsx"])
+  n0 --> n23["train"]
+  n23 --> n24(["page.tsx"])
+  root --> n25["(marketing)"]
+  n25 --> n26["[locale]"]
+  n26 --> n27["faq"]
+  n27 --> n28(["page.tsx"])
+  n26 --> n30(["page.tsx"])
+  n26 --> n31["privacy"]
+  n31 --> n32(["page.tsx"])
+  root --> n33["api"]
+  n33 --> n34["auth"]
+  n34 --> n35["[...path]"]
+  n35 --> n36(["API: route.ts"])
+  n33 --> n37["cron"]
+  n37 --> n38["cleanup"]
+  n38 --> n39(["API: route.ts"])
+  n33 --> n40["email"]
+  n40 --> n41["unsubscribe"]
+  n41 --> n42(["API: route.ts"])
+  n33 --> n43["powersync"]
+  n43 --> n44["batch"]
+  n44 --> n45(["API: route.ts"])
+  root --> n46["auth"]
+  n46 --> n47["[path]"]
+  n47 --> n48(["page.tsx"])
 ```
 
 ## Route Groups
@@ -1063,11 +1109,40 @@ erDiagram
         text name
         text description
         text category
+        text effect_type
         integer difficulty
         text status "new, learning, performance_ready, mastered, shelved"
-        text_arr tags
+        integer duration "seconds"
+        text performance_type "close_up, parlor, stage, street, virtual"
+        text angle_sensitivity "none, slight, moderate, high"
+        text props
+        text music
+        text_arr languages
+        boolean is_camera_friendly
+        boolean is_silent
         text notes
         text source
+        text video_url
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    tags {
+        uuid id PK "default random"
+        uuid user_id FK
+        text name "unique per user"
+        text color "hex"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    trick_tags {
+        uuid id PK "default random"
+        uuid user_id FK
+        uuid trick_id FK
+        uuid tag_id FK
         timestamptz created_at
         timestamptz updated_at
         timestamptz deleted_at
@@ -1206,6 +1281,7 @@ erDiagram
     }
 
     users ||--o{ tricks : "owns"
+    users ||--o{ tags : "owns"
     users ||--o{ setlists : "owns"
     users ||--o{ practice_sessions : "owns"
     users ||--o{ performances : "owns"
@@ -1224,6 +1300,9 @@ erDiagram
 
     items ||--o{ item_tricks : "used for"
     tricks ||--o{ item_tricks : "requires"
+
+    tricks ||--o{ trick_tags : "tagged with"
+    tags ||--o{ trick_tags : "applied to"
 
     tricks ||--o{ goals : "targeted by"
 ```

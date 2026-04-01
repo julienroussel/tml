@@ -38,14 +38,55 @@ A trick, sleight, move, or technique in the magician's repertoire.
 | name | text | NOT NULL |
 | description | text | |
 | category | text | e.g. "card", "coin", "mentalism" |
+| effect_type | text | The magical effect: vanish, production, transformation, etc. |
 | difficulty | integer | 1-5 scale |
 | status | text | `"new"`, `"learning"`, `"performance_ready"`, `"mastered"`, `"shelved"`, default `"new"` |
-| tags | text[] | Free-form tags |
+| duration | integer | Estimated performance time in seconds |
+| performance_type | text | `"close_up"`, `"parlor"`, `"stage"`, `"street"`, `"virtual"` |
+| angle_sensitivity | text | `"none"`, `"slight"`, `"moderate"`, `"high"` |
+| props | text | Quick-note for materials/equipment needed |
+| music | text | Track name/description, null = no music |
+| languages | text[] | Languages the trick can be performed in |
+| is_camera_friendly | boolean | Can be performed on camera |
+| is_silent | boolean | Can be performed without speaking |
 | notes | text | Personal notes |
 | source | text | Where the trick was learned |
+| video_url | text | Reference video URL |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
+
+### tags
+
+User-defined tags for organizing tricks (and future entities). Shared across the whole app.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | Branded as `TagId` |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| name | text | NOT NULL, normalized (trimmed, lowercased) |
+| color | text | Hex color (e.g. `"#7c3aed"`) for visual grouping |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+Unique constraint on `(user_id, lower(name))` where `deleted_at IS NULL`.
+
+### trick_tags
+
+Join table linking tags to tricks (many-to-many).
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| tag_id | UUID (FK -> tags) | NOT NULL, cascade delete |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+Unique constraint on `(trick_id, tag_id)` where `deleted_at IS NULL`.
 
 ### setlists
 
@@ -243,6 +284,8 @@ Not all tables are synced to the client via PowerSync:
 | Table | Synced | Notes |
 |---|---|---|
 | tricks | Yes | Filtered by `user_id` |
+| tags | Yes | Filtered by `user_id` |
+| trick_tags | Yes | Filtered by `user_id` |
 | setlists | Yes | Filtered by `user_id` |
 | setlist_tricks | Yes | Global bucket (no `user_id`) |
 | practice_sessions | Yes | Filtered by `user_id` |
@@ -269,6 +312,7 @@ type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
 type GoalId = string & { readonly __brand: "GoalId" };
+type TagId = string & { readonly __brand: "TagId" };
 ```
 
 These types prevent accidentally passing a `TrickId` where a `SetlistId` is expected, catching errors at compile time rather than runtime.

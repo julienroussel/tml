@@ -5,6 +5,7 @@ import { itemTricks } from "./items";
 import { performances } from "./performances";
 import { practiceSessionTricks } from "./practice-sessions";
 import { setlistTricks } from "./setlists";
+import { trickTags } from "./tags";
 
 /**
  * Regression test for issue #46: Junction table FK constraints must use
@@ -60,6 +61,14 @@ describe("junction table FK constraints (#46)", () => {
       entityFks: [
         { columnName: "practice_session_id", expectedAction: "no action" },
         { columnName: "trick_id", expectedAction: "no action" },
+      ] satisfies FkExpectation[],
+    },
+    {
+      name: "trick_tags",
+      table: trickTags,
+      entityFks: [
+        { columnName: "trick_id", expectedAction: "no action" },
+        { columnName: "tag_id", expectedAction: "no action" },
       ] satisfies FkExpectation[],
     },
   ] as const;

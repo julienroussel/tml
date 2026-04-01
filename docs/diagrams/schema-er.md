@@ -21,11 +21,40 @@ erDiagram
         text name
         text description
         text category
+        text effect_type
         integer difficulty
         text status "new, learning, performance_ready, mastered, shelved"
-        text_arr tags
+        integer duration "seconds"
+        text performance_type "close_up, parlor, stage, street, virtual"
+        text angle_sensitivity "none, slight, moderate, high"
+        text props
+        text music
+        text_arr languages
+        boolean is_camera_friendly
+        boolean is_silent
         text notes
         text source
+        text video_url
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    tags {
+        uuid id PK "default random"
+        uuid user_id FK
+        text name "unique per user"
+        text color "hex"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    trick_tags {
+        uuid id PK "default random"
+        uuid user_id FK
+        uuid trick_id FK
+        uuid tag_id FK
         timestamptz created_at
         timestamptz updated_at
         timestamptz deleted_at
@@ -164,6 +193,7 @@ erDiagram
     }
 
     users ||--o{ tricks : "owns"
+    users ||--o{ tags : "owns"
     users ||--o{ setlists : "owns"
     users ||--o{ practice_sessions : "owns"
     users ||--o{ performances : "owns"
@@ -182,6 +212,9 @@ erDiagram
 
     items ||--o{ item_tricks : "used for"
     tricks ||--o{ item_tricks : "requires"
+
+    tricks ||--o{ trick_tags : "tagged with"
+    tags ||--o{ trick_tags : "applied to"
 
     tricks ||--o{ goals : "targeted by"
 ```

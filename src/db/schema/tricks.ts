@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -19,15 +20,28 @@ export const tricks = pgTable(
     name: text().notNull(),
     description: text(),
     category: text(),
+    effectType: text("effect_type"),
     difficulty: integer(),
     status: text({
       enum: ["new", "learning", "performance_ready", "mastered", "shelved"],
     })
       .default("new")
       .notNull(),
-    tags: text().array(),
+    duration: integer(),
+    performanceType: text("performance_type", {
+      enum: ["close_up", "parlor", "stage", "street", "virtual"],
+    }),
+    angleSensitivity: text("angle_sensitivity", {
+      enum: ["none", "slight", "moderate", "high"],
+    }),
+    props: text(),
+    music: text(),
+    languages: text().array(),
+    isCameraFriendly: boolean("is_camera_friendly"),
+    isSilent: boolean("is_silent"),
     notes: text(),
     source: text(),
+    videoUrl: text("video_url"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

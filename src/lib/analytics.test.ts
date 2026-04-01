@@ -43,5 +43,46 @@ describe("analytics", () => {
         theme: "light",
       });
     });
+
+    it("fires trick_created with category and status", async () => {
+      const { trackEvent } = await import("@/lib/analytics");
+      trackEvent("trick_created", { category: "Card", status: "new" });
+
+      expect(mockTrack).toHaveBeenCalledWith("trick_created", {
+        category: "Card",
+        status: "new",
+      });
+    });
+
+    it("fires trick_created with null category", async () => {
+      const { trackEvent } = await import("@/lib/analytics");
+      trackEvent("trick_created", { category: null, status: "learning" });
+
+      expect(mockTrack).toHaveBeenCalledWith("trick_created", {
+        category: null,
+        status: "learning",
+      });
+    });
+
+    it("fires trick_updated without properties", async () => {
+      const { trackEvent } = await import("@/lib/analytics");
+      trackEvent("trick_updated");
+
+      expect(mockTrack).toHaveBeenCalledWith("trick_updated");
+    });
+
+    it("fires trick_deleted without properties", async () => {
+      const { trackEvent } = await import("@/lib/analytics");
+      trackEvent("trick_deleted");
+
+      expect(mockTrack).toHaveBeenCalledWith("trick_deleted");
+    });
+
+    it("fires tag_created without properties", async () => {
+      const { trackEvent } = await import("@/lib/analytics");
+      trackEvent("tag_created");
+
+      expect(mockTrack).toHaveBeenCalledWith("tag_created");
+    });
   });
 });

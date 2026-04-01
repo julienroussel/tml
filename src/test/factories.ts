@@ -5,12 +5,15 @@ import type {
   NewItem,
   NewPerformance,
   NewPracticeSession,
+  NewTag,
   NewTrick,
   NewUser,
   Performance,
   PracticeSession,
   Setlist,
+  Tag,
   Trick,
+  TrickTag,
   User,
 } from "@/db/types";
 
@@ -45,11 +48,46 @@ function createTestTrick(overrides?: Partial<NewTrick>): Trick {
     name: `Test Trick ${counter}`,
     description: "A test trick",
     category: "card",
+    effectType: null,
     difficulty: 3,
     status: "new",
-    tags: ["test"],
+    duration: null,
+    performanceType: null,
+    angleSensitivity: null,
+    props: null,
+    music: null,
+    languages: null,
+    isCameraFriendly: null,
+    isSilent: null,
     notes: null,
     source: null,
+    videoUrl: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+function createTestTag(overrides?: Partial<NewTag>): Tag {
+  return {
+    id: nextId(),
+    userId: nextId(),
+    name: `test-tag-${counter}`,
+    color: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+function createTestTrickTag(overrides?: Partial<TrickTag>): TrickTag {
+  return {
+    id: nextId(),
+    userId: nextId(),
+    trickId: nextId(),
+    tagId: nextId(),
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -160,6 +198,8 @@ export {
   createTestPerformance,
   createTestPracticeSession,
   createTestSetlist,
+  createTestTag,
   createTestTrick,
+  createTestTrickTag,
   createTestUser,
 };

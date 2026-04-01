@@ -1,6 +1,6 @@
 # Route Map
 
-<!-- Last verified: 2026-03-30 -->
+<!-- Last verified: 2026-04-01 -->
 
 ## Route Structure
 
@@ -25,33 +25,35 @@ graph TD
   n15 --> n16(["page.tsx"])
   n0 --> n17["plan"]
   n17 --> n18(["page.tsx"])
-  n0 --> n19["settings"]
+  n0 --> n19["repertoire"]
   n19 --> n20(["page.tsx"])
-  n0 --> n21["train"]
+  n0 --> n21["settings"]
   n21 --> n22(["page.tsx"])
-  root --> n23["(marketing)"]
-  n23 --> n24["[locale]"]
-  n24 --> n25["faq"]
-  n25 --> n26(["page.tsx"])
-  n24 --> n28(["page.tsx"])
-  n24 --> n29["privacy"]
-  n29 --> n30(["page.tsx"])
-  root --> n31["api"]
-  n31 --> n32["auth"]
-  n32 --> n33["[...path]"]
-  n33 --> n34(["API: route.ts"])
-  n31 --> n35["cron"]
-  n35 --> n36["cleanup"]
-  n36 --> n37(["API: route.ts"])
-  n31 --> n38["email"]
-  n38 --> n39["unsubscribe"]
-  n39 --> n40(["API: route.ts"])
-  n31 --> n41["powersync"]
-  n41 --> n42["batch"]
-  n42 --> n43(["API: route.ts"])
-  root --> n44["auth"]
-  n44 --> n45["[path]"]
-  n45 --> n46(["page.tsx"])
+  n0 --> n23["train"]
+  n23 --> n24(["page.tsx"])
+  root --> n25["(marketing)"]
+  n25 --> n26["[locale]"]
+  n26 --> n27["faq"]
+  n27 --> n28(["page.tsx"])
+  n26 --> n30(["page.tsx"])
+  n26 --> n31["privacy"]
+  n31 --> n32(["page.tsx"])
+  root --> n33["api"]
+  n33 --> n34["auth"]
+  n34 --> n35["[...path]"]
+  n35 --> n36(["API: route.ts"])
+  n33 --> n37["cron"]
+  n37 --> n38["cleanup"]
+  n38 --> n39(["API: route.ts"])
+  n33 --> n40["email"]
+  n40 --> n41["unsubscribe"]
+  n41 --> n42(["API: route.ts"])
+  n33 --> n43["powersync"]
+  n43 --> n44["batch"]
+  n44 --> n45(["API: route.ts"])
+  root --> n46["auth"]
+  n46 --> n47["[path]"]
+  n47 --> n48(["page.tsx"])
 ```
 
 ## Route Groups
