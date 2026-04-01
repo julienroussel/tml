@@ -35,6 +35,7 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 | Path | Page | Module | Description |
 |---|---|---|---|
 | `/dashboard` | Dashboard | -- | Home with module grid and quick stats |
+| `/repertoire` | Repertoire | -- | Trick CRUD with tags, filtering, and search |
 | `/improve` | Improve | Improve | Practice session logging and history |
 | `/train` | Train | Train | Goal setting, drills, streaks |
 | `/plan` | Plan | Plan | Setlist builder |
