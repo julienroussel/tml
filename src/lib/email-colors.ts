@@ -1,7 +1,7 @@
 import "server-only";
 
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { join } from "node:path";
 import { formatHex, parse } from "culori";
 
 /**
@@ -13,7 +13,7 @@ import { formatHex, parse } from "culori";
  * source of truth and convert them with culori at module load time.
  */
 
-const GLOBALS_CSS_PATH = resolve(import.meta.dirname, "../app/globals.css");
+const GLOBALS_CSS_PATH = join(process.cwd(), "src/app/globals.css");
 
 /** Token names we need in emails, mapped to their export name. */
 const TOKEN_MAP = {
