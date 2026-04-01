@@ -7,14 +7,30 @@ import { Button } from "@/components/ui/button";
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 import { errorMessages } from "@/i18n/messages/errors-only";
 
-function ErrorContent({
+const FALLBACK = {
+  pageTitle: "Error | The Magic Lab",
+  somethingWrong: "Something went wrong",
+  unexpectedError: "An unexpected error occurred.",
+  tryAgain: "Try again",
+} as const;
+
+interface ErrorDisplayProps {
+  buttonLabel: string;
+  description: string;
+  error: Error & { digest?: string };
+  heading: string;
+  pageTitle: string;
+  reset: () => void;
+}
+
+function ErrorDisplay({
   error,
   reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}): ReactElement {
-  const t = useTranslations("errors");
+  pageTitle,
+  heading,
+  description,
+  buttonLabel,
+}: ErrorDisplayProps): ReactElement {
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -24,11 +40,11 @@ function ErrorContent({
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = t("pageTitle");
+    document.title = pageTitle;
     return () => {
       document.title = previousTitle;
     };
-  }, [t]);
+  }, [pageTitle]);
 
   return (
     <main
@@ -38,13 +54,34 @@ function ErrorContent({
       tabIndex={-1}
     >
       <div role="alert">
-        <h1 className="font-semibold text-xl">{t("somethingWrong")}</h1>
-        <p className="text-muted-foreground">{t("unexpectedError")}</p>
+        <h1 className="font-semibold text-xl">{heading}</h1>
+        <p className="text-muted-foreground">{description}</p>
       </div>
-      <Button onClick={reset} type="button">
-        {t("tryAgain")}
+      <Button className="min-h-11" onClick={reset} type="button">
+        {buttonLabel}
       </Button>
     </main>
+  );
+}
+
+function ErrorContent({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}): ReactElement {
+  const t = useTranslations("errors");
+
+  return (
+    <ErrorDisplay
+      buttonLabel={t("tryAgain")}
+      description={t("unexpectedError")}
+      error={error}
+      heading={t("somethingWrong")}
+      pageTitle={t("pageTitle")}
+      reset={reset}
+    />
   );
 }
 
@@ -52,6 +89,9 @@ function ErrorContent({
  * Root error boundary. Provides its own NextIntlClientProvider since
  * the root layout does not include one — intl providers live in the
  * route-group sub-layouts which may have been the source of the error.
+ *
+ * Falls back to hardcoded English strings if the locale messages fail
+ * to resolve (e.g., during early hydration errors or code-split races).
  */
 export default function ErrorPage({
   error,
@@ -68,12 +108,23 @@ export default function ErrorPage({
     return isLocale(lang) ? lang : defaultLocale;
   });
 
+  const messages = errorMessages[locale];
+
+  if (!messages) {
+    return (
+      <ErrorDisplay
+        buttonLabel={FALLBACK.tryAgain}
+        description={FALLBACK.unexpectedError}
+        error={error}
+        heading={FALLBACK.somethingWrong}
+        pageTitle={FALLBACK.pageTitle}
+        reset={reset}
+      />
+    );
+  }
+
   return (
-    <NextIntlClientProvider
-      locale={locale}
-      messages={errorMessages[locale]}
-      timeZone="UTC"
-    >
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <ErrorContent error={error} reset={reset} />
     </NextIntlClientProvider>
   );

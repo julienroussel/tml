@@ -124,6 +124,73 @@ describe("ErrorPage", () => {
     ).toBeInTheDocument();
   });
 
+  describe("fallback when messages are unavailable", () => {
+    let errorMessagesRef: typeof import("@/i18n/messages/errors-only").errorMessages;
+    let originalEn: (typeof errorMessagesRef)["en"];
+
+    beforeEach(async () => {
+      const mod = await import("@/i18n/messages/errors-only");
+      errorMessagesRef = mod.errorMessages;
+      originalEn = errorMessagesRef.en;
+      // @ts-expect-error — intentionally setting to undefined for runtime safety test
+      errorMessagesRef.en = undefined;
+      providerMock.mockClear();
+    });
+
+    afterEach(() => {
+      errorMessagesRef.en = originalEn;
+    });
+
+    it("renders hardcoded English strings when errorMessages returns undefined", () => {
+      render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
+
+      expect(
+        screen.getByRole("heading", { name: "Something went wrong" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("An unexpected error occurred.")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Try again" })
+      ).toBeInTheDocument();
+      expect(document.title).toBe("Error | The Magic Lab");
+    });
+
+    it("does not render NextIntlClientProvider in fallback mode", () => {
+      render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
+
+      expect(providerMock).not.toHaveBeenCalled();
+    });
+
+    it("calls reset via fallback retry button", async () => {
+      const reset = vi.fn();
+      render(<ErrorPage error={new Error("test")} reset={reset} />);
+      await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+      expect(reset).toHaveBeenCalledOnce();
+    });
+
+    it("falls back to English when a non-default locale has no messages", () => {
+      // Restore en so only fr is missing
+      errorMessagesRef.en = originalEn;
+      const originalFr = errorMessagesRef.fr;
+      // @ts-expect-error — intentionally setting to undefined for runtime safety test
+      errorMessagesRef.fr = undefined;
+      document.documentElement.lang = "fr";
+
+      try {
+        render(<ErrorPage error={new Error("test")} reset={vi.fn()} />);
+
+        expect(
+          screen.getByRole("heading", { name: "Something went wrong" })
+        ).toBeInTheDocument();
+        expect(providerMock).not.toHaveBeenCalled();
+      } finally {
+        errorMessagesRef.fr = originalFr;
+        document.documentElement.lang = "";
+      }
+    });
+  });
+
   describe("locale detection", () => {
     afterEach(() => {
       document.documentElement.lang = "";

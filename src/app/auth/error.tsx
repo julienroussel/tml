@@ -34,10 +34,10 @@ export default function AuthError({
         <p className="text-muted-foreground">{t("authErrorDesc")}</p>
       </div>
       <div className="flex gap-2">
-        <Button onClick={reset} type="button">
+        <Button className="min-h-11" onClick={reset} type="button">
           {t("tryAgain")}
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild className="min-h-11" variant="outline">
           <Link href="/">{t("goHome")}</Link>
         </Button>
       </div>
