@@ -1,7 +1,10 @@
 const STATIC_CACHE = "static-v1";
 const PAGES_CACHE = "pages-v1";
-const EXPECTED_CACHES = [STATIC_CACHE, PAGES_CACHE];
+const ASSETS_CACHE = "assets-v1";
+const EXPECTED_CACHES = [STATIC_CACHE, PAGES_CACHE, ASSETS_CACHE];
 const MAX_STATIC_ENTRIES = 250;
+const MAX_ASSET_ENTRIES = 50;
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|avif|svg|ico)$/i;
 
 async function trimCache(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
@@ -49,8 +52,27 @@ function isSafeToCacheForever(url, response) {
   return (response.headers.get("cache-control") || "").includes("immutable");
 }
 
-self.addEventListener("install", () => {
-  self.skipWaiting();
+function isImageRequest(url) {
+  if (url.origin !== self.location.origin) {
+    return false;
+  }
+  return IMAGE_EXT_RE.test(url.pathname);
+}
+
+const PRECACHE_ASSETS = [
+  "/logo-light.svg",
+  "/logo-dark.svg",
+  "/icon-192x192.png",
+  "/icon-512x512.png",
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(ASSETS_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -141,6 +163,34 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-first for same-origin images: serve fresh when online,
+  // fall back to cached version when offline. Images in /public/ lack
+  // content hashes so cache-first could serve stale versions after deploy.
+  if (isImageRequest(url)) {
+    event.respondWith(
+      caches.open(ASSETS_CACHE).then((cache) =>
+        fetch(event.request)
+          .then((response) => {
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+              trimCache(ASSETS_CACHE, MAX_ASSET_ENTRIES);
+            }
+            return response;
+          })
+          .catch(() =>
+            cache
+              .match(event.request)
+              .then(
+                (cached) =>
+                  cached ||
+                  new Response("", { status: 503, statusText: "Offline" })
+              )
+          )
+      )
+    );
+    return;
+  }
+
   // Accepted trade-off: cached HTML contains the per-request CSP nonce from
   // the original response. When served offline, the nonce is replayed (no
   // longer single-use). This weakens nonce-based CSP but is inherent to any
@@ -205,6 +255,8 @@ self.addEventListener("notificationclick", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "clear-user-cache") {
-    event.waitUntil(caches.delete(PAGES_CACHE));
+    event.waitUntil(
+      Promise.all([caches.delete(PAGES_CACHE), caches.delete(ASSETS_CACHE)])
+    );
   }
 });
