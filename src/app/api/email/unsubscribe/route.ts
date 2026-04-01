@@ -7,17 +7,21 @@ import { defaultLocale, isLocale } from "@/i18n/config";
 import type { EmailTranslations } from "@/i18n/email-translations";
 import { getEmailTranslations } from "@/i18n/email-translations";
 import { escapeHtml, verifyUnsubscribeToken } from "@/lib/email";
+import {
+  foregroundHex,
+  mutedForegroundHex,
+  primaryForegroundHex,
+  primaryHex,
+} from "@/lib/email-colors";
 
 const TRAILING_SLASHES = /\/+$/;
 
 const CSP_HEADER =
   "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'";
 
-const BODY_STYLE =
-  'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 40px auto; padding: 0 24px; color: #374151;';
+const BODY_STYLE = `font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 40px auto; padding: 0 24px; color: ${foregroundHex};`;
 
-const BRAND_HEADER =
-  '<div style="margin-bottom: 32px;"><p style="font-size: 14px; color: #6b7280; letter-spacing: 0.2em; font-weight: 300; margin: 0 0 2px;">THE</p><p style="font-size: 24px; color: #111827; font-weight: 700; letter-spacing: 0.03em; margin: 0;">MAGIC LAB</p></div>';
+const BRAND_HEADER = `<div style="margin-bottom: 32px;"><p style="font-size: 14px; color: ${mutedForegroundHex}; letter-spacing: 0.2em; font-weight: 300; margin: 0 0 2px;">THE</p><p style="font-size: 24px; color: ${foregroundHex}; font-weight: 700; letter-spacing: 0.03em; margin: 0;">MAGIC LAB</p></div>`;
 
 function htmlResponse(body: string, status: number): NextResponse {
   return new NextResponse(body, {
@@ -122,7 +126,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   <form method="POST" action="/api/email/unsubscribe?locale=${locale}">
     <input type="hidden" name="token" value="${escapedToken}" />
     <input type="hidden" name="locale" value="${locale}" />
-    <button type="submit" style="background-color: #7c3aed; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; min-height: 44px; min-width: 44px; font-size: 16px; cursor: pointer;">${escapeHtml(t.unsubscribeButton)}</button>
+    <button type="submit" style="background-color: ${primaryHex}; color: ${primaryForegroundHex}; border: none; border-radius: 6px; padding: 12px 24px; min-height: 44px; min-width: 44px; font-size: 16px; cursor: pointer;">${escapeHtml(t.unsubscribeButton)}</button>
   </form>`,
       locale
     ),
