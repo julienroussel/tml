@@ -89,9 +89,10 @@ export function DynamicIntlProvider({
     switchLocale: (newLocale: Locale) => switchLocaleRef.current(newLocale),
   });
 
-  // Keep <html lang> in sync for app routes where locale comes from cookie,
-  // not from a URL segment. Marketing pages use <div lang={locale}> instead.
-  // Guard avoids unnecessary DOM mutation on marketing pages where lang already matches.
+  // Secondary sync: keeps <html lang> correct when the user switches
+  // locale client-side (e.g., via settings). The primary sync is the
+  // blocking inline script in the root layout (src/lib/lang-script.ts)
+  // which handles initial page load before hydration.
   useEffect(() => {
     if (document.documentElement.lang !== locale) {
       document.documentElement.lang = locale;
