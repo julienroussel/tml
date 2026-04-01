@@ -10,6 +10,14 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import {
+  backgroundHex,
+  foregroundHex,
+  mutedForegroundHex,
+  mutedHex,
+  primaryForegroundHex,
+  primaryHex,
+} from "@/lib/email-colors";
 
 interface WelcomeEmailProps {
   appUrl?: string;
@@ -97,7 +105,7 @@ const logoImg: React.CSSProperties = {
 };
 
 const bodyStyle: React.CSSProperties = {
-  backgroundColor: "#f9fafb",
+  backgroundColor: mutedHex,
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   margin: "0",
@@ -105,7 +113,7 @@ const bodyStyle: React.CSSProperties = {
 };
 
 const container: React.CSSProperties = {
-  backgroundColor: "#ffffff",
+  backgroundColor: backgroundHex,
   borderRadius: "8px",
   margin: "40px auto",
   maxWidth: "480px",
@@ -113,7 +121,7 @@ const container: React.CSSProperties = {
 };
 
 const headingStyle: React.CSSProperties = {
-  color: "#111827",
+  color: foregroundHex,
   fontSize: "24px",
   fontWeight: "600",
   lineHeight: "1.3",
@@ -121,14 +129,14 @@ const headingStyle: React.CSSProperties = {
 };
 
 const textStyle: React.CSSProperties = {
-  color: "#374151",
+  color: foregroundHex,
   fontSize: "16px",
   lineHeight: "1.5",
   margin: "0 0 16px",
 };
 
 const listItem: React.CSSProperties = {
-  color: "#374151",
+  color: foregroundHex,
   fontSize: "16px",
   lineHeight: "1.5",
   margin: "0 0 8px",
@@ -136,9 +144,9 @@ const listItem: React.CSSProperties = {
 };
 
 const buttonStyle: React.CSSProperties = {
-  backgroundColor: "#7c3aed",
+  backgroundColor: primaryHex,
   borderRadius: "6px",
-  color: "#ffffff",
+  color: primaryForegroundHex,
   display: "inline-block",
   fontSize: "16px",
   fontWeight: "500",
@@ -148,7 +156,7 @@ const buttonStyle: React.CSSProperties = {
 };
 
 const footerStyle: React.CSSProperties = {
-  color: "#6b7280",
+  color: mutedForegroundHex,
   fontSize: "14px",
   marginTop: "24px",
 };
