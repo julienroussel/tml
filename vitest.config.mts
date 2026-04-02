@@ -28,21 +28,12 @@ export default defineConfig({
         "src/components/theme-provider.tsx",
         "src/components/app-sidebar.tsx",
         // shadcn vendor components and hooks — tested upstream
-        "src/components/ui/badge.tsx",
-        "src/components/ui/card.tsx",
-        "src/components/ui/input.tsx",
-        "src/components/ui/separator.tsx",
-        "src/components/ui/sheet.tsx",
-        "src/components/ui/sidebar.tsx",
-        "src/components/ui/skeleton.tsx",
-        "src/components/ui/tooltip.tsx",
+        "src/components/ui/**",
         "src/hooks/use-mobile.ts",
         // Lazy-loading wrapper that just re-exports via React.lazy; no logic to cover
         "src/components/push-notifications-lazy.tsx",
-        // Marketing pages — exclude layout and static content pages only
-        "src/app/\\(marketing\\)/layout.tsx",
-        "src/app/\\(marketing\\)/privacy/page.tsx",
-        "src/app/\\(marketing\\)/faq/page.tsx",
+        // Marketing pages — static content with no testable logic
+        "src/app/\\(marketing\\)/**",
         // Database schema definitions (declarative, no logic)
         "src/db/schema/**",
         "src/db/types.ts",
