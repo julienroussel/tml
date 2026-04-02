@@ -57,7 +57,7 @@ export async function AppSidebar(): Promise<ReactElement> {
                   <SidebarNavItem
                     href={`/${mod.slug}`}
                     key={mod.slug}
-                    label={mod.label}
+                    label={t(mod.slug)}
                   >
                     <Icon />
                   </SidebarNavItem>
@@ -77,7 +77,7 @@ export async function AppSidebar(): Promise<ReactElement> {
                   <SidebarNavItem
                     href={`/${mod.slug}`}
                     key={mod.slug}
-                    label={mod.label}
+                    label={t(mod.slug)}
                   >
                     <Icon />
                   </SidebarNavItem>

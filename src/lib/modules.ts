@@ -12,67 +12,51 @@ import {
 type ModuleGroup = "admin" | "main";
 
 interface AppModuleBase {
-  description: string;
   enabled: boolean;
   group: ModuleGroup;
   icon: LucideIcon;
-  label: string;
   slug: string;
 }
 
 const APP_MODULES = [
   {
     slug: "improve",
-    label: "Improve",
-    description: "Track practice sessions and refine your skills over time.",
     icon: Dumbbell,
     enabled: false,
     group: "main",
   },
   {
     slug: "train",
-    label: "Train",
-    description: "Set goals, run drills, and build muscle memory.",
     icon: ListChecks,
     enabled: false,
     group: "main",
   },
   {
     slug: "plan",
-    label: "Plan",
-    description: "Design setlists and show running orders.",
     icon: BookOpen,
     enabled: false,
     group: "main",
   },
   {
     slug: "perform",
-    label: "Perform",
-    description: "Log performances, track venues, and review feedback.",
     icon: Star,
     enabled: false,
     group: "main",
   },
   {
     slug: "enhance",
-    label: "Enhance",
-    description: "Discover insights and suggestions to elevate your magic.",
     icon: Sparkles,
     enabled: false,
     group: "main",
   },
   {
     slug: "collect",
-    label: "Collect",
-    description: "Manage your inventory of props, books, gimmicks, and more.",
     icon: Package,
     enabled: false,
     group: "main",
   },
   {
     slug: "admin",
-    label: "Admin",
-    description: "Application settings and administration.",
     icon: Settings,
     enabled: false,
     group: "admin",

@@ -102,7 +102,7 @@ describe("AppSidebar", () => {
 
     const mainModules = getMainModules();
     for (const mod of mainModules) {
-      expect(screen.getByText(mod.label)).toBeInTheDocument();
+      expect(screen.getByText(`nav.${mod.slug}`)).toBeInTheDocument();
     }
 
     const navItems = screen.getAllByTestId("sidebar-nav-item");
@@ -119,7 +119,9 @@ describe("AppSidebar", () => {
 
     const adminModules = getAdminModules();
     for (const mod of adminModules) {
-      expect(screen.getAllByText(mod.label).length).toBeGreaterThanOrEqual(1);
+      expect(
+        screen.getAllByText(`nav.${mod.slug}`).length
+      ).toBeGreaterThanOrEqual(1);
     }
 
     const navItems = screen.getAllByTestId("sidebar-nav-item");
