@@ -1,0 +1,24 @@
+name: Cleanup Neon preview branch
+on:
+  pull_request:
+    types: [closed]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  delete-branch:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Delete Neon preview branch
+        continue-on-error: true
+        run: npx neonctl@2.22.0 branches delete "$BRANCH_NAME" --project-id "$PROJECT_ID"
+        env:
+          BRANCH_NAME: preview/${{ github.head_ref }}
+          PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
