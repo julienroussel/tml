@@ -36,6 +36,7 @@ export default async function Home({
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: "marketing" });
+  const tModules = await getTranslations({ locale });
   const modules = getMainModules();
 
   return (
@@ -174,12 +175,14 @@ export default async function Home({
                       <Icon className="size-6 text-muted-foreground" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{mod.label}</h3>
+                      <h3 className="font-semibold">
+                        {tModules(`${mod.slug}.title`)}
+                      </h3>
                       <Badge variant="secondary">{t("comingSoon")}</Badge>
                     </div>
                   </div>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    {mod.description}
+                    {tModules(`${mod.slug}.description`)}
                   </p>
                 </Link>
               );

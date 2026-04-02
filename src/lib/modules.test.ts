@@ -29,8 +29,6 @@ describe("modules registry", () => {
   it("every module has required fields", () => {
     for (const mod of APP_MODULES) {
       expect(mod.slug).toBeTruthy();
-      expect(mod.label).toBeTruthy();
-      expect(mod.description).toBeTruthy();
       expect(mod.icon).toBeDefined();
       expect(typeof mod.enabled).toBe("boolean");
       expect(["main", "admin"]).toContain(mod.group);
@@ -60,7 +58,6 @@ describe("getModule", () => {
   it("returns the correct module by slug", () => {
     const mod = getModule("improve");
     expect(mod.slug).toBe("improve");
-    expect(mod.label).toBe("Improve");
   });
 
   it("throws for an invalid slug", () => {

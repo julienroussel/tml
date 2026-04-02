@@ -20,16 +20,12 @@ vi.mock("next/link", () => ({
 const MOCK_MODULES = [
   {
     slug: "improve" as const,
-    label: "Improve",
-    description: "Track practice",
     icon: Dumbbell,
     enabled: true,
     group: "main" as const,
   },
   {
     slug: "perform" as const,
-    label: "Perform",
-    description: "Log performances",
     icon: Star,
     enabled: false,
     group: "main" as const,
@@ -40,18 +36,20 @@ vi.mock("@/lib/modules", () => ({
   getMainModules: () => MOCK_MODULES,
 }));
 
-const IMPROVE_RE = /Improve/;
-const PERFORM_RE = /Perform/;
+const IMPROVE_RE = /improve/i;
+const PERFORM_RE = /perform/i;
 
 describe("DashboardGrid", () => {
-  it("renders a card for each main module", () => {
-    render(<DashboardGrid />);
+  it("renders a card for each main module", async () => {
+    const element = await DashboardGrid();
+    render(element);
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(2);
   });
 
-  it("links each card to the correct /{slug} href", () => {
-    render(<DashboardGrid />);
+  it("links each card to the correct /{slug} href", async () => {
+    const element = await DashboardGrid();
+    render(element);
     expect(screen.getByRole("link", { name: IMPROVE_RE })).toHaveAttribute(
       "href",
       "/improve"
@@ -62,27 +60,34 @@ describe("DashboardGrid", () => {
     );
   });
 
-  it("shows a 'Soon' badge only for disabled modules", () => {
-    render(<DashboardGrid />);
+  it("shows a coming-soon badge only for disabled modules", async () => {
+    const element = await DashboardGrid();
+    render(element);
     const performLink = screen.getByRole("link", { name: PERFORM_RE });
-    expect(within(performLink).getByText("Soon")).toBeInTheDocument();
+    expect(
+      within(performLink).getByText("common.comingSoon")
+    ).toBeInTheDocument();
     const improveLink = screen.getByRole("link", { name: IMPROVE_RE });
-    expect(within(improveLink).queryByText("Soon")).not.toBeInTheDocument();
+    expect(
+      within(improveLink).queryByText("common.comingSoon")
+    ).not.toBeInTheDocument();
   });
 
-  it("sets aria-label on disabled module links", () => {
-    render(<DashboardGrid />);
+  it("sets aria-label on disabled module links", async () => {
+    const element = await DashboardGrid();
+    render(element);
     expect(screen.getByRole("link", { name: PERFORM_RE })).toHaveAttribute(
       "aria-label",
-      "Perform (coming soon)"
+      "perform.title (common.comingSoon)"
     );
     const improveLink = screen.getByRole("link", { name: IMPROVE_RE });
     expect(improveLink).not.toHaveAttribute("aria-label");
   });
 
-  it("renders module descriptions", () => {
-    render(<DashboardGrid />);
-    expect(screen.getByText("Track practice")).toBeInTheDocument();
-    expect(screen.getByText("Log performances")).toBeInTheDocument();
+  it("renders module descriptions", async () => {
+    const element = await DashboardGrid();
+    render(element);
+    expect(screen.getByText("improve.description")).toBeInTheDocument();
+    expect(screen.getByText("perform.description")).toBeInTheDocument();
   });
 });
