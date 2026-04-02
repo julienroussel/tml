@@ -113,6 +113,13 @@
       "when": 1774505976152,
       "tag": "0015_gifted_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1775111777730,
+      "tag": "0016_tricks_duration_check_constraint",
+      "breakpoints": true
     }
   ]
 }
