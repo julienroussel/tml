@@ -1,14 +1,27 @@
-import { render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TagId, TrickId } from "@/db/types";
-import type { TrickFormValues } from "../schema";
-import type { ParsedTag, ParsedTrick, TrickWithTags } from "../types";
+import type { ParsedTrick, TrickWithTags } from "../types";
 import { RepertoireView } from "./repertoire-view";
+import type { TrickDeleteDialogProps } from "./trick-delete-dialog";
+import type { TrickFiltersProps } from "./trick-filters";
+import type { TrickFormSheetProps } from "./trick-form-sheet";
 
 // Mock PowerSync — useQuery is used both directly in RepertoireView and in hooks
 vi.mock("@powersync/react", () => ({
-  useQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useQuery: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    isFetching: false,
+    error: undefined,
+  })),
   usePowerSync: vi.fn(() => ({ execute: vi.fn() })),
 }));
 
@@ -74,19 +87,10 @@ vi.mock("../hooks/use-trick-effect-types", () => ({
 }));
 
 // TrickFormSheet mock — exposes callbacks for testing
-let capturedFormSheetProps: {
-  onSubmit?: (data: TrickFormValues) => void;
-  onOpenChange?: (open: boolean) => void;
-  onToggleTag?: (tagId: TagId) => void;
-  onCreateTag?: (name: string) => Promise<TagId>;
-  open?: boolean;
-  trick?: ParsedTrick | null;
-  selectedTagIds?: TagId[];
-  availableTags?: ParsedTag[];
-} = {};
+let capturedFormSheetProps: Partial<TrickFormSheetProps> = {};
 
 vi.mock("./trick-form-sheet", () => ({
-  TrickFormSheet: (props: typeof capturedFormSheetProps) => {
+  TrickFormSheet: (props: TrickFormSheetProps) => {
     capturedFormSheetProps = props;
     return (
       <div data-open={String(props.open)} data-testid="trick-form-sheet" />
@@ -95,15 +99,10 @@ vi.mock("./trick-form-sheet", () => ({
 }));
 
 // TrickDeleteDialog mock — exposes callbacks for testing
-let capturedDeleteDialogProps: {
-  onConfirm?: () => void;
-  onOpenChange?: (open: boolean) => void;
-  open?: boolean;
-  trickName?: string | null;
-} = {};
+let capturedDeleteDialogProps: Partial<TrickDeleteDialogProps> = {};
 
 vi.mock("./trick-delete-dialog", () => ({
-  TrickDeleteDialog: (props: typeof capturedDeleteDialogProps) => {
+  TrickDeleteDialog: (props: TrickDeleteDialogProps) => {
     capturedDeleteDialogProps = props;
     return (
       <div data-open={String(props.open)} data-testid="trick-delete-dialog">
@@ -121,7 +120,9 @@ vi.mock("./trick-delete-dialog", () => ({
   },
 }));
 
-// TrickList mock — exposes edit/delete callbacks
+// TrickList mock — exposes edit/delete callbacks and captures tricks for assertions
+let capturedTrickListTricks: TrickWithTags[] = [];
+
 vi.mock("./trick-list", () => ({
   TrickList: ({
     tricks,
@@ -131,29 +132,32 @@ vi.mock("./trick-list", () => ({
     tricks: TrickWithTags[];
     onEdit: (id: TrickId) => void;
     onDelete: (id: TrickId) => void;
-  }) => (
-    <div data-testid="trick-list">
-      {tricks.map((trick) => (
-        <div key={trick.id}>
-          <span>{trick.name}</span>
-          <button
-            data-testid={`edit-${trick.id}`}
-            onClick={() => onEdit(trick.id)}
-            type="button"
-          >
-            Edit
-          </button>
-          <button
-            data-testid={`delete-${trick.id}`}
-            onClick={() => onDelete(trick.id)}
-            type="button"
-          >
-            Delete
-          </button>
-        </div>
-      ))}
-    </div>
-  ),
+  }) => {
+    capturedTrickListTricks = tricks;
+    return (
+      <div data-testid="trick-list">
+        {tricks.map((trick) => (
+          <div key={trick.id}>
+            <span>{trick.name}</span>
+            <button
+              data-testid={`edit-${trick.id}`}
+              onClick={() => onEdit(trick.id)}
+              type="button"
+            >
+              Edit
+            </button>
+            <button
+              data-testid={`delete-${trick.id}`}
+              onClick={() => onDelete(trick.id)}
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  },
 }));
 
 vi.mock("./trick-empty-state", () => ({
@@ -163,6 +167,60 @@ vi.mock("./trick-empty-state", () => ({
     </button>
   ),
 }));
+
+// TrickFilters mock — renders the search input (existing tests rely on it) and
+// exposes onSortChange via a test button so we can cover the sort handler.
+let capturedFiltersProps: Partial<TrickFiltersProps> = {};
+
+vi.mock("./trick-filters", () => ({
+  TrickFilters: (props: TrickFiltersProps) => {
+    capturedFiltersProps = props;
+    return (
+      <div>
+        <input
+          aria-label="repertoire.searchPlaceholder"
+          onChange={(e) => props.onSearchChange(e.target.value)}
+          type="search"
+          value={props.search}
+        />
+      </div>
+    );
+  },
+}));
+
+// Ensure fake timers are always cleaned up even if a test throws
+afterEach(async () => {
+  vi.useRealTimers();
+  vi.clearAllMocks();
+
+  // Reset hook mocks to defaults so no test leaks state
+  const { useQuery } = await import("@powersync/react");
+  const { useTricks } = await import("../hooks/use-tricks");
+  const { useTrick } = await import("../hooks/use-trick");
+
+  vi.mocked(useQuery).mockReturnValue({
+    data: [],
+    isLoading: false,
+    isFetching: false,
+    error: undefined,
+  });
+  vi.mocked(useTricks).mockReturnValue({
+    tricks: [],
+    error: null,
+    isLoading: false,
+  });
+  vi.mocked(useTrick).mockReturnValue({ trick: null, isLoading: false });
+
+  // Restore mutation mock defaults (clearAllMocks strips implementations)
+  mockCreateTrick.mockResolvedValue("new-trick-id");
+  mockUpdateTrick.mockResolvedValue(undefined);
+  mockDeleteTrick.mockResolvedValue(undefined);
+
+  capturedFormSheetProps = {};
+  capturedDeleteDialogProps = {};
+  capturedFiltersProps = {};
+  capturedTrickListTricks = [];
+});
 
 const ADD_TRICK_PATTERN = /repertoire.addTrick/i;
 
@@ -214,7 +272,7 @@ describe("RepertoireView", () => {
 
   it("renders trick list when tricks are available", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
-    vi.mocked(useTricks).mockReturnValueOnce({
+    vi.mocked(useTricks).mockReturnValue({
       tricks: [makeTrick("trick-1", "Card Warp")],
       error: null,
       isLoading: false,
@@ -264,8 +322,14 @@ describe("RepertoireView", () => {
       "data-open",
       "true"
     );
-    // onOpenChange(false) exercises the handler — just verify it doesn't throw
-    expect(() => capturedFormSheetProps.onOpenChange?.(false)).not.toThrow();
+    // onOpenChange(false) exercises the close handler
+    act(() => {
+      capturedFormSheetProps.onOpenChange?.(false);
+    });
+    expect(screen.getByTestId("trick-form-sheet")).toHaveAttribute(
+      "data-open",
+      "false"
+    );
   });
 
   it("calls createTrick on form submit for a new trick", async () => {
@@ -294,12 +358,19 @@ describe("RepertoireView", () => {
       videoUrl: "",
       notes: "",
     });
-    expect(mockCreateTrick).toHaveBeenCalled();
+    expect(mockCreateTrick).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "New Trick", status: "new" }),
+      []
+    );
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("repertoire.trickCreated");
+    });
   });
 
   it("opens edit sheet when edit button is clicked on a trick", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
-    vi.mocked(useTricks).mockReturnValueOnce({
+    vi.mocked(useTricks).mockReturnValue({
       tricks: [makeTrick("trick-edit-1", "Silk Production")],
       error: null,
       isLoading: false,
@@ -313,7 +384,7 @@ describe("RepertoireView", () => {
 
   it("opens delete dialog when delete button is clicked", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
-    vi.mocked(useTricks).mockReturnValueOnce({
+    vi.mocked(useTricks).mockReturnValue({
       tricks: [makeTrick("trick-del-1", "Vanish")],
       error: null,
       isLoading: false,
@@ -326,7 +397,7 @@ describe("RepertoireView", () => {
 
   it("calls deleteTrick when delete is confirmed", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
-    vi.mocked(useTricks).mockReturnValueOnce({
+    vi.mocked(useTricks).mockReturnValue({
       tricks: [makeTrick("trick-del-2", "Coin Vanish")],
       error: null,
       isLoading: false,
@@ -336,11 +407,15 @@ describe("RepertoireView", () => {
     await userEvent.click(screen.getByTestId("delete-trick-del-2"));
     await userEvent.click(screen.getByTestId("confirm-delete"));
     expect(mockDeleteTrick).toHaveBeenCalledWith("trick-del-2");
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("repertoire.trickDeleted");
+    });
   });
 
   it("closes delete dialog via onOpenChange(false)", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
-    vi.mocked(useTricks).mockReturnValueOnce({
+    vi.mocked(useTricks).mockReturnValue({
       tricks: [makeTrick("trick-close-1", "Some Trick")],
       error: null,
       isLoading: false,
@@ -349,8 +424,14 @@ describe("RepertoireView", () => {
     render(<RepertoireView />);
     await userEvent.click(screen.getByTestId("delete-trick-close-1"));
     expect(screen.getByTestId("confirm-delete")).toBeInTheDocument();
-    // onOpenChange(false) exercises the handler — just verify it doesn't throw
-    expect(() => capturedDeleteDialogProps.onOpenChange?.(false)).not.toThrow();
+    // onOpenChange(false) exercises the close handler
+    act(() => {
+      capturedDeleteDialogProps.onOpenChange?.(false);
+    });
+    expect(screen.getByTestId("trick-delete-dialog")).toHaveAttribute(
+      "data-open",
+      "false"
+    );
   });
 
   it("toggles a tag via onToggleTag without throwing", async () => {
@@ -359,14 +440,17 @@ describe("RepertoireView", () => {
     await userEvent.click(
       screen.getByRole("button", { name: ADD_TRICK_PATTERN })
     );
-    // Toggle a tag — exercises handleToggleTag code path
-    expect(() =>
-      capturedFormSheetProps.onToggleTag?.("tag-1" as TagId)
-    ).not.toThrow();
+    // Toggle a tag — exercises handleToggleTag add path
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.("tag-1" as TagId);
+    });
+    expect(capturedFormSheetProps.selectedTagIds).toEqual(["tag-1"]);
+
     // Toggle again to remove — exercises the filter branch
-    expect(() =>
-      capturedFormSheetProps.onToggleTag?.("tag-1" as TagId)
-    ).not.toThrow();
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.("tag-1" as TagId);
+    });
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
   });
 
   it("calls updateTrick when submitting the form in edit mode", async () => {
@@ -411,14 +495,10 @@ describe("RepertoireView", () => {
       expect.any(Array),
       expect.any(Array)
     );
-
-    // Reset
-    vi.mocked(useTricks).mockReturnValue({
-      tricks: [],
-      error: null,
-      isLoading: false,
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("repertoire.trickUpdated");
     });
-    vi.mocked(useTrick).mockReturnValue({ trick: null, isLoading: false });
   });
 
   it("calls createTag via onCreateTag handler", async () => {
@@ -434,17 +514,280 @@ describe("RepertoireView", () => {
     expect(mockCreateTag).toHaveBeenCalledWith("Beginner");
   });
 
-  it("shows no results message when filters are active but no tricks found", async () => {
+  it("updates search input value when user types", async () => {
     render(<RepertoireView />);
-    // Type in the search box to activate filters
     await userEvent.type(
       screen.getByRole("searchbox", { name: "repertoire.searchPlaceholder" }),
       "nonexistent"
     );
-    // After debounce, no results message should appear
-    // (debounced, so we check the search input is correct)
     expect(
       screen.getByRole("searchbox", { name: "repertoire.searchPlaceholder" })
     ).toHaveValue("nonexistent");
+  });
+
+  it("computes tagsDirty correctly when editing a trick with changed tags", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+
+    // Set up a trick with an existing tag
+    vi.mocked(useQuery).mockReturnValue({
+      data: [
+        {
+          trick_id: "trick-tags-1",
+          tag_id: "tag-existing",
+          tag_name: "Existing",
+          color: null,
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    });
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick("trick-tags-1", "Tagged Trick")],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick: makeTrick("trick-tags-1", "Tagged Trick"),
+      isLoading: false,
+    });
+
+    render(<RepertoireView />);
+
+    // Open edit mode — preloads tag-existing into selectedTagIds
+    await userEvent.click(screen.getByTestId("edit-trick-tags-1"));
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Toggle tag-existing (remove it) — exercises the filter branch (243-244)
+    // and marks tags as dirty via selectedTagIds.some(...) (line 156)
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.("tag-existing" as TagId);
+    });
+
+    // Toggle a new tag (add it) — exercises the spread branch
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.("tag-new" as TagId);
+    });
+
+    // At this point tagsDirty should be true and selectedTagIds differs from original
+    // Submit to exercise the removeTagIds.filter callback (line 195)
+    await capturedFormSheetProps.onSubmit?.({
+      name: "Tagged Trick",
+      status: "new",
+      description: "",
+      category: "",
+      effectType: "",
+      difficulty: null,
+      duration: null,
+      performanceType: null,
+      angleSensitivity: null,
+      props: "",
+      music: "",
+      languages: [],
+      isCameraFriendly: null,
+      isSilent: null,
+      source: "",
+      videoUrl: "",
+      notes: "",
+    });
+
+    expect(mockUpdateTrick).toHaveBeenCalledWith(
+      "trick-tags-1",
+      expect.any(Object),
+      ["tag-new"],
+      ["tag-existing"]
+    );
+  });
+
+  it("updates sort when a valid sort value is provided via onSortChange", () => {
+    render(<RepertoireView />);
+    act(() => {
+      capturedFiltersProps.onSortChange?.("name-asc");
+    });
+    expect(capturedFiltersProps.sort).toBe("name-asc");
+  });
+
+  it("ignores invalid sort values via onSortChange", () => {
+    render(<RepertoireView />);
+    // Set a valid sort first
+    act(() => {
+      capturedFiltersProps.onSortChange?.("name-asc");
+    });
+    // Trigger with an invalid value — exercises the guard branch that does nothing
+    act(() => {
+      capturedFiltersProps.onSortChange?.("invalid-sort");
+    });
+    // Sort should remain unchanged since invalid values are rejected
+    expect(capturedFiltersProps.sort).toBe("name-asc");
+  });
+
+  it("shows no-results message when search is active after debounce", async () => {
+    vi.useFakeTimers();
+
+    render(<RepertoireView />);
+
+    const searchBox = screen.getByRole("searchbox", {
+      name: "repertoire.searchPlaceholder",
+    });
+
+    searchBox.focus();
+
+    // Directly call onSearchChange on TrickFilters via the rendered search input
+    fireEvent.change(searchBox, { target: { value: "nonexistent" } });
+
+    // Advance past the 300ms debounce
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "repertoire.noResults"
+    );
+  });
+
+  it("enriches tricks with tags from trick_tags join query", async () => {
+    const { useQuery } = await import("@powersync/react");
+    const { useTricks } = await import("../hooks/use-tricks");
+
+    vi.mocked(useQuery).mockReturnValue({
+      data: [
+        {
+          trick_id: "t1",
+          tag_id: "tag-a",
+          tag_name: "Cards",
+          color: "#ff0000",
+        },
+        { trick_id: "t1", tag_id: "tag-b", tag_name: "Easy", color: null },
+      ],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    });
+
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick("t1", "Card Trick")],
+      error: null,
+      isLoading: false,
+    });
+
+    render(<RepertoireView />);
+
+    expect(screen.getByTestId("trick-list")).toBeInTheDocument();
+    expect(screen.getByText("Card Trick")).toBeInTheDocument();
+    expect(capturedTrickListTricks[0]?.tags).toEqual([
+      { id: "tag-a", name: "Cards", color: "#ff0000" },
+      { id: "tag-b", name: "Easy", color: null },
+    ]);
+  });
+
+  it("does nothing when confirm delete is called with no pending trick", async () => {
+    render(<RepertoireView />);
+    // Call onConfirm before any trick is marked for deletion (deletingTrickId is null)
+    await expect(
+      capturedDeleteDialogProps.onConfirm?.()
+    ).resolves.toBeUndefined();
+    expect(mockDeleteTrick).not.toHaveBeenCalled();
+  });
+
+  it("shows error toast when delete fails", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick("trick-del-fail", "Rope Trick")],
+      error: null,
+      isLoading: false,
+    });
+    mockDeleteTrick.mockRejectedValueOnce(new Error("delete failed"));
+
+    render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId("delete-trick-del-fail"));
+    await userEvent.click(screen.getByTestId("confirm-delete"));
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("repertoire.deleteFailed");
+    });
+  });
+
+  it("shows error toast when trick creation fails", async () => {
+    mockCreateTrick.mockRejectedValueOnce(new Error("fail"));
+
+    render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+
+    await capturedFormSheetProps.onSubmit?.({
+      name: "Failing Trick",
+      status: "new",
+      description: "",
+      category: "",
+      effectType: "",
+      difficulty: null,
+      duration: null,
+      performanceType: null,
+      angleSensitivity: null,
+      props: "",
+      music: "",
+      languages: [],
+      isCameraFriendly: null,
+      isSilent: null,
+      source: "",
+      videoUrl: "",
+      notes: "",
+    });
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("repertoire.saveFailed");
+    });
+  });
+
+  it("shows error toast when trick update fails", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick("trick-fail-upd", "Coin Warp")],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick: makeTrick("trick-fail-upd", "Coin Warp"),
+      isLoading: false,
+    });
+    mockUpdateTrick.mockRejectedValueOnce(new Error("update failed"));
+
+    render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId("edit-trick-fail-upd"));
+
+    await capturedFormSheetProps.onSubmit?.({
+      name: "Coin Warp",
+      status: "learning",
+      description: "",
+      category: "",
+      effectType: "",
+      difficulty: null,
+      duration: null,
+      performanceType: null,
+      angleSensitivity: null,
+      props: "",
+      music: "",
+      languages: [],
+      isCameraFriendly: null,
+      isSilent: null,
+      source: "",
+      videoUrl: "",
+      notes: "",
+    });
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("repertoire.saveFailed");
+    });
   });
 });

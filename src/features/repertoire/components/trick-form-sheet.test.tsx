@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TrickId } from "@/db/types";
 import type { ParsedTrick } from "../types";
 import { TrickFormSheet } from "./trick-form-sheet";
@@ -56,6 +56,11 @@ const defaultProps = {
 };
 
 describe("TrickFormSheet", () => {
+  // restoreAllMocks (not clearAllMocks) because vi.spyOn on window.confirm needs full restore
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders without crashing when open with no trick (add mode)", () => {
     render(<TrickFormSheet {...defaultProps} />);
     expect(screen.getByText("repertoire.addTrick")).toBeInTheDocument();
@@ -107,5 +112,56 @@ describe("TrickFormSheet", () => {
   it("renders the trick form", () => {
     render(<TrickFormSheet {...defaultProps} />);
     expect(screen.getByTestId("trick-form")).toBeInTheDocument();
+  });
+
+  it("cancel button shows confirm and closes when user confirms with dirty form", async () => {
+    const onOpenChange = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(
+      <TrickFormSheet
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        tagsDirty={true}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cancel" })
+    );
+    expect(window.confirm).toHaveBeenCalledWith("repertoire.unsavedChanges");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("cancel button shows confirm and stays open when user cancels with dirty form", async () => {
+    const onOpenChange = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(
+      <TrickFormSheet
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        tagsDirty={true}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cancel" })
+    );
+    expect(window.confirm).toHaveBeenCalledWith("repertoire.unsavedChanges");
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it("cancel button does not show confirm when form is clean", async () => {
+    const onOpenChange = vi.fn();
+    vi.spyOn(window, "confirm");
+    render(
+      <TrickFormSheet
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        tagsDirty={false}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cancel" })
+    );
+    expect(window.confirm).not.toHaveBeenCalled();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });

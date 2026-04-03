@@ -1,9 +1,41 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TagId, TrickId } from "@/db/types";
 import type { TrickWithTags } from "../types";
 import { formatDuration, getContrastColor, TrickCard } from "./trick-card";
+
+// DropdownMenu mock renders all content synchronously (always-visible) since Radix
+// portals don't work in jsdom. Tests verify callback wiring only — stopPropagation
+// and open/close behavior are NOT tested through this mock.
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuTrigger: ({
+    children,
+    asChild: _asChild,
+  }: {
+    children: React.ReactNode;
+    asChild?: boolean;
+  }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuItem: ({
+    children,
+    onClick,
+    variant: _variant,
+  }: {
+    children: React.ReactNode;
+    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    variant?: "default" | "destructive";
+  }) => (
+    <button onClick={onClick} type="button">
+      {children}
+    </button>
+  ),
+}));
 
 const CARD_WARP_PATTERN = /Card Warp/;
 const DURATION_PATTERN = /\d+[ms]/;
@@ -34,6 +66,10 @@ const makeTrick = (overrides: Partial<TrickWithTags> = {}): TrickWithTags => ({
 });
 
 describe("TrickCard", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders the trick name", () => {
     render(
       <TrickCard onDelete={vi.fn()} onEdit={vi.fn()} trick={makeTrick()} />
@@ -235,6 +271,32 @@ describe("TrickCard", () => {
     await userEvent.keyboard("{ArrowDown}");
     // The card's handleCardKeyDown should not have fired Enter or Space
     expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it("calls onEdit from dropdown menu Edit item", async () => {
+    const onEdit = vi.fn();
+    render(
+      <TrickCard onDelete={vi.fn()} onEdit={onEdit} trick={makeTrick()} />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cardActions" })
+    );
+    await userEvent.click(screen.getByText("repertoire.edit"));
+    expect(onEdit).toHaveBeenCalledWith("trick-1");
+    expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onDelete from dropdown menu Delete item", async () => {
+    const onDelete = vi.fn();
+    render(
+      <TrickCard onDelete={onDelete} onEdit={vi.fn()} trick={makeTrick()} />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cardActions" })
+    );
+    await userEvent.click(screen.getByText("repertoire.delete"));
+    expect(onDelete).toHaveBeenCalledWith("trick-1");
+    expect(onDelete).toHaveBeenCalledTimes(1);
   });
 });
 

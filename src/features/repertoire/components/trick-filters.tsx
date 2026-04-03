@@ -15,7 +15,7 @@ import { STATUS_CONFIG, TRICK_STATUSES } from "../constants";
 /** Sentinel value representing "all" (no filter). */
 const ALL = "__all__";
 
-interface TrickFiltersProps {
+export interface TrickFiltersProps {
   categories: string[];
   category: string | null;
   onCategoryChange: (value: string | null) => void;

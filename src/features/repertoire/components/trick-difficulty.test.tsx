@@ -1,9 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { TrickDifficulty } from "./trick-difficulty";
 
 describe("TrickDifficulty", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders in read-only mode without radiogroup role", () => {
     render(<TrickDifficulty value={3} />);
     expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
@@ -35,7 +39,11 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={2} />);
     const radios = screen.getAllByRole("radio");
-    await userEvent.click(radios[1] as HTMLElement);
+    const target = radios[1];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 2 radio elements");
+    }
+    await userEvent.click(target);
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
@@ -43,7 +51,11 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={2} />);
     const radios = screen.getAllByRole("radio");
-    await userEvent.click(radios[4] as HTMLElement);
+    const target = radios[4];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 5 radio elements");
+    }
+    await userEvent.click(target);
     expect(onChange).toHaveBeenCalledWith(5);
   });
 
@@ -73,7 +85,11 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={2} />);
     const radios = screen.getAllByRole("radio");
-    await userEvent.type(radios[1] as HTMLElement, "{ArrowRight}");
+    const target = radios[1];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 2 radio elements");
+    }
+    await userEvent.type(target, "{ArrowRight}");
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
@@ -81,7 +97,59 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={3} />);
     const radios = screen.getAllByRole("radio");
-    await userEvent.type(radios[2] as HTMLElement, "{Delete}");
+    const target = radios[2];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 3 radio elements");
+    }
+    await userEvent.type(target, "{Delete}");
     expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it("handles ArrowLeft key to decrease difficulty", async () => {
+    const onChange = vi.fn();
+    render(<TrickDifficulty onChange={onChange} value={3} />);
+    const radios = screen.getAllByRole("radio");
+    const target = radios[2];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 3 radio elements");
+    }
+    await userEvent.type(target, "{ArrowLeft}");
+    expect(onChange).toHaveBeenCalledWith(2);
+  });
+
+  it("handles ArrowDown key to decrease difficulty", async () => {
+    const onChange = vi.fn();
+    render(<TrickDifficulty onChange={onChange} value={3} />);
+    const radios = screen.getAllByRole("radio");
+    const target = radios[2];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 3 radio elements");
+    }
+    await userEvent.type(target, "{ArrowDown}");
+    expect(onChange).toHaveBeenCalledWith(2);
+  });
+
+  it("ArrowLeft from value 1 clears to null", async () => {
+    const onChange = vi.fn();
+    render(<TrickDifficulty onChange={onChange} value={1} />);
+    const radios = screen.getAllByRole("radio");
+    const target = radios[0];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 1 radio element");
+    }
+    await userEvent.type(target, "{ArrowLeft}");
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it("ArrowLeft with no selection selects difficulty 1", async () => {
+    const onChange = vi.fn();
+    render(<TrickDifficulty onChange={onChange} value={null} />);
+    const radios = screen.getAllByRole("radio");
+    const target = radios[0];
+    if (!(target instanceof HTMLElement)) {
+      throw new Error("Expected at least 1 radio element");
+    }
+    await userEvent.type(target, "{ArrowLeft}");
+    expect(onChange).toHaveBeenCalledWith(1);
   });
 });

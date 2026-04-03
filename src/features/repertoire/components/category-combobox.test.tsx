@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CategoryCombobox } from "./category-combobox";
 
 // cmdk uses ResizeObserver and scrollIntoView internally when the popover opens
@@ -32,6 +32,10 @@ const defaultProps = {
 };
 
 describe("CategoryCombobox", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders without crashing", () => {
     render(<CategoryCombobox {...defaultProps} />);
     expect(screen.getByRole("combobox")).toBeInTheDocument();
@@ -107,5 +111,45 @@ describe("CategoryCombobox", () => {
     expect(
       screen.getByRole("combobox", { name: "Category" })
     ).toBeInTheDocument();
+  });
+
+  it("calls onChange when selecting an option from the list", async () => {
+    const onChange = vi.fn();
+    render(<CategoryCombobox {...defaultProps} onChange={onChange} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    await userEvent.click(screen.getByText("Cards"));
+    expect(onChange).toHaveBeenCalledWith("Cards");
+  });
+
+  it("shows custom value option when search doesn't match any option", async () => {
+    render(<CategoryCombobox {...defaultProps} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    // After opening, there are two combobox roles: the trigger button and the CommandInput
+    const allComboboxes = screen.getAllByRole("combobox");
+    // The CommandInput is the input element (last in DOM order)
+    const commandInput = allComboboxes.at(-1);
+    if (!commandInput) {
+      throw new Error("Expected CommandInput combobox to exist");
+    }
+    await userEvent.type(commandInput, "NewCategory");
+    expect(
+      screen.getByText("repertoire.combobox.useCustom (value: NewCategory)")
+    ).toBeInTheDocument();
+  });
+
+  it("calls onChange with custom value when custom option is clicked", async () => {
+    const onChange = vi.fn();
+    render(<CategoryCombobox {...defaultProps} onChange={onChange} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    const allComboboxes = screen.getAllByRole("combobox");
+    const commandInput = allComboboxes.at(-1);
+    if (!commandInput) {
+      throw new Error("Expected CommandInput combobox to exist");
+    }
+    await userEvent.type(commandInput, "NewCategory");
+    await userEvent.click(
+      screen.getByText("repertoire.combobox.useCustom (value: NewCategory)")
+    );
+    expect(onChange).toHaveBeenCalledWith("NewCategory");
   });
 });
