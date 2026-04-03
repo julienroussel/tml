@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface TrickDeleteDialogProps {
+export interface TrickDeleteDialogProps {
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;

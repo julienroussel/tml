@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { TagId } from "@/db/types";
 import type { ParsedTag } from "../types";
 import { TagPicker } from "./tag-picker";
+
+const CREATE_TAG_PATTERN = /repertoire\.tagPicker\.create/;
 
 // cmdk uses ResizeObserver and scrollIntoView internally
 beforeAll(() => {
@@ -36,6 +38,10 @@ const makeTag = (id: string, name: string, color?: string): ParsedTag => ({
 });
 
 describe("TagPicker", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders without crashing", () => {
     render(
       <TagPicker
@@ -193,7 +199,7 @@ describe("TagPicker", () => {
     );
     expect(onCreateTag).toHaveBeenCalledWith("MyNewTag");
     // Wait for the async create to complete
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(onToggleTag).toHaveBeenCalledWith(newTagId);
     });
   });
@@ -227,5 +233,110 @@ describe("TagPicker", () => {
     expect(
       screen.getByRole("list", { name: "repertoire.tagPicker.selectedTags" })
     ).toBeInTheDocument();
+  });
+
+  it("does not allow selecting more tags when maxTags limit is reached", async () => {
+    const onToggleTag = vi.fn();
+    const tags = [makeTag("t1", "Cards"), makeTag("t2", "Coins")];
+    render(
+      <TagPicker
+        availableTags={tags}
+        maxTags={1}
+        onCreateTag={vi.fn()}
+        onToggleTag={onToggleTag}
+        selectedTagIds={["t1" as TagId]}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.tagPicker.search" })
+    );
+    // "Coins" is unselected but atLimit is true — the CommandItem is disabled
+    // Clicking a disabled cmdk item does not fire onSelect
+    const coinsItem = screen.getByText("Coins");
+    await userEvent.click(coinsItem);
+    expect(onToggleTag).not.toHaveBeenCalled();
+  });
+
+  it("shows error toast when tag creation fails", async () => {
+    const { toast } = await import("sonner");
+    const onCreateTag = vi.fn().mockRejectedValue(new Error("fail"));
+    render(
+      <TagPicker
+        availableTags={[]}
+        onCreateTag={onCreateTag}
+        onToggleTag={vi.fn()}
+        selectedTagIds={[]}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.tagPicker.search" })
+    );
+    const input = screen.getByRole("combobox");
+    await userEvent.type(input, "FailTag");
+    await userEvent.click(
+      screen.getByText("repertoire.tagPicker.create (name: FailTag)")
+    );
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "repertoire.tagPicker.createFailed"
+      );
+    });
+  });
+
+  it("hides create option when search exactly matches existing tag name", async () => {
+    const tags = [makeTag("t1", "Beginner")];
+    render(
+      <TagPicker
+        availableTags={tags}
+        onCreateTag={vi.fn()}
+        onToggleTag={vi.fn()}
+        selectedTagIds={[]}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.tagPicker.search" })
+    );
+    const input = screen.getByRole("combobox");
+    await userEvent.type(input, "Beginner");
+    expect(screen.queryByText(CREATE_TAG_PATTERN)).not.toBeInTheDocument();
+  });
+
+  it("calls onToggleTag when clicking an unselected tag in the picker", async () => {
+    const onToggleTag = vi.fn();
+    const tags = [makeTag("t1", "Cards")];
+    render(
+      <TagPicker
+        availableTags={tags}
+        onCreateTag={vi.fn()}
+        onToggleTag={onToggleTag}
+        selectedTagIds={[]}
+      />
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.tagPicker.search" })
+    );
+    await userEvent.click(screen.getByText("Cards"));
+    expect(onToggleTag).toHaveBeenCalledWith("t1");
+  });
+
+  it("allows deselecting a tag when maxTags limit is reached", async () => {
+    const onToggleTag = vi.fn();
+    const tags = [makeTag("t1", "Cards"), makeTag("t2", "Coins")];
+    render(
+      <TagPicker
+        availableTags={tags}
+        maxTags={1}
+        onCreateTag={vi.fn()}
+        onToggleTag={onToggleTag}
+        selectedTagIds={["t1" as TagId]}
+      />
+    );
+    // Remove "Cards" via the badge remove button — this deselects an already-selected tag
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "repertoire.tagPicker.remove (name: Cards)",
+      })
+    );
+    expect(onToggleTag).toHaveBeenCalledWith("t1");
   });
 });
