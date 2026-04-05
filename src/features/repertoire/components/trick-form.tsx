@@ -5,7 +5,6 @@ import { XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { KeyboardEvent } from "react";
 import { useEffect, useState } from "react";
-import type { Resolver } from "react-hook-form";
 import { useForm, useWatch } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -150,7 +149,7 @@ function TrickForm({
   userEffectTypes,
 }: TrickFormProps): React.ReactElement {
   const t = useTranslations("repertoire");
-  const form = useForm<TrickFormValues>({
+  const form = useForm({
     defaultValues: {
       name: "",
       description: "",
@@ -171,10 +170,7 @@ function TrickForm({
       notes: "",
       ...defaultValues,
     },
-    // TODO: remove cast when @hookform/resolvers supports Zod 4 — tracked in review follow-ups
-    resolver: zodResolver(
-      trickFormSchema as unknown as Parameters<typeof zodResolver>[0]
-    ) as unknown as Resolver<TrickFormValues>,
+    resolver: zodResolver(trickFormSchema),
   });
 
   const languages =
@@ -288,7 +284,9 @@ function TrickForm({
                   <FormControl>
                     <TrickDifficulty
                       onChange={field.onChange}
-                      value={field.value ?? null}
+                      value={
+                        typeof field.value === "number" ? field.value : null
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -330,7 +328,9 @@ function TrickForm({
                   <FormControl>
                     <DurationInput
                       onChange={field.onChange}
-                      value={field.value ?? null}
+                      value={
+                        typeof field.value === "number" ? field.value : null
+                      }
                     />
                   </FormControl>
                   <FormMessage />
