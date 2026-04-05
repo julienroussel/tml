@@ -3,12 +3,22 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TrickId } from "@/db/types";
 import type { ParsedTrick } from "../types";
+import type { TrickFormProps } from "./trick-form";
 import { TrickFormSheet } from "./trick-form-sheet";
 
 // Mock TrickForm to avoid rendering the full react-hook-form + comboboxes
 vi.mock("./trick-form", () => ({
-  TrickForm: ({ formId }: { formId: string }) => (
-    <form data-testid="trick-form" id={formId} />
+  TrickForm: ({
+    formId,
+    onDirtyChange,
+  }: Pick<TrickFormProps, "formId" | "onDirtyChange">) => (
+    <form data-testid="trick-form" id={formId}>
+      <button
+        data-testid="make-dirty"
+        onClick={() => onDirtyChange?.(true)}
+        type="button"
+      />
+    </form>
   ),
 }));
 
@@ -148,6 +158,42 @@ describe("TrickFormSheet", () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it("cancel button shows confirm when formDirty is true and tagsDirty is false", async () => {
+    const onOpenChange = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(
+      <TrickFormSheet
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        tagsDirty={false}
+      />
+    );
+    await userEvent.click(screen.getByTestId("make-dirty"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cancel" })
+    );
+    expect(window.confirm).toHaveBeenCalledWith("repertoire.unsavedChanges");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("cancel button stays open when formDirty is true and user declines confirm", async () => {
+    const onOpenChange = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(
+      <TrickFormSheet
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        tagsDirty={false}
+      />
+    );
+    await userEvent.click(screen.getByTestId("make-dirty"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "repertoire.cancel" })
+    );
+    expect(window.confirm).toHaveBeenCalledWith("repertoire.unsavedChanges");
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
   it("cancel button does not show confirm when form is clean", async () => {
     const onOpenChange = vi.fn();
     vi.spyOn(window, "confirm");
@@ -214,6 +260,42 @@ describe("TrickFormSheet", () => {
         await userEvent.keyboard("{Escape}");
         expect(window.confirm).not.toHaveBeenCalled();
         expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+
+      it("shows confirm when formDirty is true and tagsDirty is false", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={false}
+          />
+        );
+        await userEvent.click(screen.getByTestId("make-dirty"));
+        await userEvent.keyboard("{Escape}");
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+
+      it("stays open when formDirty is true and user declines confirm", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(false);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={false}
+          />
+        );
+        await userEvent.click(screen.getByTestId("make-dirty"));
+        await userEvent.keyboard("{Escape}");
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).not.toHaveBeenCalled();
       });
     });
 
@@ -296,6 +378,50 @@ describe("TrickFormSheet", () => {
         });
         expect(window.confirm).not.toHaveBeenCalled();
         expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+
+      it("shows confirm when formDirty is true and tagsDirty is false", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={false}
+          />
+        );
+        await userEvent.click(screen.getByTestId("make-dirty"));
+        await flushRadixTimers();
+        fireEvent.pointerDown(getOverlay(), {
+          button: 0,
+          pointerType: "mouse",
+        });
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+
+      it("stays open when formDirty is true and user declines confirm", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(false);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={false}
+          />
+        );
+        await userEvent.click(screen.getByTestId("make-dirty"));
+        await flushRadixTimers();
+        fireEvent.pointerDown(getOverlay(), {
+          button: 0,
+          pointerType: "mouse",
+        });
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).not.toHaveBeenCalled();
       });
     });
   });
