@@ -116,6 +116,9 @@
       "esbuild",
       "lefthook"
     ],
+    "overrides": {
+      "zod": "$zod"
+    },
     "packageExtensions": {
       "@neondatabase/auth": {
         "peerDependencies": {
