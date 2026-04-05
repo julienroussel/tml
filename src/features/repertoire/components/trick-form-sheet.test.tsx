@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TrickId } from "@/db/types";
@@ -163,5 +163,140 @@ describe("TrickFormSheet", () => {
     );
     expect(window.confirm).not.toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  describe("guardDismiss (escape/click-outside)", () => {
+    describe("escape key", () => {
+      it("shows confirm and closes when user confirms with dirty form", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={true}
+          />
+        );
+        await userEvent.keyboard("{Escape}");
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+
+      it("shows confirm and stays open when user cancels with dirty form", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(false);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={true}
+          />
+        );
+        await userEvent.keyboard("{Escape}");
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).not.toHaveBeenCalled();
+      });
+
+      it("closes without confirm when form is clean", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm");
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={false}
+          />
+        );
+        await userEvent.keyboard("{Escape}");
+        expect(window.confirm).not.toHaveBeenCalled();
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    describe("click outside (overlay)", () => {
+      /**
+       * Flush the setTimeout(fn, 0) Radix uses to register the pointerdown listener.
+       * Verified against radix-ui 1.4.x. If this breaks after a Radix upgrade,
+       * check whether the timer strategy in usePointerDownOutside has changed.
+       */
+      async function flushRadixTimers(): Promise<void> {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
+      }
+
+      function getOverlay(): Element {
+        const overlay = document.querySelector('[data-slot="sheet-overlay"]');
+        if (!overlay) {
+          throw new Error("Expected sheet overlay to be in the document");
+        }
+        return overlay;
+      }
+
+      it("shows confirm and closes when user confirms with dirty form", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={true}
+          />
+        );
+        await flushRadixTimers();
+        fireEvent.pointerDown(getOverlay(), {
+          button: 0,
+          pointerType: "mouse",
+        });
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+
+      it("shows confirm and stays open when user cancels with dirty form", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm").mockReturnValue(false);
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={true}
+          />
+        );
+        await flushRadixTimers();
+        fireEvent.pointerDown(getOverlay(), {
+          button: 0,
+          pointerType: "mouse",
+        });
+        expect(window.confirm).toHaveBeenCalledWith(
+          "repertoire.unsavedChanges"
+        );
+        expect(onOpenChange).not.toHaveBeenCalled();
+      });
+
+      it("closes without confirm when form is clean", async () => {
+        const onOpenChange = vi.fn();
+        vi.spyOn(window, "confirm");
+        render(
+          <TrickFormSheet
+            {...defaultProps}
+            onOpenChange={onOpenChange}
+            tagsDirty={false}
+          />
+        );
+        await flushRadixTimers();
+        fireEvent.pointerDown(getOverlay(), {
+          button: 0,
+          pointerType: "mouse",
+        });
+        expect(window.confirm).not.toHaveBeenCalled();
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
   });
 });
