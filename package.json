@@ -97,7 +97,7 @@
     "dotenv": "17.4.1",
     "drizzle-kit": "0.31.10",
     "jsdom": "29.0.1",
-    "lefthook": "2.1.4",
+    "lefthook": "2.1.5",
     "react-email": "5.2.10",
     "shadcn": "4.1.2",
     "tailwindcss": "4.2.2",
