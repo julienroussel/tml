@@ -36,7 +36,8 @@ vi.mock("@/auth/server", () => ({
 
 vi.mock("@/lib/csp", () => ({
   buildCsp: vi.fn(
-    () => "default-src 'self'; script-src 'self' 'unsafe-inline'"
+    () =>
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'sha256-test1' 'sha256-test2'"
   ),
 }));
 
@@ -274,7 +275,7 @@ describe("proxy", () => {
     expect(response.cookies.get("refresh-token")?.value).toBe("xyz789");
   });
 
-  it("does not include nonce in CSP (unsafe-inline covers all inline scripts)", async () => {
+  it("does not include nonce in CSP (hash-based policy, no per-request nonce)", async () => {
     const { proxy } = await import("./proxy");
 
     const response = await proxy(createRequest("/about", false));

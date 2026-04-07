@@ -1,11 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
+import { render } from "@testing-library/react";
+// Imported directly from next-themes (not our wrapper @/components/theme-provider)
+// because the test must verify the raw script output of ThemeProvider itself.
+import { ThemeProvider } from "next-themes";
+import { createElement } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { THEME_PROVIDER_PROPS } from "@/components/theme-provider";
+import { LANG_SCRIPT } from "@/lib/lang-script";
 import {
   BASE_DIRECTIVES,
   buildCsp,
   DEV_EXTENSIONS,
   directivesToString,
+  INLINE_SCRIPT_HASHES,
+  LANG_SCRIPT_HASH,
   mergeDirectives,
+  THEME_SCRIPT_HASH,
 } from "./csp";
+
+const CSP_SHA256_FORMAT = /^'sha256-[A-Za-z0-9+/=]+'$/;
+const UPGRADE_INSECURE_WITH_TRAILING_SPACE = /upgrade-insecure-requests /;
+
+function sha256Csp(content: string): string {
+  const hash = createHash("sha256").update(content, "utf-8").digest("base64");
+  return `'sha256-${hash}'`;
+}
 
 describe("BASE_DIRECTIVES", () => {
   it("includes self in default-src", () => {
@@ -103,6 +122,20 @@ describe("directivesToString", () => {
     const result = directivesToString(BASE_DIRECTIVES);
     expect(result).not.toContain("frame-src");
   });
+
+  it("emits boolean directives without values", () => {
+    const result = directivesToString(BASE_DIRECTIVES);
+    expect(result).toContain("upgrade-insecure-requests");
+    expect(result).not.toMatch(UPGRADE_INSECURE_WITH_TRAILING_SPACE);
+  });
+
+  it("skips directives in the skip set", () => {
+    const result = directivesToString(
+      BASE_DIRECTIVES,
+      new Set(["upgrade-insecure-requests"])
+    );
+    expect(result).not.toContain("upgrade-insecure-requests");
+  });
 });
 
 describe("buildCsp", () => {
@@ -127,13 +160,82 @@ describe("buildCsp", () => {
     }
   });
 
-  it("includes unsafe-inline in script-src for ThemeProvider compatibility", () => {
+  it("includes unsafe-inline in script-src for CSP Level 1 fallback", () => {
     const csp = buildCsp({ isDev: false });
     expect(csp).toContain("'unsafe-inline'");
   });
 
-  it("does not include nonce (root layout ThemeProvider cannot receive one)", () => {
+  it("includes inline script hashes in script-src", () => {
     const csp = buildCsp({ isDev: false });
-    expect(csp).not.toContain("nonce");
+    for (const hash of INLINE_SCRIPT_HASHES) {
+      expect(csp).toContain(hash);
+    }
+  });
+
+  it("includes upgrade-insecure-requests in production", () => {
+    const csp = buildCsp({ isDev: false });
+    expect(csp).toContain("upgrade-insecure-requests");
+  });
+
+  it("omits upgrade-insecure-requests in dev", () => {
+    const csp = buildCsp({ isDev: true });
+    expect(csp).not.toContain("upgrade-insecure-requests");
+  });
+});
+
+describe("INLINE_SCRIPT_HASHES", () => {
+  beforeEach(() => {
+    // next-themes reads matchMedia during initialization.
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn().mockReturnValue(true),
+      }))
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("contains exactly 2 hashes (LANG_SCRIPT + next-themes)", () => {
+    expect(INLINE_SCRIPT_HASHES).toHaveLength(2);
+  });
+
+  it("all hashes use CSP sha256 format", () => {
+    for (const hash of INLINE_SCRIPT_HASHES) {
+      expect(hash).toMatch(CSP_SHA256_FORMAT);
+    }
+  });
+
+  it("LANG_SCRIPT hash matches actual content (update with: pnpm hash:csp)", () => {
+    expect(LANG_SCRIPT_HASH).toBe(sha256Csp(LANG_SCRIPT));
+  });
+
+  it("next-themes hash matches ThemeProvider script (update with: pnpm hash:csp)", () => {
+    // Render with the shared THEME_PROVIDER_PROPS (used by layout.tsx and this test).
+    const { container } = render(
+      createElement(ThemeProvider, THEME_PROVIDER_PROPS, createElement("div"))
+    );
+
+    const script = container.querySelector("script");
+    if (!script) {
+      throw new Error("Expected ThemeProvider to inject a <script> element");
+    }
+
+    const scriptContent = script.innerHTML;
+    expect(scriptContent.length).toBeGreaterThan(0);
+
+    expect(
+      THEME_SCRIPT_HASH,
+      "next-themes hash mismatch — run: pnpm hash:csp"
+    ).toBe(sha256Csp(scriptContent));
   });
 });

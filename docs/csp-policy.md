@@ -10,7 +10,7 @@ CSP headers are constructed by the `buildCsp()` function in `src/lib/csp.ts` and
 
 ```
 default-src 'self';
-script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://va.vercel-scripts.com;
+script-src 'self' 'unsafe-inline' 'sha256-<LANG_SCRIPT>' 'sha256-<next-themes>' 'wasm-unsafe-eval' https://va.vercel-scripts.com;
 style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob: https://lh3.googleusercontent.com;
 font-src 'self';
@@ -23,12 +23,15 @@ form-action 'self' https://*.neonauth.c-2.eu-central-1.aws.neon.tech;
 upgrade-insecure-requests
 ```
 
+_(Hash values abbreviated above — see `INLINE_SCRIPT_HASHES` in `src/lib/csp.ts` for actual values.)_
+
 ### Directive Breakdown
 
 | Directive | Value | Reason |
 |---|---|---|
 | `default-src` | `'self'` | Baseline: only same-origin resources |
-| `script-src` | `'self' 'unsafe-inline'` | `unsafe-inline` required for next-themes' ThemeProvider anti-flicker script in the root layout. The root layout must stay static (no `headers()` call) so a per-request nonce cannot be passed to ThemeProvider. React's default output escaping provides XSS protection. |
+| `script-src` | `'self' 'unsafe-inline'` | `'unsafe-inline'` is kept for CSP Level 1 backward compatibility. CSP Level 2+ browsers ignore it when hash sources are present. |
+| | `'sha256-...'` (x2) | SHA-256 hashes of the two inline scripts in the root layout: the locale detection script (`LANG_SCRIPT`) and the next-themes ThemeProvider anti-flicker script. Only these scripts are allowed to run inline. |
 | | `'wasm-unsafe-eval'` | Required by PowerSync WASM module |
 | | `https://va.vercel-scripts.com` | Vercel Analytics script |
 | `style-src` | `'self' 'unsafe-inline'` | Inline styles from CSS-in-JS and component libraries |
@@ -55,21 +58,19 @@ The CSP is built programmatically via a typed builder function:
 
 ```typescript
 // src/lib/csp.ts
-interface BuildCspOptions {
-  isDev: boolean;
-}
+const INLINE_SCRIPT_HASHES = [
+  "'sha256-<LANG_SCRIPT_hash>'",   // locale detection
+  "'sha256-<next-themes_hash>'",   // ThemeProvider anti-flicker
+] as const;
 
 const BASE_DIRECTIVES: CspDirectives = {
   "default-src": ["'self'"],
-  "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://va.vercel-scripts.com"],
-  "connect-src": [
+  "script-src": [
     "'self'",
+    "'unsafe-inline'",
+    ...INLINE_SCRIPT_HASHES,
+    "'wasm-unsafe-eval'",
     "https://va.vercel-scripts.com",
-    "https://vitals.vercel-insights.com",
-    "https://*.powersync.journeyapps.com",
-    "wss://*.powersync.journeyapps.com",
-    "https://*.neonauth.c-2.eu-central-1.aws.neon.tech",
-    "https://*.apirest.c-2.eu-central-1.aws.neon.tech",
   ],
   // ... other directives
 };
@@ -89,11 +90,34 @@ function buildCsp(options: BuildCspOptions): string {
 }
 ```
 
+### Hash-Based Inline Script Policy
+
+The root layout contains two inline `<script>` tags:
+
+1. **Locale detection** (`src/lib/lang-script.ts`) — sets `<html lang>` before first paint for screen readers.
+2. **Theme anti-flicker** (injected by next-themes `ThemeProvider`) — applies the saved theme class before first paint to prevent a flash of the wrong theme.
+
+Both scripts are deterministic: their content is fixed for a given set of locales and ThemeProvider configuration. Their SHA-256 hashes are listed in `INLINE_SCRIPT_HASHES` in `src/lib/csp.ts`.
+
+**How it works:**
+
+- CSP Level 2+ browsers see hash sources in `script-src` and **ignore** `'unsafe-inline'` — only scripts matching a listed hash are allowed to execute inline.
+- CSP Level 1 browsers do not understand hash sources and fall back to `'unsafe-inline'`, which permits all inline scripts (same security as before).
+- This is the CSP spec's recommended migration path from `'unsafe-inline'` to hash-based allowlisting.
+
+**When to update hashes:**
+
+| Event | Action |
+|---|---|
+| `next-themes` upgraded | Run `pnpm hash:csp` — the anti-flicker script may have changed |
+| ThemeProvider props changed in `layout.tsx` | Run `pnpm hash:csp` — serialized params affect the script |
+| Locale added or removed | Run `pnpm hash:csp` — LANG_SCRIPT interpolates the locales array |
+
+The `pnpm hash:csp` command recomputes both hashes and updates `src/lib/csp.ts` in place. A test in `src/lib/csp.test.ts` verifies the hashes match the actual script content — stale hashes cause CI failure.
+
 ### Why No Nonce?
 
-A nonce-based CSP would be more restrictive than `'unsafe-inline'`, but the root layout's `ThemeProvider` (next-themes) injects an inline `<script>` for theme flash prevention. The root layout must stay static for marketing pages and cannot call `headers()` to read a per-request nonce. Including a nonce in the CSP would cause CSP Level 2+ browsers to ignore `'unsafe-inline'`, blocking the theme script on every page load.
-
-XSS protection relies on React's default output escaping rather than CSP nonces.
+A nonce-based CSP would be even more restrictive, but the root layout must stay static for marketing page generation and cannot call `headers()` to read a per-request nonce. Hash-based allowlisting provides equivalent security for deterministic scripts without requiring dynamic rendering.
 
 ### Environment-Aware Directives
 

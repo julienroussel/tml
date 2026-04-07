@@ -71,12 +71,13 @@ function needsAuth(pathname: string): boolean {
 /**
  * Build CSP for the current route.
  *
- * No per-request nonce is generated. The CSP relies on 'unsafe-inline' for
- * inline scripts. A nonce-based approach would be more restrictive, but the
- * root layout's ThemeProvider (next-themes) injects an inline <script> that
- * cannot receive a nonce — the root layout must stay static for marketing
- * pages and cannot call headers(). Including a nonce in the CSP would cause
- * CSP Level 2+ browsers to ignore 'unsafe-inline', blocking that script.
+ * Inline scripts (lang-detection and next-themes anti-flicker) are allowed
+ * via SHA-256 hashes in script-src. CSP Level 2+ browsers ignore the
+ * co-present 'unsafe-inline' and only permit scripts matching a listed hash.
+ * 'unsafe-inline' is kept for CSP Level 1 fallback.
+ *
+ * No per-request nonce — the root layout must stay static for marketing
+ * pages and cannot call headers().
  */
 function buildCspForRoute(): string {
   return buildCsp({ isDev });

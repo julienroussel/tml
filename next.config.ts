@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
           value: "max-age=63072000; includeSubDomains; preload",
         },
         // Content-Security-Policy is set dynamically per-request in proxy.ts
-        // with a nonce for script-src (see #44).
+        // with hash-based script-src (see #127).
       ],
     },
     {

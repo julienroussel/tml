@@ -3,19 +3,21 @@ name: CI
 on:
   push:
     branches: [main]
+  # WARNING: Do NOT change to pull_request_target. The dependabot steps below
+  # checkout github.head_ref and push with contents:write — under
+  # pull_request_target, a malicious fork PR could exploit that combination.
   pull_request:
     branches: [main]
 
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   ci:
     name: Lint, Type Check, Test & Build
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,7 +37,7 @@ jobs:
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**') }}
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('next.config.ts', 'src/**') }}
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             nextjs-${{ runner.os }}-
@@ -43,11 +45,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # On push events, github.event.pull_request is null so .user.login is
+      # empty — these conditions evaluate correctly (true for !=, false for ==).
+      - name: Update CSP hashes (dependabot)
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        run: pnpm hash:csp
+
       - name: Lint & format check
         run: pnpm lint
 
       - name: Type check
-        run: pnpm exec tsc --noEmit
+        run: pnpm typecheck
 
       - name: Run tests
         run: pnpm test:coverage -- --reporter=default --reporter=github-actions
@@ -64,7 +72,7 @@ jobs:
         run: pnpm i18n:check
 
       - name: Check migration drift
-        if: github.actor != 'dependabot[bot]'
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         run: |
           pnpm db:generate
           git diff --exit-code src/db/migrations/
@@ -72,7 +80,7 @@ jobs:
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
 
       - name: Check generated docs staleness
-        if: github.actor != 'dependabot[bot]'
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         run: |
           pnpm docs:generate
           git diff --exit-code public/llms.txt public/llms-full.txt docs/diagrams/
@@ -120,3 +128,74 @@ jobs:
           name: pwa-playwright-report-${{ github.sha }}
           path: playwright-report/
           retention-days: 30
+
+  # Separate job with write permissions — keeps the CI job read-only.
+  # Runs only for dependabot PRs after CI passes.
+  dependabot-csp-commit:
+    name: Auto-commit CSP hashes (dependabot)
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    needs: ci
+    concurrency:
+      group: ${{ github.workflow }}-csp-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout validated PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Validate branch ref
+        run: |
+          if [[ ! "$HEAD_REF" =~ ^dependabot/[a-zA-Z0-9._/-]+$ ]]; then
+            echo "::error::Unexpected branch ref: $HEAD_REF"
+            exit 1
+          fi
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        # --ignore-scripts: security hardening for the write-permission job.
+        # Safe because next-themes ships pre-built dist/ in its npm package.
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Update CSP hashes
+        # Note: tsx executes project code (and transitive node_modules imports)
+        # with contents:write. This is accepted risk — mitigated by:
+        # pull_request trigger (no fork access), --ignore-scripts,
+        # git-add scoped to src/lib/csp.ts, and branch prefix validation.
+        run: pnpm hash:csp
+
+      - name: Commit and push
+        # The pushed commit uses GITHUB_TOKEN, which does not trigger a new
+        # CI run. This is accepted — the script only modifies two hash string
+        # literals, and the ci job already validated the build with updated
+        # hashes. The commit is also validated on merge to main.
+        #
+        # --force-with-lease compares the remote HEAD against EXPECTED_SHA.
+        # If dependabot force-pushes a rebase between CI passing and this
+        # job running, the push safely fails (no data loss). The next CI
+        # run on the rebased branch will re-run the hash update.
+        run: |
+          git diff --quiet src/lib/csp.ts && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/csp.ts
+          git commit -m "chore: update CSP inline script hashes [#$PR_NUMBER]"
+          git push --force-with-lease="refs/heads/$HEAD_REF:$EXPECTED_SHA" origin "HEAD:refs/heads/$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}

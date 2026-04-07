@@ -45,16 +45,34 @@ function cspDirectiveNames(
   return ALL_DIRECTIVE_NAMES.filter((key) => key in directives);
 }
 
+/**
+ * SHA-256 hashes of the two known inline scripts in the root layout.
+ *
+ * CSP Level 2+ browsers that see hash sources in script-src will ignore
+ * 'unsafe-inline' and only allow scripts whose content matches a listed hash.
+ * CSP Level 1 browsers ignore hashes and fall back to 'unsafe-inline'.
+ *
+ * LANG_SCRIPT_HASH = locale detection (src/lib/lang-script.ts)
+ * THEME_SCRIPT_HASH = next-themes ThemeProvider anti-flicker (next-themes@0.4.6)
+ *
+ * Recompute with: pnpm hash:csp
+ */
+const LANG_SCRIPT_HASH =
+  "'sha256-OXaEoHYR86dnPtcYJd0RDCyeOVHvj6cQ/jmfmAHCyOs='";
+const THEME_SCRIPT_HASH =
+  "'sha256-cd+HpnSsLaEz1lKWBNn+k+xOe1m2p5ZgfjoyNvHy9eU='";
+
+const INLINE_SCRIPT_HASHES = [LANG_SCRIPT_HASH, THEME_SCRIPT_HASH] as const;
+
 const BASE_DIRECTIVES: CspDirectives = {
   "default-src": ["'self'"],
-  // 'unsafe-inline' allows inline scripts (e.g., next-themes' ThemeProvider
-  // anti-flicker script and the lang-detection script in the root layout). A nonce-based policy
-  // would be more restrictive, but the root layout must stay static (no
-  // headers() call) for marketing pages, so ThemeProvider cannot receive a
-  // per-request nonce. React's default output escaping provides XSS protection.
+  // 'unsafe-inline' is kept for backward compatibility with CSP Level 1
+  // browsers. CSP Level 2+ browsers ignore it when hash sources are present,
+  // restricting inline scripts to the two hashed scripts above.
   "script-src": [
     "'self'",
     "'unsafe-inline'",
+    ...INLINE_SCRIPT_HASHES,
     "'wasm-unsafe-eval'",
     "https://va.vercel-scripts.com",
   ],
@@ -155,5 +173,8 @@ export {
   buildCsp,
   DEV_EXTENSIONS,
   directivesToString,
+  INLINE_SCRIPT_HASHES,
+  LANG_SCRIPT_HASH,
   mergeDirectives,
+  THEME_SCRIPT_HASH,
 };

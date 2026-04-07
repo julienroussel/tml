@@ -4,7 +4,10 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import type { ReactElement, ReactNode } from "react";
 import { ServiceWorkerRegistration } from "@/components/sw-registration";
-import { ThemeProvider } from "@/components/theme-provider";
+import {
+  THEME_PROVIDER_PROPS,
+  ThemeProvider,
+} from "@/components/theme-provider";
 import { LANG_SCRIPT } from "@/lib/lang-script";
 import "./globals.css";
 
@@ -69,9 +72,7 @@ export default function RootLayout({
             See src/lib/lang-script.ts for detection logic. */}
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: blocking inline script for a11y — same pattern as next-themes anti-flicker */}
         <script dangerouslySetInnerHTML={{ __html: LANG_SCRIPT }} />
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-        </ThemeProvider>
+        <ThemeProvider {...THEME_PROVIDER_PROPS}>{children}</ThemeProvider>
         <ServiceWorkerRegistration />
         <Analytics />
         <SpeedInsights />
