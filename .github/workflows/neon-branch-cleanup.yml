@@ -1,6 +1,18 @@
+# SECURITY: This workflow uses pull_request_target so that Dependabot PRs
+# (which can't access secrets under `pull_request`) can still clean up Neon
+# preview branches. This is safe because:
+#   1. NO step checks out or executes code from the PR
+#   2. The fork guard (head.repo == repository) skips fork PRs entirely
+#   3. github.head_ref is passed via env var (not inline in run:), preventing injection
+#   4. neonctl is version-pinned (prefer npx pin over the official action,
+#      which uses a floating @v2 tag and inlines inputs into shell commands)
+# If you modify this workflow, NEVER add actions/checkout with the PR's ref.
+
 name: Cleanup Neon preview branch
 on:
-  pull_request:
+  pull_request_target:
+    branches:
+      - main
     types: [closed]
 
 permissions: {}
