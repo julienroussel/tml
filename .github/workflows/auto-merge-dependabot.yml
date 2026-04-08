@@ -9,6 +9,16 @@
 # required status check on `main` — otherwise PRs can merge without validation.
 # Production dependencies (next, react, etc.) are excluded from auto-merge by
 # the `direct:development` guard in the condition below.
+#
+# NOTE: A fine-grained PAT (DEPENDABOT_MERGE_PAT) is used instead of
+# GITHUB_TOKEN so that the merge event is attributed to a real user. This
+# ensures the pull_request_target:closed event fires and triggers the Neon
+# branch cleanup workflow. GITHUB_TOKEN-initiated merges suppress downstream
+# workflow triggers (GitHub security rule).
+#
+# Required PAT scopes (fine-grained, scoped to this repository only):
+#   - Contents: Read and write (for merge)
+#   - Pull requests: Read and write (for approve + merge)
 
 name: Auto-merge Dependabot
 
@@ -40,7 +50,7 @@ jobs:
         env:
           # PR_URL is set via env (not inline in run:) to prevent shell injection
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_MERGE_PAT }}
       - name: Enable auto-merge
         if: |
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
@@ -49,4 +59,4 @@ jobs:
         env:
           # PR_URL is set via env (not inline in run:) to prevent shell injection
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_MERGE_PAT }}
