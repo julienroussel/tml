@@ -22,10 +22,16 @@ updates:
     labels:
       - 'dependencies'
     groups:
-      all-minor-patch:
+      # -- Auto-merge tier (order matters: first match wins) --
+      patch-updates:
+        update-types:
+          - patch
+      dev-minor-updates:
+        dependency-type: development
         update-types:
           - minor
-          - patch
+
+      # -- Manual review tier (only production minors reach these) --
       next:
         patterns:
           - 'next'
@@ -46,14 +52,6 @@ updates:
           - 'shadcn'
           - 'radix-ui'
           - '@radix-ui/*'
-      biome:
-        patterns:
-          - '@biomejs/*'
-          - 'ultracite'
-      vitest:
-        patterns:
-          - '@vitest/*'
-          - 'vitest'
     ignore:
       - dependency-name: 'next'
         update-types: ['version-update:semver-major']
