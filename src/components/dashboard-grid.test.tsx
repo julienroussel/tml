@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { Dumbbell, Star } from "lucide-react";
+import { Dumbbell, Package, Sparkles, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { DashboardGrid } from "./dashboard-grid";
@@ -16,35 +16,75 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// One enabled + one disabled to exercise both badge-visible and badge-hidden paths
-const MOCK_MODULES = [
+const MOCK_LIBRARY = [
+  {
+    slug: "collect" as const,
+    icon: Package,
+    enabled: false,
+    group: "library" as const,
+  },
+];
+
+const MOCK_LAB = [
   {
     slug: "improve" as const,
     icon: Dumbbell,
-    enabled: true,
-    group: "main" as const,
+    enabled: false,
+    group: "lab" as const,
   },
   {
     slug: "perform" as const,
     icon: Star,
     enabled: false,
-    group: "main" as const,
+    group: "lab" as const,
   },
 ];
 
-vi.mock("@/lib/modules", () => ({
-  getMainModules: () => MOCK_MODULES,
-}));
+const MOCK_INSIGHTS = [
+  {
+    slug: "enhance" as const,
+    icon: Sparkles,
+    enabled: false,
+    group: "insights" as const,
+  },
+];
+
+vi.mock("@/lib/modules", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/modules")>();
+  return {
+    MODULE_GROUPS: actual.MODULE_GROUPS,
+    MODULE_GROUP_NAV_KEYS: actual.MODULE_GROUP_NAV_KEYS,
+    getModulesByGroup: (group: string) => {
+      if (group === "library") {
+        return MOCK_LIBRARY;
+      }
+      if (group === "lab") {
+        return MOCK_LAB;
+      }
+      if (group === "insights") {
+        return MOCK_INSIGHTS;
+      }
+      return [];
+    },
+  };
+});
 
 const IMPROVE_RE = /improve/i;
-const PERFORM_RE = /perform/i;
 
 describe("DashboardGrid", () => {
-  it("renders a card for each main module", async () => {
+  it("renders grouped sections with headings", async () => {
+    const element = await DashboardGrid();
+    render(element);
+    expect(screen.getByText("nav.library")).toBeInTheDocument();
+    expect(screen.getByText("nav.theLab")).toBeInTheDocument();
+    expect(screen.getByText("nav.insights")).toBeInTheDocument();
+  });
+
+  it("renders a card for each non-admin, non-repertoire module", async () => {
     const element = await DashboardGrid();
     render(element);
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(2);
+    expect(links).toHaveLength(4);
   });
 
   it("links each card to the correct /{slug} href", async () => {
@@ -54,40 +94,39 @@ describe("DashboardGrid", () => {
       "href",
       "/improve"
     );
-    expect(screen.getByRole("link", { name: PERFORM_RE })).toHaveAttribute(
-      "href",
-      "/perform"
-    );
   });
 
-  it("shows a coming-soon badge only for disabled modules", async () => {
+  it("shows a coming-soon badge on disabled modules", async () => {
     const element = await DashboardGrid();
     render(element);
-    const performLink = screen.getByRole("link", { name: PERFORM_RE });
-    expect(
-      within(performLink).getByText("common.comingSoon")
-    ).toBeInTheDocument();
     const improveLink = screen.getByRole("link", { name: IMPROVE_RE });
     expect(
-      within(improveLink).queryByText("common.comingSoon")
-    ).not.toBeInTheDocument();
+      within(improveLink).getByText("common.comingSoon")
+    ).toBeInTheDocument();
   });
 
   it("sets aria-label on disabled module links", async () => {
     const element = await DashboardGrid();
     render(element);
-    expect(screen.getByRole("link", { name: PERFORM_RE })).toHaveAttribute(
-      "aria-label",
-      "perform.title (common.comingSoon)"
-    );
     const improveLink = screen.getByRole("link", { name: IMPROVE_RE });
-    expect(improveLink).not.toHaveAttribute("aria-label");
+    expect(improveLink).toHaveAttribute(
+      "aria-label",
+      "improve.title (common.comingSoon)"
+    );
   });
 
   it("renders module descriptions", async () => {
     const element = await DashboardGrid();
     render(element);
+    expect(screen.getByText("collect.description")).toBeInTheDocument();
     expect(screen.getByText("improve.description")).toBeInTheDocument();
     expect(screen.getByText("perform.description")).toBeInTheDocument();
+    expect(screen.getByText("enhance.description")).toBeInTheDocument();
+  });
+
+  it("does not render the admin group", async () => {
+    const element = await DashboardGrid();
+    render(element);
+    expect(screen.queryByText("nav.admin")).not.toBeInTheDocument();
   });
 });

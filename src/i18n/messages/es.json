@@ -32,10 +32,12 @@
     "plan": "Planificar",
     "perform": "Actuar",
     "enhance": "Optimizar",
-    "collect": "Coleccionar",
+    "collect": "Colección",
     "settings": "Ajustes",
     "admin": "Admin",
-    "modules": "Módulos"
+    "library": "Biblioteca",
+    "theLab": "El Laboratorio",
+    "insights": "Análisis"
   },
   "repertoire": {
     "title": "Repertorio",
@@ -230,7 +232,7 @@
     "description": "Descubre análisis y sugerencias para elevar tu magia."
   },
   "collect": {
-    "title": "Coleccionar",
+    "title": "Colección",
     "description": "Gestiona tu inventario de accesorios, libros, gimmicks y más."
   },
   "admin": {

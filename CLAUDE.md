@@ -63,7 +63,7 @@ Requires Node 24.x and pnpm >= 10.
 
 ### Route Groups
 
-- `src/app/(app)/` — authenticated routes (dashboard, repertoire, settings, account, feature modules). Protected by `proxy.ts`. Dynamic (server-rendered on demand). Notable non-module routes: `/repertoire` (trick CRUD — fully implemented, lives outside the module registry), `/account/[path]` (Neon Auth account management via `AccountView`).
+- `src/app/(app)/` — authenticated routes (dashboard, repertoire, settings, account, feature modules). Protected by `proxy.ts`. Dynamic (server-rendered on demand). `/repertoire` is the Repertoire module (Library group) — trick CRUD with tags, fully implemented and enabled. `/account/[path]` is Neon Auth account management via `AccountView`.
 - `src/app/(marketing)/[locale]/` — public pages (landing, FAQ, privacy). URL-based locale routing with `generateStaticParams` for all 7 locales. Statically generated at build time (21 pages). Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions.
 - `src/app/auth/` — sign-in / sign-up pages. Dynamic (reads `NEXT_LOCALE` cookie for locale-aware rendering). Authenticated users are redirected to `/dashboard`.
 - `src/app/api/` — API route handlers (PowerSync upload, auth, unsubscribe, etc.).
@@ -77,9 +77,13 @@ Requires Node 24.x and pnpm >= 10.
 
 ### Module Registry
 
-- `src/lib/modules.ts` defines all feature modules (improve, train, plan, perform, enhance, collect, admin).
-- All modules are currently `enabled: false` — features are in development.
-- Each module has a slug, label, description, icon, and group (`main` or `admin`).
+- `src/lib/modules.ts` defines all feature modules, organized into 4 groups (`MODULE_GROUPS`):
+  - **Library**: Repertoire (`enabled: true`), Collection (slug: `collect`, `enabled: false`)
+  - **Lab**: Improve, Train, Plan, Perform (all `enabled: false`)
+  - **Insights**: Enhance (`enabled: false`)
+  - **Admin**: Admin (`enabled: false`)
+- Each module has a slug, label, description, icon, enabled state, and group.
+- Use `getModulesByGroup(group)` to retrieve modules for a specific group.
 
 ---
 
@@ -220,7 +224,7 @@ Type safety is a first-class concern. All code must be rigorously typed.
 - **Empty states**: Icon + title + description + primary CTA. Use `ModuleComingSoon` pattern
 - **Loading states**: Skeleton for cold start only — offline-first means data is usually instant
 - **Error states**: Error boundary with retry button
-- **Mobile nav**: Bottom tab bar (<768px) — Dashboard, Improve, Plan, Perform, More
+- **Mobile nav**: Bottom tab bar (<768px) — Dashboard, Repertoire, Plan, Perform, More
 - **Desktop nav**: Sidebar (unchanged existing pattern)
 - **Accent color**: Violet (oklch hue 280) — matches the theatrical nature of magic
 

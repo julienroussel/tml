@@ -1,7 +1,7 @@
 import { UserButton } from "@neondatabase/auth/react";
-import { LayoutDashboard, UserCog, WandSparkles } from "lucide-react";
+import { LayoutDashboard, UserCog } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { ReactElement } from "react";
+import { Fragment, type ReactElement } from "react";
 import { Logo } from "@/components/logo";
 import { SidebarNavItem } from "@/components/sidebar-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -16,12 +16,14 @@ import {
   SidebarMenu,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { getAdminModules, getMainModules } from "@/lib/modules";
+import {
+  getModulesByGroup,
+  MODULE_GROUP_NAV_KEYS,
+  MODULE_GROUPS,
+} from "@/lib/modules";
 
 export async function AppSidebar(): Promise<ReactElement> {
   const t = await getTranslations("nav");
-  const mainModules = getMainModules();
-  const adminModules = getAdminModules();
 
   return (
     <Sidebar>
@@ -40,52 +42,37 @@ export async function AppSidebar(): Promise<ReactElement> {
               <SidebarNavItem href="/dashboard" label={t("dashboard")}>
                 <LayoutDashboard />
               </SidebarNavItem>
-              <SidebarNavItem href="/repertoire" label={t("repertoire")}>
-                <WandSparkles />
-              </SidebarNavItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
-          <SidebarGroupLabel>{t("modules")}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainModules.map((mod) => {
-                const Icon = mod.icon;
-                return (
-                  <SidebarNavItem
-                    href={`/${mod.slug}`}
-                    key={mod.slug}
-                    label={t(mod.slug)}
-                  >
-                    <Icon />
-                  </SidebarNavItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
-          <SidebarGroupLabel>{t("admin")}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminModules.map((mod) => {
-                const Icon = mod.icon;
-                return (
-                  <SidebarNavItem
-                    href={`/${mod.slug}`}
-                    key={mod.slug}
-                    label={t(mod.slug)}
-                  >
-                    <Icon />
-                  </SidebarNavItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {MODULE_GROUPS.map((group) => {
+          const modules = getModulesByGroup(group);
+          const navKey = MODULE_GROUP_NAV_KEYS[group];
+          return (
+            <Fragment key={group}>
+              <SidebarSeparator />
+              <SidebarGroup>
+                <SidebarGroupLabel>{t(navKey)}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {modules.map((mod) => {
+                      const Icon = mod.icon;
+                      return (
+                        <SidebarNavItem
+                          href={`/${mod.slug}`}
+                          key={mod.slug}
+                          label={t(mod.slug)}
+                        >
+                          <Icon />
+                        </SidebarNavItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </Fragment>
+          );
+        })}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

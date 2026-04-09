@@ -113,7 +113,7 @@ src/
     (app)/                # Authenticated app (dashboard, modules)
     auth/                 # Sign-in / sign-up (dynamic, locale-aware)
     api/                  # API routes (auth, sync, email, cron)
-  features/               # Feature modules (improve, train, plan, ...)
+  features/               # Feature modules grouped by purpose (library, lab, insights)
     <module>/components/  # Module-specific components
     <module>/hooks/       # Module-specific hooks
   components/             # Shared React components

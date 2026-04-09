@@ -32,10 +32,12 @@
     "plan": "Plannen",
     "perform": "Optreden",
     "enhance": "Optimaliseren",
-    "collect": "Verzamelen",
+    "collect": "Collectie",
     "settings": "Instellingen",
     "admin": "Admin",
-    "modules": "Modules"
+    "library": "Bibliotheek",
+    "theLab": "Het Lab",
+    "insights": "Inzichten"
   },
   "repertoire": {
     "title": "Repertoire",
@@ -230,7 +232,7 @@
     "description": "Ontdek inzichten en suggesties om je magie te verbeteren."
   },
   "collect": {
-    "title": "Verzamelen",
+    "title": "Collectie",
     "description": "Beheer je inventaris van rekwisieten, boeken, gimmicks en meer."
   },
   "admin": {

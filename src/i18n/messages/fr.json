@@ -35,7 +35,9 @@
     "collect": "Collection",
     "settings": "Paramètres",
     "admin": "Admin",
-    "modules": "Modules"
+    "library": "Bibliothèque",
+    "theLab": "Le Labo",
+    "insights": "Analyses"
   },
   "repertoire": {
     "title": "Répertoire",

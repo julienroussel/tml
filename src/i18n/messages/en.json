@@ -32,10 +32,12 @@
     "plan": "Plan",
     "perform": "Perform",
     "enhance": "Enhance",
-    "collect": "Collect",
+    "collect": "Collection",
     "settings": "Settings",
     "admin": "Admin",
-    "modules": "Modules"
+    "library": "Library",
+    "theLab": "The Lab",
+    "insights": "Insights"
   },
   "repertoire": {
     "title": "Repertoire",
@@ -230,7 +232,7 @@
     "description": "Discover insights and suggestions to elevate your magic."
   },
   "collect": {
-    "title": "Collect",
+    "title": "Collection",
     "description": "Manage your inventory of props, books, gimmicks, and more."
   },
   "admin": {

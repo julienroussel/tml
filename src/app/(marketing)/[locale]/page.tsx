@@ -13,7 +13,7 @@ import {
   type LocaleParams,
   locales,
 } from "@/i18n/config";
-import { getMainModules } from "@/lib/modules";
+import { getModulesByGroup, MODULE_GROUPS } from "@/lib/modules";
 
 export async function generateMetadata({
   params,
@@ -37,7 +37,9 @@ export default async function Home({
 
   const t = await getTranslations({ locale, namespace: "marketing" });
   const tModules = await getTranslations({ locale });
-  const modules = getMainModules();
+  const modules = MODULE_GROUPS.filter((g) => g !== "admin").flatMap((g) =>
+    getModulesByGroup(g)
+  );
 
   return (
     <>
@@ -166,7 +168,12 @@ export default async function Home({
               const Icon = mod.icon;
               return (
                 <Link
-                  className="group flex flex-col gap-3 rounded-xl p-4 transition-colors hover:bg-background"
+                  aria-label={
+                    mod.enabled
+                      ? undefined
+                      : `${tModules(`${mod.slug}.title`)} (${t("comingSoon")})`
+                  }
+                  className="group flex flex-col gap-3 rounded-xl p-4 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   href={`/${mod.slug}`}
                   key={mod.slug}
                 >
@@ -178,7 +185,9 @@ export default async function Home({
                       <h3 className="font-semibold">
                         {tModules(`${mod.slug}.title`)}
                       </h3>
-                      <Badge variant="secondary">{t("comingSoon")}</Badge>
+                      {!mod.enabled && (
+                        <Badge variant="secondary">{t("comingSoon")}</Badge>
+                      )}
                     </div>
                   </div>
                   <p className="text-muted-foreground text-sm leading-relaxed">

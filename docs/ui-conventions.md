@@ -35,7 +35,7 @@ Design principles and component conventions for The Magic Lab.
 
 ### Mobile Navigation
 
-- **Bottom tab bar** for primary module navigation (Improve, Train, Plan, Perform, Collect)
+- **Bottom tab bar** for primary module navigation (Dashboard, Repertoire, Plan, Perform, More)
 - Fixed to bottom of viewport
 - 44px minimum touch targets
 - Active state indicated by violet accent
@@ -58,7 +58,7 @@ Design principles and component conventions for The Magic Lab.
 |          (p-4)                           |
 |                                          |
 +------------------------------------------+
-| [Improve] [Train] [Plan] [Perform] [...] |  <- Bottom tabs (mobile only)
+| [Dashboard] [Repertoire] [Plan] [Perform] [More] |  <- Bottom tabs (mobile only)
 +------------------------------------------+
 ```
 

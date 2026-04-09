@@ -35,15 +35,15 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 | Path | Page | Module | Description |
 |---|---|---|---|
 | `/dashboard` | Dashboard | -- | Home with module grid and quick stats |
-| `/repertoire` | Repertoire | -- | Trick CRUD with tags, filtering, and search |
-| `/improve` | Improve | Improve | Practice session logging and history |
-| `/train` | Train | Train | Goal setting, drills, streaks |
-| `/plan` | Plan | Plan | Setlist builder |
-| `/perform` | Perform | Perform | Performance logging and review |
-| `/enhance` | Enhance | Enhance | Insights, suggestions, analytics |
-| `/collect` | Collect | Collect | Inventory of props, books, gimmicks |
+| `/repertoire` | Repertoire | Repertoire (Library) | Trick CRUD with tags, filtering, and search |
+| `/collect` | Collection | Collection (Library) | Inventory of props, books, gimmicks |
+| `/improve` | Improve | Improve (Lab) | Practice session logging and history |
+| `/train` | Train | Train (Lab) | Goal setting, drills, streaks |
+| `/plan` | Plan | Plan (Lab) | Setlist builder |
+| `/perform` | Perform | Perform (Lab) | Performance logging and review |
+| `/enhance` | Enhance | Enhance (Insights) | Insights, suggestions, analytics |
 | `/settings` | Settings | -- | User preferences, account |
-| `/admin` | Admin | Admin | Application administration |
+| `/admin` | Admin | Admin (Admin) | Application administration |
 | `/account/[path]` | Account | -- | Neon Auth account management (sign-in, sign-up, etc.) |
 
 ### Auth Routes

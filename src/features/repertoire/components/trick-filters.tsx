@@ -51,7 +51,7 @@ export function TrickFilters({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
       {/* Search input */}
-      <div className="relative w-full sm:max-w-xs">
+      <div className="relative w-full sm:flex-1">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           aria-label={t("searchPlaceholder")}
