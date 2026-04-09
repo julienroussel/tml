@@ -22,7 +22,7 @@ src/app/
 
 ### Marketing Routes -- `(marketing)/[locale]/`
 
-Marketing pages use URL-based locale routing for SEO. Each page is statically generated for all 7 locales (21 total pages). Bare paths (`/`, `/faq`, `/privacy`) are redirected by the proxy to locale-prefixed versions (e.g., `/en`, `/en/faq`).
+Marketing pages use URL-based locale routing for SEO. Each page is statically generated for all 7 locales (21 total pages). Bare paths (`/faq`, `/privacy`) are redirected by the proxy to locale-prefixed versions (e.g., `/en/faq`). The root path `/` redirects authenticated users to `/dashboard` and unauthenticated users to the locale-prefixed landing page (e.g., `/en`).
 
 | Path | Page | Description |
 |---|---|---|
@@ -66,13 +66,16 @@ The proxy (`src/proxy.ts`) handles locale redirects and auth-based routing:
 ```
 Any user
   |
-  +--> visits / or /faq or /privacy
-  |      --> 302 redirect to /[locale] (detected from cookie or Accept-Language)
+  +--> visits /faq or /privacy
+  |      --> 302 redirect to /[locale]/... (detected from cookie or Accept-Language)
   |
   +--> visits /en, /fr/faq, etc.
          --> Serve static page (no server computation)
 
 Unauthenticated user
+  |
+  +--> visits /
+  |      --> 302 redirect to /[locale] (marketing landing page)
   |
   +--> visits /dashboard, /improve, etc.
   |      --> Redirect to /auth/sign-in
@@ -81,6 +84,9 @@ Unauthenticated user
          --> Show static FAQ page
 
 Authenticated user
+  |
+  +--> visits /
+  |      --> 302 redirect to /dashboard
   |
   +--> visits /auth/sign-in, /auth/sign-up
   |      --> Redirect to /dashboard

@@ -103,6 +103,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const csp = buildCspForRoute();
 
+  // Redirect authenticated users from root to dashboard.
+  // Cookie-existence check only — no session validation to keep proxy fast.
+  // If the cookie is stale, the dashboard's auth guard redirects to sign-in.
+  if (pathname === "/" && request.cookies.has(SESSION_COOKIE_NAME)) {
+    const response = NextResponse.redirect(
+      new URL("/dashboard", request.url),
+      302
+    );
+    response.headers.set("Content-Security-Policy", csp);
+    return response;
+  }
+
   // Redirect bare marketing paths to locale-prefixed versions.
   // Uses 302 (not 301) because the target depends on the user's locale
   // preference which can change (cookie + Accept-Language).

@@ -165,6 +165,17 @@ describe("proxy", () => {
     expect(mockMiddleware).not.toHaveBeenCalled();
   });
 
+  it("redirects authenticated users from / to /dashboard", async () => {
+    const { proxy } = await import("./proxy");
+
+    const response = await proxy(createRequest("/", true));
+    expect(response.status).toBe(302);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      "/dashboard"
+    );
+    expect(response.headers.get("Content-Security-Policy")).toBeTruthy();
+  });
+
   it("redirects bare marketing paths to locale-prefixed versions", async () => {
     const { proxy } = await import("./proxy");
 

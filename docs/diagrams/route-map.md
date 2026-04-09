@@ -62,7 +62,8 @@ graph TD
 - `/[locale]` — Landing page (hero, features, CTAs) — 7 locale variants
 - `/[locale]/privacy` — Privacy policy — 7 locale variants
 - `/[locale]/faq` — Frequently asked questions — 7 locale variants
-- Bare paths (`/`, `/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions
+- Bare paths (`/faq`, `/privacy`) are 302-redirected by proxy to locale-prefixed versions
+- The root path `/` redirects authenticated users to `/dashboard`, unauthenticated users to the locale-prefixed landing page
 
 ### `(app)/` — Authenticated App
 - `/dashboard` — Main dashboard
