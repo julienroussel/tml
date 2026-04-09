@@ -69,9 +69,8 @@ vi.mock("@/components/ui/sidebar", () => ({
 }));
 
 describe("AppSidebar", () => {
-  it("renders the home/logo link pointing to /dashboard", async () => {
-    const element = await AppSidebar();
-    render(element);
+  it("renders the home/logo link pointing to /dashboard", () => {
+    render(<AppSidebar />);
 
     const links = screen.getAllByRole("link");
     const homeLink = links.find(
@@ -80,25 +79,22 @@ describe("AppSidebar", () => {
     expect(homeLink).toBeInTheDocument();
   });
 
-  it('renders "The Magic Lab" sr-only text', async () => {
-    const element = await AppSidebar();
-    render(element);
+  it('renders "The Magic Lab" sr-only text', () => {
+    render(<AppSidebar />);
 
     const srText = screen.getByText("The Magic Lab");
     expect(srText).toBeInTheDocument();
     expect(srText.className).toContain("sr-only");
   });
 
-  it("renders the Dashboard nav item", async () => {
-    const element = await AppSidebar();
-    render(element);
+  it("renders the Dashboard nav item", () => {
+    render(<AppSidebar />);
 
     expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
   });
 
-  it("renders nav items for all module groups", async () => {
-    const element = await AppSidebar();
-    render(element);
+  it("renders nav items for all module groups", () => {
+    render(<AppSidebar />);
 
     const navItems = screen.getAllByTestId("sidebar-nav-item");
     for (const group of MODULE_GROUPS) {
@@ -111,9 +107,8 @@ describe("AppSidebar", () => {
     }
   });
 
-  it("renders a nav item for every module", async () => {
-    const element = await AppSidebar();
-    render(element);
+  it("renders a nav item for every module", () => {
+    render(<AppSidebar />);
 
     for (const mod of APP_MODULES) {
       // Some slugs (e.g. "admin") also appear as group labels, so use getAllByText
@@ -123,9 +118,8 @@ describe("AppSidebar", () => {
     }
   });
 
-  it("renders group labels for all module groups", async () => {
-    const element = await AppSidebar();
-    render(element);
+  it("renders group labels for all module groups", () => {
+    render(<AppSidebar />);
 
     expect(screen.getByText("nav.library")).toBeInTheDocument();
     expect(screen.getByText("nav.theLab")).toBeInTheDocument();
@@ -133,9 +127,8 @@ describe("AppSidebar", () => {
     expect(screen.getAllByText("nav.admin").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the Settings nav item", async () => {
-    const element = await AppSidebar();
-    render(element);
+  it("renders the Settings nav item", () => {
+    render(<AppSidebar />);
 
     expect(screen.getByText("nav.settings")).toBeInTheDocument();
     const navItems = screen.getAllByTestId("sidebar-nav-item");
