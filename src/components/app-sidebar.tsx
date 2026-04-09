@@ -1,6 +1,8 @@
+"use client";
+
 import { UserButton } from "@neondatabase/auth/react";
 import { LayoutDashboard, UserCog } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { Fragment, type ReactElement } from "react";
 import { Logo } from "@/components/logo";
 import { SidebarNavItem } from "@/components/sidebar-nav";
@@ -22,8 +24,8 @@ import {
   MODULE_GROUPS,
 } from "@/lib/modules";
 
-export async function AppSidebar(): Promise<ReactElement> {
-  const t = await getTranslations("nav");
+export function AppSidebar(): ReactElement {
+  const t = useTranslations("nav");
 
   return (
     <Sidebar>
