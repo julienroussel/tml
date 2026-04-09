@@ -32,10 +32,12 @@
     "plan": "Planen",
     "perform": "Auftreten",
     "enhance": "Optimieren",
-    "collect": "Sammeln",
+    "collect": "Sammlung",
     "settings": "Einstellungen",
     "admin": "Admin",
-    "modules": "Module"
+    "library": "Bibliothek",
+    "theLab": "Das Labor",
+    "insights": "Einblicke"
   },
   "repertoire": {
     "title": "Repertoire",
@@ -230,7 +232,7 @@
     "description": "Entdecke Einblicke und Vorschläge, um deine Magie zu verbessern."
   },
   "collect": {
-    "title": "Sammeln",
+    "title": "Sammlung",
     "description": "Verwalte dein Inventar an Requisiten, Büchern, Gimmicks und mehr."
   },
   "admin": {

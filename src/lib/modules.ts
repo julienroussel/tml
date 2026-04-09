@@ -7,9 +7,12 @@ import {
   Settings,
   Sparkles,
   Star,
+  WandSparkles,
 } from "lucide-react";
 
-type ModuleGroup = "admin" | "main";
+const MODULE_GROUPS = ["library", "lab", "insights", "admin"] as const;
+
+type ModuleGroup = (typeof MODULE_GROUPS)[number];
 
 interface AppModuleBase {
   enabled: boolean;
@@ -18,42 +21,55 @@ interface AppModuleBase {
   slug: string;
 }
 
+const MODULE_GROUP_NAV_KEYS = {
+  admin: "admin",
+  insights: "insights",
+  lab: "theLab",
+  library: "library",
+} as const satisfies Record<ModuleGroup, string>;
+
 const APP_MODULES = [
   {
-    slug: "improve",
-    icon: Dumbbell,
-    enabled: false,
-    group: "main",
-  },
-  {
-    slug: "train",
-    icon: ListChecks,
-    enabled: false,
-    group: "main",
-  },
-  {
-    slug: "plan",
-    icon: BookOpen,
-    enabled: false,
-    group: "main",
-  },
-  {
-    slug: "perform",
-    icon: Star,
-    enabled: false,
-    group: "main",
-  },
-  {
-    slug: "enhance",
-    icon: Sparkles,
-    enabled: false,
-    group: "main",
+    slug: "repertoire",
+    icon: WandSparkles,
+    enabled: true,
+    group: "library",
   },
   {
     slug: "collect",
     icon: Package,
     enabled: false,
-    group: "main",
+    group: "library",
+  },
+  {
+    slug: "improve",
+    icon: Dumbbell,
+    enabled: false,
+    group: "lab",
+  },
+  {
+    slug: "train",
+    icon: ListChecks,
+    enabled: false,
+    group: "lab",
+  },
+  {
+    slug: "plan",
+    icon: BookOpen,
+    enabled: false,
+    group: "lab",
+  },
+  {
+    slug: "perform",
+    icon: Star,
+    enabled: false,
+    group: "lab",
+  },
+  {
+    slug: "enhance",
+    icon: Sparkles,
+    enabled: false,
+    group: "insights",
   },
   {
     slug: "admin",
@@ -79,23 +95,19 @@ function getModule<S extends ModuleSlug>(
   return mod;
 }
 
-function getMainModules(): readonly Extract<
-  AppModuleEntry,
-  { group: "main" }
->[] {
+function getModulesByGroup<G extends ModuleGroup>(
+  group: G
+): readonly Extract<AppModuleEntry, { group: G }>[] {
   return APP_MODULES.filter(
-    (m): m is Extract<AppModuleEntry, { group: "main" }> => m.group === "main"
-  );
-}
-
-function getAdminModules(): readonly Extract<
-  AppModuleEntry,
-  { group: "admin" }
->[] {
-  return APP_MODULES.filter(
-    (m): m is Extract<AppModuleEntry, { group: "admin" }> => m.group === "admin"
+    (m): m is Extract<AppModuleEntry, { group: G }> => m.group === group
   );
 }
 
 export type { AppModuleEntry, ModuleGroup, ModuleSlug };
-export { APP_MODULES, getAdminModules, getMainModules, getModule };
+export {
+  APP_MODULES,
+  getModule,
+  getModulesByGroup,
+  MODULE_GROUP_NAV_KEYS,
+  MODULE_GROUPS,
+};

@@ -40,14 +40,36 @@ describe("Home (marketing landing page)", () => {
     expect(ctas.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders feature section with all 6 modules", async () => {
+  it("renders feature section with all 7 non-admin modules", async () => {
     render(await Home(defaultParams));
     const featureSection = document.getElementById("features");
     expect(featureSection).toBeInTheDocument();
     // Each module renders as a link with an h3 heading
     const headings =
       featureSection?.parentElement?.querySelectorAll("h3") ?? [];
-    expect(headings).toHaveLength(6);
+    expect(headings).toHaveLength(7);
+  });
+
+  it("does not show coming soon badge or aria-label on enabled modules", async () => {
+    render(await Home(defaultParams));
+    const featureGrid = document.getElementById("features")?.parentElement;
+    expect(featureGrid).toBeInTheDocument();
+
+    // Repertoire is the only enabled module — its link should exist
+    const repertoireLink = featureGrid?.querySelector('a[href="/repertoire"]');
+    expect(repertoireLink).toBeInTheDocument();
+
+    // Enabled modules must NOT have a "comingSoon" badge
+    expect(repertoireLink?.textContent).not.toContain("marketing.comingSoon");
+
+    // Enabled modules must NOT have an aria-label override
+    expect(repertoireLink).not.toHaveAttribute("aria-label");
+
+    // Disabled modules (e.g. improve) SHOULD have the badge and aria-label
+    const disabledLink = featureGrid?.querySelector('a[href="/improve"]');
+    expect(disabledLink).toBeInTheDocument();
+    expect(disabledLink?.textContent).toContain("marketing.comingSoon");
+    expect(disabledLink).toHaveAttribute("aria-label");
   });
 
   it("renders the GitHub link with correct attributes", async () => {

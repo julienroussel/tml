@@ -26,6 +26,12 @@ describe("HeaderTitle", () => {
     expect(screen.getByText("nav.improve")).toBeInTheDocument();
   });
 
+  it("renders module label for /repertoire", () => {
+    vi.mocked(usePathname).mockReturnValue("/repertoire");
+    render(<HeaderTitle />);
+    expect(screen.getByText("nav.repertoire")).toBeInTheDocument();
+  });
+
   it("renders nothing for unknown route", () => {
     vi.mocked(usePathname).mockReturnValue("/unknown");
     const { container } = render(<HeaderTitle />);

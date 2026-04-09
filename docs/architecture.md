@@ -30,14 +30,15 @@ src/app/
   (app)/                # Authenticated application
     layout.tsx          # Sidebar + header chrome
     dashboard/page.tsx  # Home dashboard
-    improve/page.tsx    # Practice session logging
-    train/page.tsx      # Goal setting and drills
-    plan/page.tsx       # Setlist builder
-    perform/page.tsx    # Performance tracking
-    enhance/page.tsx    # Insights and suggestions
-    collect/page.tsx    # Inventory management
+    repertoire/page.tsx # Trick library (Library module)
+    collect/page.tsx    # Inventory management (Library module)
+    improve/page.tsx    # Practice session logging (Lab module)
+    train/page.tsx      # Goal setting and drills (Lab module)
+    plan/page.tsx       # Setlist builder (Lab module)
+    perform/page.tsx    # Performance tracking (Lab module)
+    enhance/page.tsx    # Insights and suggestions (Insights module)
     settings/page.tsx   # User preferences
-    admin/page.tsx      # Admin panel
+    admin/page.tsx      # Admin panel (Admin module)
   layout.tsx            # Root layout (theme, fonts, analytics)
   api/                  # API routes
 ```
@@ -46,9 +47,14 @@ See [route-structure.md](./route-structure.md) for the complete route tree.
 
 ## Feature Modules
 
-Each feature area is organized as a self-contained module defined in `src/lib/modules.ts`. Modules declare their slug, label, description, icon, and enabled state. The module registry drives both the sidebar navigation and the marketing feature grid.
+Each feature area is organized as a self-contained module defined in `src/lib/modules.ts`. Modules declare their slug, label, description, icon, enabled state, and group. The module registry drives both the sidebar navigation and the marketing feature grid. Use `getModulesByGroup(group)` to retrieve modules for a specific group.
 
-Current modules: **Improve**, **Train**, **Plan**, **Perform**, **Enhance**, **Collect**, **Admin**.
+Modules are organized into 4 groups:
+
+- **Library**: Repertoire (enabled), Collection
+- **Lab**: Improve, Train, Plan, Perform
+- **Insights**: Enhance
+- **Admin**: Admin
 
 See [diagrams/module-deps.md](./diagrams/module-deps.md) for feature module dependencies.
 

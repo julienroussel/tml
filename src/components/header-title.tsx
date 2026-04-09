@@ -9,7 +9,6 @@ type NavKey = Parameters<ReturnType<typeof useTranslations<"nav">>>[0];
 
 const NAV_KEYS = [
   "dashboard",
-  "repertoire",
   "settings",
   ...APP_MODULES.map((m) => m.slug),
 ] satisfies readonly NavKey[];

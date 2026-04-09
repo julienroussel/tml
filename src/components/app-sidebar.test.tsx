@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { getAdminModules, getMainModules } from "@/lib/modules";
+import { APP_MODULES, getModulesByGroup, MODULE_GROUPS } from "@/lib/modules";
 import { AppSidebar } from "./app-sidebar";
 
 vi.mock("next/link", () => ({
@@ -96,40 +96,41 @@ describe("AppSidebar", () => {
     expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
   });
 
-  it("renders all main module nav items", async () => {
+  it("renders nav items for all module groups", async () => {
     const element = await AppSidebar();
     render(element);
-
-    const mainModules = getMainModules();
-    for (const mod of mainModules) {
-      expect(screen.getByText(`nav.${mod.slug}`)).toBeInTheDocument();
-    }
 
     const navItems = screen.getAllByTestId("sidebar-nav-item");
-    const mainHrefs = mainModules.map((m) => `/${m.slug}`);
-    const renderedMainItems = navItems.filter((item) =>
-      mainHrefs.includes(item.getAttribute("data-href") ?? "")
-    );
-    expect(renderedMainItems).toHaveLength(mainModules.length);
+    for (const group of MODULE_GROUPS) {
+      const modules = getModulesByGroup(group);
+      const groupHrefs = modules.map((m) => `/${m.slug}`);
+      const rendered = navItems.filter((item) =>
+        groupHrefs.includes(item.getAttribute("data-href") ?? "")
+      );
+      expect(rendered).toHaveLength(modules.length);
+    }
   });
 
-  it("renders all admin module nav items", async () => {
+  it("renders a nav item for every module", async () => {
     const element = await AppSidebar();
     render(element);
 
-    const adminModules = getAdminModules();
-    for (const mod of adminModules) {
+    for (const mod of APP_MODULES) {
+      // Some slugs (e.g. "admin") also appear as group labels, so use getAllByText
       expect(
         screen.getAllByText(`nav.${mod.slug}`).length
       ).toBeGreaterThanOrEqual(1);
     }
+  });
 
-    const navItems = screen.getAllByTestId("sidebar-nav-item");
-    const adminHrefs = adminModules.map((m) => `/${m.slug}`);
-    const renderedAdminItems = navItems.filter((item) =>
-      adminHrefs.includes(item.getAttribute("data-href") ?? "")
-    );
-    expect(renderedAdminItems).toHaveLength(adminModules.length);
+  it("renders group labels for all module groups", async () => {
+    const element = await AppSidebar();
+    render(element);
+
+    expect(screen.getByText("nav.library")).toBeInTheDocument();
+    expect(screen.getByText("nav.theLab")).toBeInTheDocument();
+    expect(screen.getByText("nav.insights")).toBeInTheDocument();
+    expect(screen.getAllByText("nav.admin").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the Settings nav item", async () => {
