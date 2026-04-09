@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
 import { auth } from "@/auth/server";
 import { DashboardGrid } from "@/components/dashboard-grid";
+import { RepertoireCard } from "@/components/repertoire-card";
 import { getDb } from "@/db";
 import { tricks } from "@/db/schema/tricks";
 
@@ -34,12 +35,12 @@ export default async function DashboardPage(): Promise<ReactElement> {
         <p className="text-muted-foreground">
           {session?.user
             ? t("welcomeBack", {
-                name: session.user.name ?? "magician",
-                count: trickCount,
+                name: session.user.name ?? t("fallbackName"),
               })
             : t("welcome")}
         </p>
       </div>
+      <RepertoireCard trickCount={trickCount} />
       <DashboardGrid />
     </div>
   );

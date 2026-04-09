@@ -202,7 +202,11 @@
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bienvenue dans The Magic Lab. Choisissez un module pour commencer.",
-    "welcomeBack": "Bon retour, {name}. Vous avez {count, plural, one {# tour} other {# tours}} dans votre répertoire."
+    "welcomeBack": "Content de vous revoir, {name}.",
+    "fallbackName": "magicien",
+    "repertoireTitle": "Mon répertoire",
+    "repertoireDescription": "{count, plural, one {# tour} other {# tours}} dans votre collection",
+    "repertoireLink": "Ouvrir le répertoire"
   },
   "improve": {
     "title": "Améliorer",
