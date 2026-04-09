@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ShieldAlert } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
