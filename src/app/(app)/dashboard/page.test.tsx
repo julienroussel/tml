@@ -6,6 +6,12 @@ vi.mock("@/components/dashboard-grid", () => ({
   DashboardGrid: () => <div data-testid="dashboard-grid" />,
 }));
 
+vi.mock("@/components/repertoire-card", () => ({
+  RepertoireCard: ({ trickCount }: { trickCount: number }) => (
+    <div data-count={trickCount} data-testid="repertoire-card" />
+  ),
+}));
+
 interface MockSession {
   data: { user: { id: string; name: string } | null };
 }
@@ -92,6 +98,14 @@ describe("DashboardPage", () => {
     render(await DashboardPage());
 
     expect(screen.getByTestId("dashboard-grid")).toBeInTheDocument();
+  });
+
+  it("renders the RepertoireCard with the correct trickCount", async () => {
+    render(await DashboardPage());
+
+    const card = screen.getByTestId("repertoire-card");
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveAttribute("data-count", "3");
   });
 
   it("queries the database with correct parameters", async () => {

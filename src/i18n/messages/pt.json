@@ -202,7 +202,11 @@
   "dashboard": {
     "title": "Painel",
     "welcome": "Bem-vindo ao The Magic Lab. Escolha um módulo para começar.",
-    "welcomeBack": "Bem-vindo de volta, {name}. Tem {count, plural, one {# truque} other {# truques}} no seu repertório."
+    "welcomeBack": "Bem-vindo de volta, {name}.",
+    "fallbackName": "mágico",
+    "repertoireTitle": "O Meu Repertório",
+    "repertoireDescription": "{count, plural, one {# truque} other {# truques}} na sua coleção",
+    "repertoireLink": "Abrir repertório"
   },
   "improve": {
     "title": "Melhorar",

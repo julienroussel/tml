@@ -202,7 +202,11 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welkom bij The Magic Lab. Kies een module om te beginnen.",
-    "welcomeBack": "Welkom terug, {name}. Je hebt {count, plural, one {# truc} other {# trucs}} in je repertoire."
+    "welcomeBack": "Welkom terug, {name}.",
+    "fallbackName": "goochelaar",
+    "repertoireTitle": "Mijn Repertoire",
+    "repertoireDescription": "{count, plural, one {# truc} other {# trucs}} in je collectie",
+    "repertoireLink": "Repertoire openen"
   },
   "improve": {
     "title": "Verbeteren",
