@@ -1015,7 +1015,7 @@ Source: docs/diagrams/route-map.md
 
 # Route Map
 
-<!-- Last verified: 2026-04-09 -->
+<!-- Last verified: 2026-04-13 -->
 
 ## Route Structure
 
