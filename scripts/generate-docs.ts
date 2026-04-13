@@ -34,8 +34,8 @@ function runGenerator(
 
 function generateAll(projectRoot: string): GeneratorResult[] {
   const generators = [
-    { name: "llms.txt", script: "scripts/generate-llms-txt.ts" },
     { name: "Route map", script: "scripts/generate-route-map.ts" },
+    { name: "llms.txt", script: "scripts/generate-llms-txt.ts" },
   ];
 
   const results: GeneratorResult[] = [];

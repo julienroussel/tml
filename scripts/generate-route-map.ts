@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { readdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
@@ -88,13 +89,21 @@ function generateMermaid(appDir: string): string {
   return lines.join("\n");
 }
 
+function getLastCommitDate(projectRoot: string): string {
+  const iso = execSync("git log -1 --format=%cI HEAD", {
+    cwd: projectRoot,
+    encoding: "utf-8",
+  }).trim();
+  return iso.slice(0, 10);
+}
+
 function generateRouteMap(projectRoot: string): string {
   const appDir = join(projectRoot, "src", "app");
   const mermaid = generateMermaid(appDir);
 
   return `# Route Map
 
-<!-- Last verified: ${new Date().toISOString().split("T")[0]} -->
+<!-- Last verified: ${getLastCommitDate(projectRoot)} -->
 
 ## Route Structure
 

@@ -97,23 +97,25 @@ describe("generateAll", () => {
     const results = generateAll("/project");
 
     expect(results).toHaveLength(2);
-    expect(results[0]?.name).toBe("llms.txt");
-    expect(results[1]?.name).toBe("Route map");
+    expect(results[0]?.name).toBe("Route map");
+    expect(results[1]?.name).toBe("llms.txt");
     expect(results.every((r) => r.success)).toBe(true);
   });
 
   it("includes failures in results without stopping", () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedExecSync.mockReturnValueOnce("").mockImplementationOnce(() => {
-      throw new Error("route map failed");
-    });
+    mockedExecSync
+      .mockImplementationOnce(() => {
+        throw new Error("route map failed");
+      })
+      .mockReturnValueOnce("");
 
     const results = generateAll("/project");
 
     expect(results).toHaveLength(2);
-    expect(results[0]?.success).toBe(true);
-    expect(results[1]?.success).toBe(false);
-    expect(results[1]?.message).toBe("route map failed");
+    expect(results[0]?.success).toBe(false);
+    expect(results[0]?.message).toBe("route map failed");
+    expect(results[1]?.success).toBe(true);
   });
 
   it("logs output for each generator", () => {
