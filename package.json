@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "5.2.2",
-    "@journeyapps/wa-sqlite": "1.5.0",
+    "@journeyapps/wa-sqlite": "1.6.0",
     "@neondatabase/auth": "0.2.0-beta.1",
     "@neondatabase/serverless": "1.0.2",
     "@powersync/common": "1.51.0",
