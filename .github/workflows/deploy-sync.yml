@@ -9,7 +9,9 @@ on:
       - "src/sync/schema.ts"
       - "src/sync/synced-columns.ts"
       - "scripts/generate-sync.ts"
+      - "scripts/powersync.ts"
       - ".github/workflows/deploy-sync.yml"
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -22,6 +24,7 @@ jobs:
   deploy:
     name: Deploy sync-config.yaml
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 5
     steps:
       - name: Checkout
