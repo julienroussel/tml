@@ -1,0 +1,61 @@
+name: Validate PowerSync sync config
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "powersync/sync-config.yaml"
+      - "src/db/schema/**"
+      - "src/sync/schema.ts"
+      - "src/sync/synced-columns.ts"
+      - "scripts/generate-sync.ts"
+      - "scripts/powersync.ts"
+      - ".github/workflows/validate-sync.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate sync-config.yaml
+    # Skip fork PRs (no access to POWERSYNC_ADMIN_TOKEN — would fail opaquely)
+    # and Dependabot PRs (same secrets restriction). The post-merge deploy
+    # workflow still catches any real issue.
+    #
+    # Note: if this job is ever marked required in branch protection, these
+    # skip conditions produce "skipped" status, which GitHub treats as neither
+    # pass nor fail — blocking auto-merge for Dependabot and fork PRs.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check sync artifacts are up to date
+        run: pnpm sync:check
+
+      - name: Validate sync config
+        run: pnpm sync:validate
+        env:
+          POWERSYNC_ADMIN_TOKEN: ${{ secrets.POWERSYNC_ADMIN_TOKEN }}
+          POWERSYNC_INSTANCE_ID: ${{ vars.POWERSYNC_INSTANCE_ID }}
+          POWERSYNC_PROJECT_ID: ${{ vars.POWERSYNC_PROJECT_ID }}

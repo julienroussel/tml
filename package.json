@@ -41,7 +41,7 @@
     "i18n:check": "tsx scripts/check-i18n.ts",
     "sync:generate": "tsx scripts/generate-sync.ts",
     "sync:check": "tsx scripts/check-sync.ts",
-    "sync:validate": "tsx scripts/powersync.ts validate",
+    "sync:validate": "tsx scripts/powersync.ts validate --validate-only=sync-config",
     "sync:deploy": "tsx scripts/powersync.ts deploy sync-config",
     "email:dev": "email dev --dir src/emails --port 3030",
     "screenshots": "tsx scripts/generate-screenshots.ts"
