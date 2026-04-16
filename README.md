@@ -94,6 +94,12 @@ pnpm db:generate      # Generate Drizzle migration from schema changes
 pnpm db:migrate       # Apply pending migrations to Neon
 pnpm db:studio        # Open Drizzle Studio GUI
 
+# PowerSync sync config (generated from Drizzle schema)
+pnpm sync:generate    # Regenerate client schema, column allowlist, and sync-config.yaml
+pnpm sync:check       # Fail if sync artifacts drift from the Drizzle schema
+pnpm sync:validate    # Validate powersync/sync-config.yaml via the PowerSync CLI
+pnpm sync:deploy      # Deploy sync-config.yaml to PowerSync Cloud (requires POWERSYNC_ADMIN_TOKEN)
+
 # i18n & docs
 pnpm i18n:check       # Validate all locales have matching keys
 pnpm docs:generate    # Regenerate llms.txt files from docs/

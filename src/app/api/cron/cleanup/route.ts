@@ -2,7 +2,8 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { Pool } from "@neondatabase/serverless";
 import { type NextRequest, NextResponse } from "next/server";
-import { quoteId, type SyncedTableName } from "@/sync/queries";
+import { quoteId } from "@/sync/queries";
+import type { SyncedTableName } from "@/sync/synced-columns";
 
 /**
  * Daily cron job that hard-deletes rows soft-deleted more than 30 days ago.

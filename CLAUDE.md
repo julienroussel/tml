@@ -28,6 +28,10 @@ pnpm test:e2e:ui    # Open Playwright UI mode
 pnpm db:generate    # Generate Drizzle migration from schema changes
 pnpm db:migrate     # Apply pending migrations to Neon
 pnpm db:studio      # Open Drizzle Studio GUI
+pnpm sync:generate  # Regenerate PowerSync sync artifacts from Drizzle schema
+pnpm sync:check     # Fail if sync artifacts are out of date with the Drizzle schema
+pnpm sync:validate  # Validate powersync/sync-config.yaml via the PowerSync CLI
+pnpm sync:deploy    # Deploy sync-config.yaml to PowerSync Cloud (requires POWERSYNC_ADMIN_TOKEN)
 pnpm i18n:check     # Validate all locales have matching keys
 pnpm docs:generate  # Regenerate llms.txt files from docs/
 pnpm email:dev      # Start React Email dev server (port 3030)
@@ -183,16 +187,38 @@ Type safety is a first-class concern. All code must be rigorously typed.
 ## Sync Engine Reference
 
 - **CRITICAL — Offline-first is a core requirement**: The app must work fully offline after initial load. PowerSync's local SQLite database is the primary data source for all reads — network is optional. Never introduce changes that break offline functionality. In particular, the service worker (`public/sw.js`) must cache all assets required for offline boot, including PowerSync WASM binaries and web workers under `/@powersync/`. The `shouldBypass()` function must only skip live API traffic (remote sync, auth, analytics), never static assets needed for offline access.
-- **Server schema**: `src/db/schema/` (Drizzle — server-side, Neon Postgres)
-- **Client schema**: `src/sync/schema.ts` (PowerSync — client-side, local SQLite)
-- **IMPORTANT**: When modifying the database schema, ALWAYS update both schemas
+- **Server schema**: `src/db/schema/` (Drizzle — server-side, Neon Postgres). **Source of truth.**
+- **Client schema**: `src/sync/schema.ts` (PowerSync — client-side, local SQLite). **Generated.**
+- **Sync config**: `powersync/sync-config.yaml` (PowerSync Sync Streams edition 3, deployed to PowerSync Cloud). **Generated.**
+- **Column allowlist**: `src/sync/synced-columns.ts` (`SYNCED_TABLE_NAMES` / `SYNCED_COLUMNS` for the batch endpoint). **Generated.**
 - **Write path**: Component → `execute()` → upload queue → `/api/powersync/upload` → Drizzle → Neon
 - **Read path**: Neon → PowerSync Cloud → client SQLite → `useQuery()` → React component
 - **Conflict resolution**: Last-write-wins with `updated_at` timestamps
 - **Deletion**: Soft-delete with `deleted_at` tombstone, 30-day hard-delete cleanup
-- **Connector allowlists**: New synced tables MUST be added to `SYNCED_TABLE_NAMES` and `SYNCED_COLUMNS` in `src/sync/queries.ts` — unlisted tables/columns are silently rejected
 - **Mutation scoping**: The connector forces the authenticated `user_id` on all writes server-side — never trusted from the client
 - **Error semantics**: 4xx responses are permanent (mutation dropped); 5xx/network errors trigger PowerSync retry
+
+### Sync Config Codegen
+
+The three sync artifacts above are generated from the Drizzle schema by `scripts/generate-sync.ts`. **Never hand-edit them** — changes will be overwritten on the next regen.
+
+- Run `pnpm sync:generate` after any change under `src/db/schema/**` to refresh the artifacts.
+- `pnpm sync:check` fails if the committed artifacts disagree with the Drizzle schema; it runs on pre-commit (via Lefthook) and in CI as a PR gate.
+- Server-only tables (`users`, `user_preferences`, `push_subscriptions`) are listed in the `SERVER_ONLY_TABLES` denylist in `scripts/generate-sync.ts`. New tables sync by default — add to the denylist only if a table must never reach the client.
+- The generator fails fast on an unknown Drizzle `columnType`. When that happens, add a mapping in `mapColumnType`.
+
+### Sync Config Deployment
+
+`powersync/sync-config.yaml` is deployed to PowerSync Cloud via the PowerSync CLI, run from GitHub Actions.
+
+- **Workflow**: `.github/workflows/deploy-sync.yml` runs on push to `main` when `powersync/sync-config.yaml` or the Drizzle schema changes. It calls `pnpm sync:validate` then `pnpm sync:deploy`.
+- **Manual deploy**: `POWERSYNC_ADMIN_TOKEN=... POWERSYNC_INSTANCE_ID=... POWERSYNC_PROJECT_ID=... pnpm sync:deploy` (for first-time deploys or emergency reverts).
+- **Credentials** — all `POWERSYNC_*`-prefixed for consistency. A thin wrapper (`scripts/powersync.ts`) maps them to the bare names the CLI expects.
+  - `POWERSYNC_ADMIN_TOKEN` — GitHub **secret**, Personal Access Token generated at https://dashboard.powersync.com/account/access-tokens.
+  - `POWERSYNC_INSTANCE_ID` / `POWERSYNC_PROJECT_ID` — GitHub repository **variables** (not secrets; visible in logs for debuggability). Discover via `powersync fetch instances --output=json` after `powersync login`.
+  - `POWERSYNC_ORG_ID` — only needed if the PAT spans multiple organisations.
+- **Rollback**: The CLI has no native rollback. Revert the commit and re-run the workflow.
+- **Dashboard is view-only** — never edit sync rules in the PowerSync Cloud Dashboard. Every change must flow through a PR.
 
 ## CSP Rules
 
@@ -208,7 +234,7 @@ Type safety is a first-class concern. All code must be rigorously typed.
 2. Generate migration: `pnpm db:generate`
 3. Review generated SQL in `src/db/migrations/`
 4. Apply migration: `pnpm db:migrate`
-5. Update PowerSync client schema: `src/sync/schema.ts`
+5. Regenerate PowerSync sync artifacts: `pnpm sync:generate` (updates `src/sync/schema.ts`, `src/sync/synced-columns.ts`, `powersync/sync-config.yaml`)
 6. Reset `dev/julien` Neon branch from parent (keeps local dev in sync with latest schema)
 7. Run `pnpm docs:generate` to update documentation
 
@@ -238,9 +264,9 @@ Type safety is a first-class concern. All code must be rigorously typed.
 
 Checklist:
 1. Feature dir in `src/features/<name>/` (shared `components/` and `hooks/`)
-2. Server schema in `src/db/schema/<name>.ts`
+2. Server schema in `src/db/schema/<name>.ts` (update the barrel in `src/db/schema/index.ts`)
 3. Generate + apply migration (`pnpm db:generate && pnpm db:migrate`)
-4. Update PowerSync client schema (`src/sync/schema.ts`)
+4. Regenerate sync artifacts (`pnpm sync:generate`) — commit `src/sync/schema.ts`, `src/sync/synced-columns.ts`, and `powersync/sync-config.yaml`
 5. Route(s) in `src/app/(app)/<name>/`
 6. Translation keys in all 7 locale files
 7. Components with empty/loading/error states

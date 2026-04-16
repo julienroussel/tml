@@ -7,9 +7,9 @@ import type { SqlParam } from "@/sync/queries";
 import {
   buildQuery,
   coerceOpRecord,
+  hasUserIdColumn,
   isSyncedTable,
   OpType,
-  SYNCED_COLUMNS,
 } from "@/sync/queries";
 
 /**
@@ -105,8 +105,7 @@ function buildOperationQuery(
   const record = coerceOpRecord(opData, id, table);
 
   // Force the authenticated user_id — never trust the client value
-  const hasUserId = SYNCED_COLUMNS[table].has("user_id");
-  if (hasUserId) {
+  if (hasUserIdColumn(table)) {
     record.user_id = userId;
   }
 

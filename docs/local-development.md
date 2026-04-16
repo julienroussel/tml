@@ -88,8 +88,17 @@ pnpm drizzle-kit studio
 ## PowerSync Cloud Dev Instance
 
 - Use a separate PowerSync Cloud instance for development
-- Configure sync rules to match the dev database
 - Point `NEXT_PUBLIC_POWERSYNC_URL` to the dev instance
+- Deploy the generated sync config to that instance with the dev instance IDs:
+
+  ```bash
+  POWERSYNC_ADMIN_TOKEN=... \
+    POWERSYNC_INSTANCE_ID=<dev-instance-id> \
+    POWERSYNC_PROJECT_ID=<dev-project-id> \
+    pnpm sync:deploy
+  ```
+
+  See [sync-engine.md](./sync-engine.md) for details on codegen and the deploy workflow. Never edit sync rules in the PowerSync Dashboard — all changes flow from `src/db/schema/` via `pnpm sync:generate`.
 
 ## Auth on Localhost
 
