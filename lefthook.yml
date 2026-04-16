@@ -10,3 +10,10 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
+    - run: pnpm sync:check
+      glob:
+        - "src/db/schema/**/*.ts"
+        - "src/sync/schema.ts"
+        - "src/sync/synced-columns.ts"
+        - "powersync/sync-config.yaml"
+        - "scripts/generate-sync.ts"

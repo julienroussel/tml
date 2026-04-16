@@ -3,191 +3,16 @@
  *
  * This module is deliberately free of @powersync/web imports so it can be
  * used in both client (connector.ts) and server (batch route) contexts.
+ *
+ * The synced-table allowlists (`SYNCED_TABLES`, `SYNCED_COLUMNS`) are
+ * generated from the Drizzle schema — see `scripts/generate-sync.ts`.
  */
 
-// Only client-synced tables are listed here. Server-only tables (users,
-// user_preferences) are excluded — the DELETE handler relies on every
-// synced table having a deleted_at column for soft-delete.
-const SYNCED_TABLE_NAMES = [
-  "goals",
-  "item_tags",
-  "item_tricks",
-  "items",
-  "performances",
-  "practice_session_tricks",
-  "practice_sessions",
-  "setlist_tricks",
-  "setlists",
-  "tags",
-  "trick_tags",
-  "tricks",
-] as const;
-
-type SyncedTableName = (typeof SYNCED_TABLE_NAMES)[number];
-
-const SYNCED_TABLES = new Set<SyncedTableName>(SYNCED_TABLE_NAMES);
-
-const SYNCED_COLUMNS = {
-  goals: new Set([
-    "id",
-    "user_id",
-    "title",
-    "description",
-    "target_type",
-    "target_value",
-    "current_value",
-    "deadline",
-    "completed_at",
-    "trick_id",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  item_tags: new Set([
-    "id",
-    "user_id",
-    "item_id",
-    "tag_id",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  item_tricks: new Set([
-    "id",
-    "user_id",
-    "item_id",
-    "trick_id",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  items: new Set([
-    "id",
-    "user_id",
-    "name",
-    "type",
-    "description",
-    "brand",
-    "condition",
-    "location",
-    "notes",
-    "purchase_date",
-    "purchase_price",
-    "quantity",
-    "creator",
-    "url",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  performances: new Set([
-    "id",
-    "user_id",
-    "date",
-    "venue",
-    "event_name",
-    "setlist_id",
-    "audience_size",
-    "audience_type",
-    "duration_minutes",
-    "rating",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  practice_session_tricks: new Set([
-    "id",
-    "user_id",
-    "practice_session_id",
-    "trick_id",
-    "repetitions",
-    "rating",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  practice_sessions: new Set([
-    "id",
-    "user_id",
-    "date",
-    "duration_minutes",
-    "mood",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  setlist_tricks: new Set([
-    "id",
-    "user_id",
-    "setlist_id",
-    "trick_id",
-    "position",
-    "transition_notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  setlists: new Set([
-    "id",
-    "user_id",
-    "name",
-    "description",
-    "estimated_duration_minutes",
-    "tags",
-    "language",
-    "environment",
-    "requirements",
-    "notes",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  tags: new Set([
-    "id",
-    "user_id",
-    "name",
-    "color",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  trick_tags: new Set([
-    "id",
-    "user_id",
-    "trick_id",
-    "tag_id",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-  tricks: new Set([
-    "id",
-    "user_id",
-    "name",
-    "description",
-    "category",
-    "effect_type",
-    "difficulty",
-    "status",
-    "duration",
-    "performance_type",
-    "angle_sensitivity",
-    "props",
-    "music",
-    "languages",
-    "is_camera_friendly",
-    "is_silent",
-    "notes",
-    "source",
-    "video_url",
-    "created_at",
-    "updated_at",
-    "deleted_at",
-  ]),
-} satisfies Record<SyncedTableName, Set<string>>;
+import {
+  SYNCED_COLUMNS,
+  SYNCED_TABLES,
+  type SyncedTableName,
+} from "./synced-columns";
 
 /** Operation types matching @powersync/web UpdateType values. */
 const OpType = {
@@ -207,6 +32,10 @@ interface SqlStatement {
 
 function isSyncedTable(table: string): table is SyncedTableName {
   return (SYNCED_TABLES as ReadonlySet<string>).has(table);
+}
+
+function hasUserIdColumn(table: SyncedTableName): boolean {
+  return SYNCED_COLUMNS[table].has("user_id");
 }
 
 function isSqlParam(value: unknown): value is SqlParam {
@@ -278,7 +107,7 @@ function buildQuery(
       // Scope the upsert to the current user's rows when the table has a
       // user_id column. Without this WHERE clause, a crafted PUT with another
       // user's row ID could overwrite that row.
-      const hasUserId = SYNCED_COLUMNS[table].has("user_id");
+      const hasUserId = hasUserIdColumn(table);
       let userIdWhereClause = "";
       if (hasUserId) {
         values.push(userId);
@@ -306,7 +135,7 @@ function buildQuery(
         id,
       ];
       let whereClause = `WHERE "id" = $${nonTimestampEntries.length + 1}`;
-      const hasUserId = SYNCED_COLUMNS[table].has("user_id");
+      const hasUserId = hasUserIdColumn(table);
       if (hasUserId) {
         params.push(userId);
         whereClause += ` AND "user_id" = $${params.length}`;
@@ -319,7 +148,7 @@ function buildQuery(
     case OpType.DELETE: {
       const params: SqlParam[] = [id];
       let whereClause = 'WHERE "id" = $1';
-      const hasUserId = SYNCED_COLUMNS[table].has("user_id");
+      const hasUserId = hasUserIdColumn(table);
       if (hasUserId) {
         params.push(userId);
         whereClause += ` AND "user_id" = $${params.length}`;
@@ -359,14 +188,14 @@ function coerceOpRecord(
   return record;
 }
 
-export type { SqlParam, SqlStatement, SyncedTableName };
+export type { SqlParam, SqlStatement };
 export {
   buildQuery,
   coerceOpRecord,
+  hasUserIdColumn,
   isSqlParam,
   isSyncedTable,
   OpType,
   quoteId,
-  SYNCED_COLUMNS,
   validateRecord,
 };
