@@ -22,7 +22,7 @@ export async function DashboardGrid(): Promise<ReactElement> {
     <div className="flex flex-col gap-8">
       {DISPLAY_GROUPS.map((group) => {
         const modules = getModulesByGroup(group).filter(
-          (m) => m.slug !== "repertoire"
+          (m) => m.slug !== "repertoire" && m.slug !== "collect"
         );
         if (modules.length === 0) {
           return null;

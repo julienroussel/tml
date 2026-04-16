@@ -6,6 +6,12 @@ vi.mock("@/components/dashboard-grid", () => ({
   DashboardGrid: () => <div data-testid="dashboard-grid" />,
 }));
 
+vi.mock("@/components/collection-card", () => ({
+  CollectionCard: ({ itemCount }: { itemCount: number }) => (
+    <div data-count={itemCount} data-testid="collection-card" />
+  ),
+}));
+
 vi.mock("@/components/repertoire-card", () => ({
   RepertoireCard: ({ trickCount }: { trickCount: number }) => (
     <div data-count={trickCount} data-testid="repertoire-card" />
@@ -32,6 +38,9 @@ const mockWhere = vi.fn(() => Promise.resolve([{ count: 3 }]));
 const mockFrom = vi.fn(() => ({ where: mockWhere }));
 const mockSelect = vi.fn(() => ({ from: mockFrom }));
 
+// The dashboard page calls select().from(tricks).where() then select().from(items).where()
+// Both return the same mock chain — the mockWhere default returns [{ count: 3 }] for both.
+
 vi.mock("@/db", () => ({
   getDb: vi.fn(() => ({
     select: mockSelect,
@@ -52,6 +61,13 @@ vi.mock("drizzle-orm", () => ({
   isNull: (col: unknown) => mockIsNull(col),
 }));
 
+vi.mock("@/db/schema/items", () => ({
+  items: {
+    userId: "items.userId",
+    deletedAt: "items.deletedAt",
+  },
+}));
+
 vi.mock("@/db/schema/tricks", () => ({
   tricks: {
     userId: "tricks.userId",
@@ -70,6 +86,17 @@ describe("DashboardPage", () => {
     mockWhere.mockImplementation(() => Promise.resolve([{ count: 3 }]));
     mockFrom.mockImplementation(() => ({ where: mockWhere }));
     mockSelect.mockImplementation(() => ({ from: mockFrom }));
+  });
+
+  it("renders the CollectionCard with the correct itemCount", async () => {
+    mockWhere
+      .mockResolvedValueOnce([{ count: 3 }]) // tricks query (first)
+      .mockResolvedValueOnce([{ count: 7 }]); // items query (second)
+    render(await DashboardPage());
+
+    const card = screen.getByTestId("collection-card");
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveAttribute("data-count", "7");
   });
 
   it("renders the Dashboard heading", async () => {
@@ -101,6 +128,9 @@ describe("DashboardPage", () => {
   });
 
   it("renders the RepertoireCard with the correct trickCount", async () => {
+    mockWhere
+      .mockResolvedValueOnce([{ count: 3 }]) // tricks query (first)
+      .mockResolvedValueOnce([{ count: 7 }]); // items query (second)
     render(await DashboardPage());
 
     const card = screen.getByTestId("repertoire-card");
@@ -115,6 +145,8 @@ describe("DashboardPage", () => {
     expect(mockFrom).toHaveBeenCalled();
     expect(mockEq).toHaveBeenCalledWith("tricks.userId", "user-1");
     expect(mockIsNull).toHaveBeenCalledWith("tricks.deletedAt");
+    expect(mockEq).toHaveBeenCalledWith("items.userId", "user-1");
+    expect(mockIsNull).toHaveBeenCalledWith("items.deletedAt");
     expect(mockAnd).toHaveBeenCalled();
     expect(mockWhere).toHaveBeenCalled();
   });

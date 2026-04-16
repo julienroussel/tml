@@ -197,7 +197,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error creating trick";
-      throw new Error(`Failed to create trick: ${message}`);
+      throw new Error(`Failed to create trick: ${message}`, { cause: error });
     }
   }
 
@@ -270,7 +270,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error updating trick";
-      throw new Error(`Failed to update trick: ${message}`);
+      throw new Error(`Failed to update trick: ${message}`, { cause: error });
     }
   }
 
@@ -280,12 +280,19 @@ export function useTrickMutations(): UseTrickMutationsReturn {
 
     try {
       await db.writeTransaction(async (tx) => {
-        await tx.execute(
+        const result = await tx.execute(
           "UPDATE tricks SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
           [now, now, id, userId]
         );
+        if (!result.rowsAffected) {
+          throw new Error("Trick not found or already deleted");
+        }
         await tx.execute(
           "UPDATE trick_tags SET deleted_at = ?, updated_at = ? WHERE trick_id = ? AND user_id = ? AND deleted_at IS NULL",
+          [now, now, id, userId]
+        );
+        await tx.execute(
+          "UPDATE item_tricks SET deleted_at = ?, updated_at = ? WHERE trick_id = ? AND user_id = ? AND deleted_at IS NULL",
           [now, now, id, userId]
         );
       });
@@ -294,7 +301,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error deleting trick";
-      throw new Error(`Failed to delete trick: ${message}`);
+      throw new Error(`Failed to delete trick: ${message}`, { cause: error });
     }
   }
 

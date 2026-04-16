@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { Dumbbell, Package, Sparkles, Star } from "lucide-react";
+import { Dumbbell, Sparkles, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { DashboardGrid } from "./dashboard-grid";
@@ -16,14 +16,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const MOCK_LIBRARY = [
-  {
-    slug: "collect" as const,
-    icon: Package,
-    enabled: false,
-    group: "library" as const,
-  },
-];
+// After filtering out repertoire + collect, library group is empty in the grid.
+// This matches the real behavior — both have their own dedicated dashboard cards.
+const MOCK_LIBRARY: never[] = [];
 
 const MOCK_LAB = [
   {
@@ -75,16 +70,17 @@ describe("DashboardGrid", () => {
   it("renders grouped sections with headings", async () => {
     const element = await DashboardGrid();
     render(element);
-    expect(screen.getByText("nav.library")).toBeInTheDocument();
+    // Library group is empty (repertoire + collect filtered out — they have dedicated cards)
+    expect(screen.queryByText("nav.library")).not.toBeInTheDocument();
     expect(screen.getByText("nav.theLab")).toBeInTheDocument();
     expect(screen.getByText("nav.insights")).toBeInTheDocument();
   });
 
-  it("renders a card for each non-admin, non-repertoire module", async () => {
+  it("renders a card for each non-admin, non-repertoire, non-collect module", async () => {
     const element = await DashboardGrid();
     render(element);
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(4);
+    expect(links).toHaveLength(3);
   });
 
   it("links each card to the correct /{slug} href", async () => {
@@ -118,7 +114,6 @@ describe("DashboardGrid", () => {
   it("renders module descriptions", async () => {
     const element = await DashboardGrid();
     render(element);
-    expect(screen.getByText("collect.description")).toBeInTheDocument();
     expect(screen.getByText("improve.description")).toBeInTheDocument();
     expect(screen.getByText("perform.description")).toBeInTheDocument();
     expect(screen.getByText("enhance.description")).toBeInTheDocument();

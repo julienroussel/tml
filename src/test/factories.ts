@@ -1,6 +1,7 @@
 import type {
   Goal,
   Item,
+  ItemTag,
   NewGoal,
   NewItem,
   NewPerformance,
@@ -166,6 +167,22 @@ function createTestItem(overrides?: Partial<NewItem>): Item {
     notes: null,
     purchaseDate: null,
     purchasePrice: null,
+    quantity: 1,
+    creator: null,
+    url: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+function createTestItemTag(overrides?: Partial<ItemTag>): ItemTag {
+  return {
+    id: nextId(),
+    userId: nextId(),
+    itemId: nextId(),
+    tagId: nextId(),
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -195,6 +212,7 @@ function createTestGoal(overrides?: Partial<NewGoal>): Goal {
 export {
   createTestGoal,
   createTestItem,
+  createTestItemTag,
   createTestPerformance,
   createTestPracticeSession,
   createTestSetlist,

@@ -1,4 +1,5 @@
 import { track } from "@vercel/analytics";
+import type { ItemType } from "@/features/collect/constants";
 import type { Locale } from "@/i18n/config";
 
 /**
@@ -6,6 +7,9 @@ import type { Locale } from "@/i18n/config";
  * Centralised here so every call site is type-checked.
  */
 interface AnalyticsEventMap {
+  item_created: { type: ItemType };
+  item_deleted: Record<string, never>;
+  item_updated: Record<string, never>;
   locale_changed: { locale: Locale };
   push_notifications_disabled: Record<string, never>;
   push_notifications_enabled: Record<string, never>;

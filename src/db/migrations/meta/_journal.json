@@ -120,6 +120,13 @@
       "when": 1775111777730,
       "tag": "0016_tricks_duration_check_constraint",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1775200000000,
+      "tag": "0017_collect_inventory_columns_and_item_tags",
+      "breakpoints": true
     }
   ]
 }

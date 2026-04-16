@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Edit, MoreHorizontal, Trash2 } from "lucide-react";
+import { Clock, Edit, MoreHorizontal, Package, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -10,13 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { TrickId } from "@/db/types";
+import type { ItemId, TrickId } from "@/db/types";
 import { cn } from "@/lib/utils";
 import type { ParsedTag, TrickWithTags } from "../types";
 import { TrickDifficulty } from "./trick-difficulty";
 import { TrickStatusBadge } from "./trick-status-badge";
 
 interface TrickCardProps {
+  linkedItems?: { id: ItemId; name: string }[];
   onDelete: (id: TrickId) => void;
   onEdit: (id: TrickId) => void;
   trick: TrickWithTags;
@@ -38,10 +39,13 @@ export function formatDuration(seconds: number): string {
 
 const MAX_VISIBLE_TAGS = 3;
 
+const MAX_VISIBLE_ITEMS = 2;
+
 export function TrickCard({
   trick,
   onEdit,
   onDelete,
+  linkedItems,
 }: TrickCardProps): React.ReactElement {
   const t = useTranslations("repertoire");
 
@@ -177,6 +181,21 @@ export function TrickCard({
               </li>
             )}
           </ul>
+        )}
+
+        {/* Linked items */}
+        {linkedItems && linkedItems.length > 0 && (
+          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+            <Package aria-hidden="true" className="size-3.5 shrink-0" />
+            <span>
+              {linkedItems
+                .slice(0, MAX_VISIBLE_ITEMS)
+                .map((item) => item.name)
+                .join(", ")}
+              {linkedItems.length > MAX_VISIBLE_ITEMS &&
+                `, +${linkedItems.length - MAX_VISIBLE_ITEMS}`}
+            </span>
+          </div>
         )}
       </CardContent>
     </Card>

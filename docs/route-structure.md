@@ -36,7 +36,7 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 |---|---|---|---|
 | `/dashboard` | Dashboard | -- | Home with module grid and quick stats |
 | `/repertoire` | Repertoire | Repertoire (Library) | Trick CRUD with tags, filtering, and search |
-| `/collect` | Collection | Collection (Library) | Inventory of props, books, gimmicks |
+| `/collect` | Collection | Collection (Library) | Item CRUD with tags, trick linking, filtering, and search |
 | `/improve` | Improve | Improve (Lab) | Practice session logging and history |
 | `/train` | Train | Train (Lab) | Goal setting, drills, streaks |
 | `/plan` | Plan | Plan (Lab) | Setlist builder |

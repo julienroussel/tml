@@ -54,6 +54,7 @@
     "trickDeleted": "Truc verwijderd",
     "saveFailed": "Truc opslaan mislukt",
     "deleteFailed": "Truc verwijderen mislukt",
+    "loadError": "Gegevens laden mislukt",
     "emptyTitle": "Je repertoire is leeg",
     "emptyDescription": "Voeg je eerste truc toe om je repertoire op te bouwen.",
     "searchPlaceholder": "Trucs zoeken...",
@@ -178,7 +179,9 @@
       "tooManyTags": "Maximaal 20 tags toegestaan",
       "tagNameRequired": "Tagnaam is verplicht",
       "tagNameTooLong": "Tagnaam mag maximaal 50 tekens bevatten"
-    }
+    },
+    "linkedItems": "Gekoppelde items",
+    "noLinkedItems": "Niet gekoppeld aan items."
   },
   "landing": {
     "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",
@@ -208,7 +211,10 @@
     "fallbackName": "goochelaar",
     "repertoireTitle": "Mijn Repertoire",
     "repertoireDescription": "{count, plural, one {# truc} other {# trucs}} in je collectie",
-    "repertoireLink": "Repertoire openen"
+    "repertoireLink": "Repertoire openen",
+    "collectionTitle": "Mijn Collectie",
+    "collectionDescription": "{count, plural, one {# item} other {# items}} in je inventaris",
+    "collectionLink": "Collectie openen"
   },
   "improve": {
     "title": "Verbeteren",
@@ -233,7 +239,143 @@
   },
   "collect": {
     "title": "Collectie",
-    "description": "Beheer je inventaris van rekwisieten, boeken, gimmicks en meer."
+    "description": "Beheer je inventaris van rekwisieten, boeken, gimmicks en meer.",
+    "addItem": "Item toevoegen",
+    "editItem": "Item bewerken",
+    "deleteItem": "Item verwijderen",
+    "deleteConfirmTitle": "\"{name}\" verwijderen?",
+    "deleteConfirmDescription": "Dit item wordt uit je collectie verwijderd. Deze actie kan niet ongedaan worden gemaakt.",
+    "itemCreated": "Item toegevoegd",
+    "itemUpdated": "Item bijgewerkt",
+    "itemDeleted": "Item verwijderd",
+    "saveFailed": "Item opslaan mislukt",
+    "deleteFailed": "Item verwijderen mislukt",
+    "loadError": "Gegevens laden mislukt",
+    "emptyTitle": "Je collectie is leeg",
+    "emptyDescription": "Voeg je eerste item toe om je collectie op te bouwen.",
+    "searchPlaceholder": "Items zoeken...",
+    "sortBy": "Sorteren op",
+    "filterByType": "Filteren op type",
+    "filterByCondition": "Filteren op staat",
+    "allTypes": "Alle typen",
+    "allConditions": "Alle staten",
+    "noResults": "Geen items komen overeen met je filters.",
+    "unsavedChanges": "Je hebt niet-opgeslagen wijzigingen. Wil je ze verwerpen?",
+    "discardChangesTitle": "Wijzigingen verwerpen?",
+    "discardAction": "Verwerpen",
+    "noneSelected": "Geen",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "quantityLabel": "Aantal: {count}",
+    "linkedTricksCount": "{count, plural, one {Gebruikt in # truc} other {Gebruikt in # trucs}}",
+    "type": {
+      "prop": "Rekwisiet",
+      "book": "Boek",
+      "gimmick": "Gimmick",
+      "dvd": "DVD",
+      "download": "Download",
+      "deck": "Kaartspel",
+      "clothing": "Kleding",
+      "consumable": "Verbruiksartikel",
+      "accessory": "Accessoire",
+      "other": "Overig"
+    },
+    "condition": {
+      "new": "Nieuw",
+      "good": "Goede staat",
+      "worn": "Versleten",
+      "needs_repair": "Reparatie nodig"
+    },
+    "sort": {
+      "nameAsc": "Naam A-Z",
+      "nameDesc": "Naam Z-A",
+      "newest": "Nieuwste",
+      "oldest": "Oudste",
+      "type": "Type",
+      "priceAsc": "Prijs: laag naar hoog",
+      "priceDesc": "Prijs: hoog naar laag"
+    },
+    "field": {
+      "name": "Naam",
+      "namePlaceholder": "Invisible Deck, Card College...",
+      "type": "Type",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Wat is dit item?",
+      "brand": "Merk",
+      "brandPlaceholder": "Bicycle, Murphy's Magic...",
+      "creator": "Maker",
+      "creatorPlaceholder": "Auteur, uitvinder, ontwerper...",
+      "creatorLabelBook": "Auteur",
+      "creatorLabelDefault": "Maker",
+      "condition": "Staat",
+      "location": "Locatie",
+      "locationPlaceholder": "Close-up koffer, podiumkoffer...",
+      "quantity": "Aantal",
+      "purchaseDate": "Aankoopdatum",
+      "purchasePrice": "Aankoopprijs",
+      "pricePlaceholder": "0,00",
+      "url": "Product-URL",
+      "urlPlaceholder": "https://...",
+      "tags": "Tags",
+      "linkedTricks": "Gebruikt in trucs",
+      "notes": "Notities",
+      "notesPlaceholder": "Persoonlijke notities, opslagtips..."
+    },
+    "section": {
+      "essentials": "Essentieel",
+      "details": "Details",
+      "purchase": "Aankoopgegevens",
+      "reference": "Referentie",
+      "organization": "Organisatie"
+    },
+    "tagPicker": {
+      "search": "Tags zoeken...",
+      "noResults": "Geen tags gevonden.",
+      "create": "\"{name}\" aanmaken",
+      "selectedTags": "Geselecteerde tags",
+      "remove": "{name} verwijderen",
+      "addedTag": "Tag {name} toegevoegd",
+      "removedTag": "Tag {name} verwijderd",
+      "createdTag": "Tag {name} aangemaakt en toegevoegd",
+      "createFailed": "Kan tag niet aanmaken"
+    },
+    "trickPicker": {
+      "search": "Trucs zoeken...",
+      "noResults": "Geen trucs gevonden.",
+      "selectedTricks": "Gekoppelde trucs",
+      "remove": "{name} ontkoppelen",
+      "addedTrick": "{name} gekoppeld",
+      "removedTrick": "{name} ontkoppeld"
+    },
+    "validation": {
+      "nameRequired": "Naam is verplicht",
+      "nameTooLong": "Naam mag maximaal 200 tekens bevatten",
+      "descriptionTooLong": "Beschrijving mag maximaal 2.000 tekens bevatten",
+      "invalidUrl": "Voer een geldige HTTPS-URL in",
+      "urlTooLong": "URL mag maximaal 2.000 tekens bevatten",
+      "invalidPrice": "Voer een geldige prijs in (bijv. 29,99)",
+      "invalidDate": "Voer een geldige datum in",
+      "quantityMin": "Aantal moet minimaal 0 zijn",
+      "quantityMax": "Aantal mag maximaal 9.999 zijn",
+      "tooManyTags": "Je kunt niet meer dan 20 tags aan een item toevoegen.",
+      "tooManyTricks": "Je kunt niet meer dan {count} trucs aan een item koppelen."
+    },
+    "errors": {
+      "itemMissing": "Dit item is al verwijderd of niet gevonden."
+    },
+    "addItemDescription": "Voeg een nieuw item toe aan je collectie.",
+    "editItemDescription": "Bewerk de details van dit item.",
+    "cardActions": "Acties",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "deleteConfirm": "Verwijderen",
+    "combobox": {
+      "select": "Selecteer...",
+      "clearSelection": "Selectie wissen",
+      "noResults": "Geen resultaten gevonden.",
+      "useCustom": "\"{value}\" gebruiken"
+    }
   },
   "admin": {
     "title": "Admin",

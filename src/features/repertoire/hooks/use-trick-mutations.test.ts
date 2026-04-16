@@ -821,14 +821,18 @@ describe("use-trick-mutations", () => {
   });
 
   describe("deleteTrick", () => {
+    beforeEach(() => {
+      mockExecute.mockResolvedValue({ rowsAffected: 1 });
+    });
+
     it("executes soft-delete SQL", async () => {
       const { useTrickMutations } = await getHookExports();
       const { deleteTrick } = useTrickMutations();
 
       await deleteTrick(trickId("trick-1"));
 
-      // 1 trick soft-delete + 1 trick_tags cascade soft-delete
-      expect(mockExecute).toHaveBeenCalledTimes(2);
+      // 1 trick soft-delete + 1 trick_tags cascade + 1 item_tricks cascade
+      expect(mockExecute).toHaveBeenCalledTimes(3);
 
       const trickSql = mockExecute.mock.calls[0]?.[0] as string;
       expect(trickSql).toContain("UPDATE tricks SET deleted_at = ?");
@@ -849,6 +853,11 @@ describe("use-trick-mutations", () => {
       const tagsParams = mockExecute.mock.calls[1]?.[1] as unknown[];
       expect(tagsParams).toContain("trick-1"); // trick_id
       expect(tagsParams).toContain("user-123"); // user_id
+
+      const itemsSql = mockExecute.mock.calls[2]?.[0] as string;
+      expect(itemsSql).toContain("UPDATE item_tricks SET deleted_at = ?");
+      expect(itemsSql).toContain("WHERE trick_id = ?");
+      expect(itemsSql).toContain("user_id = ?");
     });
 
     it("tracks trick_deleted event on success", async () => {

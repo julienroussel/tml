@@ -41,6 +41,7 @@ function verifySecret(header: string | null, secret: string): boolean {
  *  they lack deleted_at columns and are cleaned up via CASCADE when the
  *  owning user row is hard-deleted. */
 const TABLES_IN_ORDER = [
+  "item_tags",
   "item_tricks",
   "setlist_tricks",
   "practice_session_tricks",
@@ -62,6 +63,7 @@ const TABLES_IN_ORDER = [
  *  cron run after their own retention period expires. */
 const USER_OWNED_TABLES = [
   "goals",
+  "item_tags",
   "item_tricks",
   "items",
   "performances",
@@ -218,13 +220,33 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       });
 
       const errorsCount = Object.keys(errors).length;
-      const resultCount = Object.keys(results).length;
-      const allFailed = resultCount > 0 && errorsCount === resultCount;
+
+      // Any table failure should signal failure (HTTP 500) so Vercel Cron
+      // surfaces the issue and retries on the next schedule. The body still
+      // includes per-table results so operators can diagnose which tables
+      // failed without needing the logs.
+      if (errorsCount > 0) {
+        console.warn("Soft-delete cleanup completed with errors:", {
+          errorsCount,
+          failedTables: Object.keys(errors),
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            totalDeleted,
+            errorsCount,
+            // errors and results intentionally omitted — see security review.
+            // Per-table failure details remain in server logs (console.warn above).
+          },
+          { status: 500 }
+        );
+      }
 
       return NextResponse.json({
-        success: !allFailed,
+        success: true,
         totalDeleted,
         errorsCount,
+        results,
       });
     } finally {
       client.release();

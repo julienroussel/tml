@@ -31,6 +31,8 @@ interface TagPickerProps {
   onCreateTag: (name: string) => Promise<TagId>;
   onToggleTag: (tagId: TagId) => void;
   selectedTagIds: TagId[];
+  /** i18n namespace containing tagPicker.* keys. Defaults to "repertoire". */
+  translationNamespace?: string;
 }
 
 function TagPicker({
@@ -39,8 +41,9 @@ function TagPicker({
   onToggleTag,
   onCreateTag,
   maxTags,
+  translationNamespace = "repertoire",
 }: TagPickerProps): React.ReactElement {
-  const t = useTranslations("repertoire");
+  const t = useTranslations(translationNamespace);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
@@ -225,7 +228,7 @@ function TagPicker({
                 <span>{tag.name}</span>
                 <button
                   aria-label={t("tagPicker.remove", { name: tag.name })}
-                  className="relative flex items-center justify-center rounded-sm p-1.5 before:absolute before:inset-[-8px] before:content-[''] hover:bg-accent"
+                  className="relative flex min-h-11 min-w-11 items-center justify-center rounded-sm p-1.5 hover:bg-accent"
                   onClick={() => handleRemove(tag)}
                   type="button"
                 >

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import type { TagId, TrickId } from "@/db/types";
+import type { ItemId, TagId, TrickId } from "@/db/types";
 import { useTagMutations } from "../hooks/use-tag-mutations";
 import { useTags } from "../hooks/use-tags";
 import { useTrick } from "../hooks/use-trick";
@@ -54,6 +54,13 @@ interface TrickTagRow {
   tag_id: string;
   tag_name: string;
   trick_id: string;
+}
+
+/** Row shape returned by the item_tricks + items join query. */
+interface TrickItemRow {
+  item_id: ItemId;
+  item_name: string;
+  trick_id: TrickId;
 }
 
 /** Debounce delay for the search input (milliseconds). */
@@ -125,7 +132,7 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Trick-tags join query (build a Map<trickId, ParsedTag[]>)
   // ---------------------------------------------------------------------------
-  const { data: trickTagRows } = useQuery<TrickTagRow>(
+  const { data: trickTagRows, error: trickTagError } = useQuery<TrickTagRow>(
     `SELECT tt.trick_id, t.id AS tag_id, t.name AS tag_name, t.color
      FROM trick_tags tt
      JOIN tags t ON tt.tag_id = t.id
@@ -133,6 +140,26 @@ export function RepertoireView(): React.ReactElement {
   );
 
   const trickTagMap = buildTrickTagMap(trickTagRows);
+
+  // ---------------------------------------------------------------------------
+  // Trick-items join query (build a Map<trickId, LinkedItem[]>)
+  // ---------------------------------------------------------------------------
+  const { data: trickItemRows, error: trickItemError } = useQuery<TrickItemRow>(
+    `SELECT itr.trick_id, i.id AS item_id, i.name AS item_name
+     FROM item_tricks itr
+     JOIN items i ON itr.item_id = i.id
+     WHERE itr.deleted_at IS NULL AND i.deleted_at IS NULL`
+  );
+
+  useEffect(() => {
+    const error = trickTagError ?? trickItemError;
+    if (error) {
+      console.error("Failed to load trick relations:", error);
+      toast.error(t("loadError"));
+    }
+  }, [trickTagError, trickItemError, t]);
+
+  const trickItemMap = buildTrickItemMap(trickItemRows);
 
   const tricksWithTags: TrickWithTags[] = tricks.map((trick) => ({
     ...trick,
@@ -205,7 +232,8 @@ export function RepertoireView(): React.ReactElement {
       setSheetOpen(false);
       setEditingTrickId(null);
       setSelectedTagIds([]);
-    } catch {
+    } catch (error) {
+      console.error("Failed to save trick:", error);
       toast.error(t("saveFailed"));
     }
   }
@@ -223,7 +251,8 @@ export function RepertoireView(): React.ReactElement {
     try {
       await deleteTrick(deletingTrickId);
       toast.success(t("trickDeleted"));
-    } catch {
+    } catch (error) {
+      console.error("Failed to delete trick:", error);
       toast.error(t("deleteFailed"));
     } finally {
       setDeleteDialogOpen(false);
@@ -261,6 +290,7 @@ export function RepertoireView(): React.ReactElement {
     if (tricksWithTags.length > 0) {
       return (
         <TrickList
+          itemMap={trickItemMap}
           onDelete={handleDeleteTrick}
           onEdit={handleEditTrick}
           tricks={tricksWithTags}
@@ -356,6 +386,28 @@ export function RepertoireView(): React.ReactElement {
 
 function isFilterSortValue(value: string): value is FilterSortValue {
   return value in SORT_MAP;
+}
+
+/**
+ * Builds a Map from trick ID to its linked items, given the raw join rows.
+ */
+function buildTrickItemMap(
+  rows: TrickItemRow[]
+): Map<TrickId, { id: ItemId; name: string }[]> {
+  const map = new Map<TrickId, { id: ItemId; name: string }[]>();
+
+  for (const row of rows) {
+    const item = { id: row.item_id, name: row.item_name };
+
+    const existing = map.get(row.trick_id);
+    if (existing) {
+      existing.push(item);
+    } else {
+      map.set(row.trick_id, [item]);
+    }
+  }
+
+  return map;
 }
 
 /**

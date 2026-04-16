@@ -200,17 +200,36 @@ Props, books, gimmicks, and other collectible items.
 | id | UUID (PK) | Branded as `ItemId` |
 | user_id | UUID (FK -> users) | NOT NULL, cascade delete |
 | name | text | NOT NULL |
-| type | text | NOT NULL: `"prop"`, `"book"`, `"gimmick"`, `"dvd"`, `"download"`, `"other"` |
+| type | text | NOT NULL: `"prop"`, `"book"`, `"gimmick"`, `"dvd"`, `"download"`, `"other"`, `"deck"`, `"clothing"`, `"consumable"`, `"accessory"` |
 | description | text | |
-| brand | text | Manufacturer/creator |
+| brand | text | Manufacturer/publisher |
 | condition | text | `"new"`, `"good"`, `"worn"`, `"needs_repair"` |
 | location | text | Storage location |
 | notes | text | |
 | purchase_date | date | |
 | purchase_price | numeric(10,2) | |
+| quantity | integer | NOT NULL, default 1, CHECK >= 0 |
+| creator | text | Author (books), inventor (gimmicks), designer |
+| url | text | Product URL (HTTPS) |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
+
+### item_tags
+
+Join table linking tags to items (many-to-many). Reuses the shared `tags` table.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| item_id | UUID (FK -> items) | NOT NULL, no action |
+| tag_id | UUID (FK -> tags) | NOT NULL, no action |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+Unique constraint on `(item_id, tag_id)` where `deleted_at IS NULL`.
 
 ### item_tricks
 

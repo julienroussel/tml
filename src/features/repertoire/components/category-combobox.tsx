@@ -25,6 +25,8 @@ interface CategoryComboboxProps {
   onChange: (value: string) => void;
   placeholder?: string;
   suggestions: readonly string[];
+  /** i18n namespace containing combobox.* keys. Defaults to "repertoire". */
+  translationNamespace?: string;
   userValues: string[];
   value: string;
 }
@@ -50,8 +52,9 @@ function CategoryCombobox({
   userValues,
   placeholder,
   label,
+  translationNamespace = "repertoire",
 }: CategoryComboboxProps): React.ReactElement {
-  const t = useTranslations("repertoire");
+  const t = useTranslations(translationNamespace);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const displayPlaceholder = placeholder ?? t("combobox.select");

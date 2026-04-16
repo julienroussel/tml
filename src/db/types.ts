@@ -1,6 +1,6 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { goals } from "./schema/goals";
-import type { items, itemTricks } from "./schema/items";
+import type { items, itemTags, itemTricks } from "./schema/items";
 import type { performances } from "./schema/performances";
 import type {
   practiceSessions,
@@ -31,8 +31,24 @@ type SetlistId = string & { readonly __brand: "SetlistId" };
 type PracticeSessionId = string & { readonly __brand: "PracticeSessionId" };
 type PerformanceId = string & { readonly __brand: "PerformanceId" };
 type ItemId = string & { readonly __brand: "ItemId" };
+type ItemTagId = string & { readonly __brand: "ItemTagId" };
 type GoalId = string & { readonly __brand: "GoalId" };
 type TagId = string & { readonly __brand: "TagId" };
+
+// Single-location brand constructors. Centralising the cast here means call
+// sites express intent without scattering `as ItemId` casts across the
+// codebase, and any future runtime validation has exactly one chokepoint.
+//
+// IMPORTANT: these are type-only casts — they do NOT validate the input is a
+// real UUID at runtime. Cross-brand misuse (e.g. `asUserId(item.id)`) is
+// prevented at compile time by branded types, but malformed strings from
+// trust boundaries (auth session, sync row, URL params) are NOT rejected
+// here. If you need runtime validation at a boundary, parse the input with
+// Zod / a UUID guard BEFORE calling the brand constructor.
+const asItemId = (value: string): ItemId => value as ItemId;
+const asTagId = (value: string): TagId => value as TagId;
+const asTrickId = (value: string): TrickId => value as TrickId;
+const asUserId = (value: string): UserId => value as UserId;
 
 // Select types (read from DB)
 type User = InferSelectModel<typeof users>;
@@ -43,6 +59,7 @@ type PracticeSession = InferSelectModel<typeof practiceSessions>;
 type PracticeSessionTrick = InferSelectModel<typeof practiceSessionTricks>;
 type Performance = InferSelectModel<typeof performances>;
 type Item = InferSelectModel<typeof items>;
+type ItemTag = InferSelectModel<typeof itemTags>;
 type ItemTrick = InferSelectModel<typeof itemTricks>;
 type Goal = InferSelectModel<typeof goals>;
 type Tag = InferSelectModel<typeof tags>;
@@ -65,6 +82,8 @@ export type {
   GoalId,
   Item,
   ItemId,
+  ItemTag,
+  ItemTagId,
   ItemTrick,
   NewGoal,
   NewItem,
@@ -92,3 +111,4 @@ export type {
   UserId,
   UserPreference,
 };
+export { asItemId, asTagId, asTrickId, asUserId };
