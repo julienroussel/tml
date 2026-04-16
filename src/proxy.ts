@@ -89,7 +89,7 @@ function redirectToLocalePath(
 ): NextResponse | undefined {
   const { pathname } = request.nextUrl;
   if (!MARKETING_PATHS.has(pathname)) {
-    return undefined;
+    return;
   }
 
   const locale = detectLocale(request);

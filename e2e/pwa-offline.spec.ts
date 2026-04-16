@@ -16,36 +16,37 @@ import { expect, type Page, test } from "@playwright/test";
  * Polls `getRegistration()` until an active SW appears (up to 15s).
  */
 async function waitForAutoRegistration(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    return new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(
-        () => reject(new Error("SW did not auto-register within 15s")),
-        15_000
-      );
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error("SW did not auto-register within 15s")),
+          15_000
+        );
 
-      async function check(): Promise<void> {
-        const reg = await navigator.serviceWorker.getRegistration("/");
-        const sw = reg?.active ?? reg?.waiting ?? reg?.installing;
-        if (sw?.state === "activated") {
-          clearTimeout(timeout);
-          resolve();
-          return;
+        async function check(): Promise<void> {
+          const reg = await navigator.serviceWorker.getRegistration("/");
+          const sw = reg?.active ?? reg?.waiting ?? reg?.installing;
+          if (sw?.state === "activated") {
+            clearTimeout(timeout);
+            resolve();
+            return;
+          }
+          if (sw) {
+            sw.addEventListener("statechange", () => {
+              if (sw.state === "activated") {
+                clearTimeout(timeout);
+                resolve();
+              }
+            });
+          } else {
+            setTimeout(check, 500);
+          }
         }
-        if (sw) {
-          sw.addEventListener("statechange", () => {
-            if (sw.state === "activated") {
-              clearTimeout(timeout);
-              resolve();
-            }
-          });
-        } else {
-          setTimeout(check, 500);
-        }
-      }
 
-      check();
-    });
-  });
+        check();
+      })
+  );
 }
 
 /**
