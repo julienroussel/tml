@@ -40,5 +40,5 @@ export function negotiateLocale(acceptLanguage: string): Locale | undefined {
     }
   }
 
-  return undefined;
+  return;
 }

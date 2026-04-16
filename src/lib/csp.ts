@@ -37,6 +37,7 @@ type AssertAllDirectives =
   Exclude<CspDirectiveName, (typeof ALL_DIRECTIVE_NAMES)[number]> extends never
     ? true
     : never;
+// biome-ignore lint/suspicious/noUnusedExpressions: compile-time type assertion
 true satisfies AssertAllDirectives;
 
 function cspDirectiveNames(
