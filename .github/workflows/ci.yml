@@ -75,7 +75,7 @@ jobs:
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
 
       - name: Check generated docs staleness
-        if: github.event_name == 'push' || github.event.pull_request.user.login != 'dependabot[bot]'
+        if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
         run: |
           pnpm docs:generate
           git diff --exit-code public/llms.txt public/llms-full.txt docs/diagrams/
