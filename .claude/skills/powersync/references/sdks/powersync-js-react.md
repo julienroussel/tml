@@ -7,6 +7,16 @@ metadata:
 
 # PowerSync React & Next.js
 
+> **Load this when** building a React web app, Next.js app, or any Vite + React project. Load **before** package install for Vite projects — contains the required `vite.config.ts` setup. Always load `powersync-js.md` first.
+
+## Table of Contents
+- [Provider Setup](#provider-setup)
+- [useSuspenseQuery](#usesuspensequery)
+- [Sync Stream Hooks](#sync-stream-hooks)
+- [Next.js Setup](#nextjs-setup)
+- [Vite Setup](#vite-setup)
+- [Common Pitfalls](#common-pitfalls)
+
 React-specific integration for the PowerSync JavaScript SDK. Use this reference alongside `references/sdks/powersync-js.md` when building React web apps, Next.js apps, or when using the React hooks from `@powersync/react` or `@powersync/react-native`.
 
 | Resource | Description |
@@ -124,7 +134,7 @@ PowerSync is tailored for client-side applications. Next.js evaluates code in a 
 ### Install
 
 ```bash
-npm install @powersync/web @journeyapps/wa-sqlite @powersync/react
+npm install @powersync/web@latest @journeyapps/wa-sqlite@latest @powersync/react@latest
 ```
 
 ### Copy Worker Assets (Turbopack)
@@ -292,6 +302,38 @@ export default defineConfig({
 > **Do NOT** add `optimizeDeps: { include: ['@powersync/web > js-logger'] }` — this dependency path does not exist in current SDK versions and causes build warnings. The `exclude` configuration above is sufficient.
 
 ## Common Pitfalls
+
+### React Strict Mode destroys PowerSyncDatabase in useEffect
+
+In development, React Strict Mode unmounts and remounts every component. If you create a `PowerSyncDatabase` inside a `useEffect` cleanup/setup cycle, the first mount's cleanup releases the shared-worker DB proxy before the second mount can use it — the database connection silently breaks.
+
+```tsx
+// WRONG — Strict Mode will destroy this on the dev double-mount
+function App() {
+  const [db, setDb] = useState<PowerSyncDatabase | null>(null);
+  useEffect(() => {
+    const database = new PowerSyncDatabase({ schema, database: { dbFilename: 'app.db' } });
+    database.connect(connector);
+    setDb(database);
+    return () => { database.close(); }; // Kills the DB on Strict Mode re-mount
+  }, []);
+  // ...
+}
+
+// CORRECT — create once at module scope (or use a stable singleton)
+const db = new PowerSyncDatabase({ schema, database: { dbFilename: 'app.db' } });
+db.connect(connector);
+
+function App() {
+  return (
+    <PowerSyncContext.Provider value={db}>
+      <YourApp />
+    </PowerSyncContext.Provider>
+  );
+}
+```
+
+Keep the DB instance stable across transient remounts. Only call `db.close()` when the app is truly done with it (e.g. on logout with `disconnectAndClear()`). Disabling `enableMultiTabs` can mask the symptom temporarily but does not fix the root cause.
 
 ### Suspense requires ErrorBoundary
 
