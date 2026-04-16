@@ -7,6 +7,16 @@ metadata:
 
 # PowerSync Service
 
+> **Load this when** configuring the PowerSync service itself — self-hosting, Docker, source database connections, bucket storage, or authentication setup.
+
+## Table of Contents
+- [Sync Config](#sync-config)
+- [Service Configuration (Self-hosted)](#service-configuration-self-hosted)
+- [PowerSync Cloud Setup](#powersync-cloud-setup)
+- [Source Database Setup](#source-database-setup)
+- [App Backend](#app-backend)
+- [Authentication](#authentication)
+
 Guidance for configuring PowerSync Service, sync config, and database replication.
 
 Critical warnings for fast setup:
@@ -104,12 +114,14 @@ api:
     - !env PS_ADMIN_TOKEN
 ```
 
-### Minimal Cloud service.yaml Example
+### Minimal Cloud service.yaml Examples
 
-For PowerSync Cloud, the minimal shape is:
+For PowerSync Cloud, the minimal shape depends on your auth provider.
+
+**Cloud + Supabase Auth:**
 
 ```yaml
-# powersync/service.yaml — Cloud
+# powersync/service.yaml — Cloud with Supabase
 replication:
   connections:
     - type: postgresql
@@ -119,7 +131,22 @@ client_auth:
   supabase: true
 ```
 
-If you are using Cloud with Supabase, this is the easiest example to reason about. Do not mentally translate from the self-hosted example first.
+**Cloud + Custom Auth (JWKS):**
+
+```yaml
+# powersync/service.yaml — Cloud with custom JWT auth
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_DATABASE_URI
+
+client_auth:
+  jwks_uri: !env PS_JWKS_URI
+  audience:
+    - !env POWERSYNC_URL
+```
+
+Choose the example that matches your auth provider. See `references/supabase-auth.md` for Supabase details or `references/custom-backend.md` for custom JWT setup.
 
 ### Replication connections
 

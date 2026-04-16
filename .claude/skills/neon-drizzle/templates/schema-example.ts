@@ -7,18 +7,21 @@
  * Usage: Import these tables in your application code for type-safe queries
  */
 
-import { relations } from "drizzle-orm";
 import {
-  boolean,
-  index,
-  integer,
-  json,
   pgTable,
   serial,
   text,
-  timestamp,
   varchar,
-} from "drizzle-orm/pg-core";
+  integer,
+  timestamp,
+  boolean,
+  decimal,
+  json,
+  index,
+  unique,
+  foreignKey,
+} from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 /**
  * Users Table
@@ -27,20 +30,20 @@ import {
  * as needed by your application.
  */
 export const users = pgTable(
-  "users",
+  'users',
   {
-    id: serial("id").primaryKey(),
-    email: varchar("email", { length: 255 }).notNull().unique(),
-    name: varchar("name", { length: 255 }).notNull(),
-    password: text("password"), // If not using external auth
-    avatar: text("avatar"), // URL to avatar image
-    isActive: boolean("is_active").default(true),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
+    id: serial('id').primaryKey(),
+    email: varchar('email', { length: 255 }).notNull().unique(),
+    name: varchar('name', { length: 255 }).notNull(),
+    password: text('password'), // If not using external auth
+    avatar: text('avatar'), // URL to avatar image
+    isActive: boolean('is_active').default(true),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
   },
   (table) => ({
-    emailIdx: index("users_email_idx").on(table.email),
-    createdAtIdx: index("users_created_at_idx").on(table.createdAt),
+    emailIdx: index('users_email_idx').on(table.email),
+    createdAtIdx: index('users_created_at_idx').on(table.createdAt),
   })
 );
 
@@ -49,17 +52,17 @@ export const users = pgTable(
  *
  * Extended user information. Uses a foreign key to link with users.
  */
-export const profiles = pgTable("profiles", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
+export const profiles = pgTable('profiles', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  bio: text("bio"),
-  location: varchar("location", { length: 255 }),
-  website: varchar("website", { length: 255 }),
-  phone: varchar("phone", { length: 20 }),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+    .references(() => users.id, { onDelete: 'cascade' }),
+  bio: text('bio'),
+  location: varchar('location', { length: 255 }),
+  website: varchar('website', { length: 255 }),
+  phone: varchar('phone', { length: 20 }),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 /**
@@ -68,25 +71,25 @@ export const profiles = pgTable("profiles", {
  * Blog posts created by users.
  */
 export const posts = pgTable(
-  "posts",
+  'posts',
   {
-    id: serial("id").primaryKey(),
-    userId: integer("user_id")
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    title: varchar("title", { length: 255 }).notNull(),
-    slug: varchar("slug", { length: 255 }).notNull().unique(),
-    content: text("content").notNull(),
-    excerpt: text("excerpt"),
-    published: boolean("published").default(false),
-    publishedAt: timestamp("published_at"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull().unique(),
+    content: text('content').notNull(),
+    excerpt: text('excerpt'),
+    published: boolean('published').default(false),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
   },
   (table) => ({
-    userIdIdx: index("posts_user_id_idx").on(table.userId),
-    publishedIdx: index("posts_published_idx").on(table.published),
-    slugIdx: index("posts_slug_idx").on(table.slug),
+    userIdIdx: index('posts_user_id_idx').on(table.userId),
+    publishedIdx: index('posts_published_idx').on(table.published),
+    slugIdx: index('posts_slug_idx').on(table.slug),
   })
 );
 
@@ -96,27 +99,27 @@ export const posts = pgTable(
  * Comments on blog posts. Supports nested comments via parent_id.
  */
 export const comments = pgTable(
-  "comments",
+  'comments',
   {
-    id: serial("id").primaryKey(),
-    postId: integer("post_id")
+    id: serial('id').primaryKey(),
+    postId: integer('post_id')
       .notNull()
-      .references(() => posts.id, { onDelete: "cascade" }),
-    userId: integer("user_id")
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    parentId: integer("parent_id").references(() => comments.id, {
-      onDelete: "cascade",
+      .references(() => users.id, { onDelete: 'cascade' }),
+    parentId: integer('parent_id').references(() => comments.id, {
+      onDelete: 'cascade',
     }),
-    content: text("content").notNull(),
-    approved: boolean("approved").default(false),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
+    content: text('content').notNull(),
+    approved: boolean('approved').default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
   },
   (table) => ({
-    postIdIdx: index("comments_post_id_idx").on(table.postId),
-    userIdIdx: index("comments_user_id_idx").on(table.userId),
-    parentIdIdx: index("comments_parent_id_idx").on(table.parentId),
+    postIdIdx: index('comments_post_id_idx').on(table.postId),
+    userIdIdx: index('comments_user_id_idx').on(table.userId),
+    parentIdIdx: index('comments_parent_id_idx').on(table.parentId),
   })
 );
 
@@ -125,11 +128,11 @@ export const comments = pgTable(
  *
  * Tags for categorizing posts.
  */
-export const tags = pgTable("tags", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull().unique(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow(),
+export const tags = pgTable('tags', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  slug: varchar('slug', { length: 100 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 /**
@@ -138,19 +141,19 @@ export const tags = pgTable("tags", {
  * Many-to-many relationship between posts and tags.
  */
 export const postTags = pgTable(
-  "post_tags",
+  'post_tags',
   {
-    postId: integer("post_id")
+    postId: integer('post_id')
       .notNull()
-      .references(() => posts.id, { onDelete: "cascade" }),
-    tagId: integer("tag_id")
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
       .notNull()
-      .references(() => tags.id, { onDelete: "cascade" }),
+      .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => ({
-    pk: { name: "post_tags_pk", columns: [table.postId, table.tagId] },
-    postIdIdx: index("post_tags_post_id_idx").on(table.postId),
-    tagIdIdx: index("post_tags_tag_id_idx").on(table.tagId),
+    pk: { name: 'post_tags_pk', columns: [table.postId, table.tagId] },
+    postIdIdx: index('post_tags_post_id_idx').on(table.postId),
+    tagIdIdx: index('post_tags_tag_id_idx').on(table.tagId),
   })
 );
 
@@ -159,15 +162,15 @@ export const postTags = pgTable(
  *
  * Application-wide or user-specific settings stored as JSON.
  */
-export const settings = pgTable("settings", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id, {
-    onDelete: "cascade",
+export const settings = pgTable('settings', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, {
+    onDelete: 'cascade',
   }), // null = global settings
-  key: varchar("key", { length: 255 }).notNull(),
-  value: json("value"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  key: varchar('key', { length: 255 }).notNull(),
+  value: json('value'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // ============================================================================
