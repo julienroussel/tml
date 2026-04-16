@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
-import { ModuleComingSoon } from "@/components/module-coming-soon";
+import { CollectView } from "@/features/collect/components/collect-view";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("collect");
@@ -12,5 +12,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function CollectPage(): ReactElement {
-  return <ModuleComingSoon slug="collect" />;
+  return <CollectView />;
 }

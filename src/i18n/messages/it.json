@@ -54,6 +54,7 @@
     "trickDeleted": "Trucco eliminato",
     "saveFailed": "Impossibile salvare il trucco",
     "deleteFailed": "Impossibile eliminare il trucco",
+    "loadError": "Impossibile caricare i dati",
     "emptyTitle": "Il tuo repertorio è vuoto",
     "emptyDescription": "Aggiungi il tuo primo trucco per iniziare a costruire il tuo repertorio.",
     "searchPlaceholder": "Cerca trucchi...",
@@ -178,7 +179,9 @@
       "tooManyTags": "Massimo 20 tag consentiti",
       "tagNameRequired": "Il nome del tag è obbligatorio",
       "tagNameTooLong": "Il nome del tag deve contenere al massimo 50 caratteri"
-    }
+    },
+    "linkedItems": "Oggetti collegati",
+    "noLinkedItems": "Non collegato a nessun oggetto."
   },
   "landing": {
     "tagline": "Allenati. Pianifica. Esibisciti. Eleva la tua magia.",
@@ -208,7 +211,10 @@
     "fallbackName": "mago",
     "repertoireTitle": "Il mio repertorio",
     "repertoireDescription": "{count, plural, one {# trucco} other {# trucchi}} nella tua collezione",
-    "repertoireLink": "Apri repertorio"
+    "repertoireLink": "Apri repertorio",
+    "collectionTitle": "La mia collezione",
+    "collectionDescription": "{count, plural, one {# oggetto} other {# oggetti}} nel tuo inventario",
+    "collectionLink": "Apri collezione"
   },
   "improve": {
     "title": "Migliora",
@@ -233,7 +239,143 @@
   },
   "collect": {
     "title": "Collezione",
-    "description": "Gestisci il tuo inventario di attrezzi, libri, gimmick e altro."
+    "description": "Gestisci il tuo inventario di attrezzi, libri, gimmick e altro.",
+    "addItem": "Aggiungi oggetto",
+    "editItem": "Modifica oggetto",
+    "deleteItem": "Elimina oggetto",
+    "deleteConfirmTitle": "Eliminare \"{name}\"?",
+    "deleteConfirmDescription": "Questo oggetto verrà rimosso dalla tua collezione. Questa azione non può essere annullata.",
+    "itemCreated": "Oggetto aggiunto",
+    "itemUpdated": "Oggetto aggiornato",
+    "itemDeleted": "Oggetto eliminato",
+    "saveFailed": "Impossibile salvare l'oggetto",
+    "deleteFailed": "Impossibile eliminare l'oggetto",
+    "loadError": "Impossibile caricare i dati",
+    "emptyTitle": "La tua collezione è vuota",
+    "emptyDescription": "Aggiungi il tuo primo oggetto per iniziare a costruire la tua collezione.",
+    "searchPlaceholder": "Cerca oggetti...",
+    "sortBy": "Ordina per",
+    "filterByType": "Filtra per tipo",
+    "filterByCondition": "Filtra per condizione",
+    "allTypes": "Tutti i tipi",
+    "allConditions": "Tutte le condizioni",
+    "noResults": "Nessun oggetto corrisponde ai tuoi filtri.",
+    "unsavedChanges": "Hai modifiche non salvate. Scartarle?",
+    "discardChangesTitle": "Scartare le modifiche?",
+    "discardAction": "Scartare",
+    "noneSelected": "Nessuno",
+    "itemCount": "{count, plural, one {# oggetto} other {# oggetti}}",
+    "quantityLabel": "Qtà: {count}",
+    "linkedTricksCount": "{count, plural, one {Usato in # trucco} other {Usato in # trucchi}}",
+    "type": {
+      "prop": "Attrezzo",
+      "book": "Libro",
+      "gimmick": "Gimmick",
+      "dvd": "DVD",
+      "download": "Download",
+      "deck": "Mazzo",
+      "clothing": "Abbigliamento",
+      "consumable": "Consumabile",
+      "accessory": "Accessorio",
+      "other": "Altro"
+    },
+    "condition": {
+      "new": "Nuovo",
+      "good": "Buono stato",
+      "worn": "Usurato",
+      "needs_repair": "Da riparare"
+    },
+    "sort": {
+      "nameAsc": "Nome A-Z",
+      "nameDesc": "Nome Z-A",
+      "newest": "Più recente",
+      "oldest": "Meno recente",
+      "type": "Tipo",
+      "priceAsc": "Prezzo: crescente",
+      "priceDesc": "Prezzo: decrescente"
+    },
+    "field": {
+      "name": "Nome",
+      "namePlaceholder": "Invisible Deck, Card College...",
+      "type": "Tipo",
+      "description": "Descrizione",
+      "descriptionPlaceholder": "Cos'è questo oggetto?",
+      "brand": "Marca",
+      "brandPlaceholder": "Bicycle, Murphy's Magic...",
+      "creator": "Creatore",
+      "creatorPlaceholder": "Autore, inventore, designer...",
+      "creatorLabelBook": "Autore",
+      "creatorLabelDefault": "Creatore",
+      "condition": "Condizione",
+      "location": "Posizione",
+      "locationPlaceholder": "Valigetta close-up, valigetta da palco...",
+      "quantity": "Quantità",
+      "purchaseDate": "Data di acquisto",
+      "purchasePrice": "Prezzo di acquisto",
+      "pricePlaceholder": "0,00",
+      "url": "URL del prodotto",
+      "urlPlaceholder": "https://...",
+      "tags": "Tag",
+      "linkedTricks": "Usato nei trucchi",
+      "notes": "Note",
+      "notesPlaceholder": "Note personali, consigli per la conservazione..."
+    },
+    "section": {
+      "essentials": "Essenziali",
+      "details": "Dettagli",
+      "purchase": "Dati di acquisto",
+      "reference": "Riferimento",
+      "organization": "Organizzazione"
+    },
+    "tagPicker": {
+      "search": "Cerca tag...",
+      "noResults": "Nessun tag trovato.",
+      "create": "Crea \"{name}\"",
+      "selectedTags": "Tag selezionati",
+      "remove": "Rimuovi {name}",
+      "addedTag": "Tag {name} aggiunto",
+      "removedTag": "Tag {name} rimosso",
+      "createdTag": "Tag {name} creato e aggiunto",
+      "createFailed": "Creazione del tag non riuscita"
+    },
+    "trickPicker": {
+      "search": "Cerca trucchi...",
+      "noResults": "Nessun trucco trovato.",
+      "selectedTricks": "Trucchi collegati",
+      "remove": "Scollega {name}",
+      "addedTrick": "{name} collegato",
+      "removedTrick": "{name} scollegato"
+    },
+    "validation": {
+      "nameRequired": "Il nome è obbligatorio",
+      "nameTooLong": "Il nome deve contenere al massimo 200 caratteri",
+      "descriptionTooLong": "La descrizione deve contenere al massimo 2000 caratteri",
+      "invalidUrl": "Inserisci un URL HTTPS valido",
+      "urlTooLong": "L'URL deve contenere al massimo 2000 caratteri",
+      "invalidPrice": "Inserisci un prezzo valido (es. 29,99)",
+      "invalidDate": "Inserisci una data valida",
+      "quantityMin": "La quantità deve essere almeno 0",
+      "quantityMax": "La quantità deve essere 9999 o meno",
+      "tooManyTags": "Impossibile aggiungere più di 20 tag a un oggetto.",
+      "tooManyTricks": "Impossibile collegare più di {count} trucchi a un oggetto."
+    },
+    "errors": {
+      "itemMissing": "Questo oggetto è già stato eliminato o non è stato trovato."
+    },
+    "addItemDescription": "Aggiungi un nuovo oggetto alla tua collezione.",
+    "editItemDescription": "Modifica i dettagli di questo oggetto.",
+    "cardActions": "Azioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "deleteConfirm": "Elimina",
+    "combobox": {
+      "select": "Seleziona...",
+      "clearSelection": "Cancella selezione",
+      "noResults": "Nessun risultato trovato.",
+      "useCustom": "Usa \"{value}\""
+    }
   },
   "admin": {
     "title": "Admin",

@@ -31,7 +31,7 @@ src/app/
     layout.tsx          # Sidebar + header chrome
     dashboard/page.tsx  # Home dashboard
     repertoire/page.tsx # Trick library (Library module)
-    collect/page.tsx    # Inventory management (Library module)
+    collect/page.tsx    # Inventory management (Library module) — enabled
     improve/page.tsx    # Practice session logging (Lab module)
     train/page.tsx      # Goal setting and drills (Lab module)
     plan/page.tsx       # Setlist builder (Lab module)
@@ -51,7 +51,7 @@ Each feature area is organized as a self-contained module defined in `src/lib/mo
 
 Modules are organized into 4 groups:
 
-- **Library**: Repertoire (enabled), Collection
+- **Library**: Repertoire (enabled), Collection (enabled)
 - **Lab**: Improve, Train, Plan, Perform
 - **Insights**: Enhance
 - **Admin**: Admin

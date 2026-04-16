@@ -58,6 +58,7 @@ next-env.d.ts
 .claude/review-*.json
 .claude/settings.local.json
 /CLAUDE.local.md
+.claude/worktrees
 
 TODO.txt
 .env*.local

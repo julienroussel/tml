@@ -132,7 +132,7 @@ erDiagram
         uuid id PK "default random"
         uuid user_id FK
         text name
-        text type "prop, book, gimmick, dvd, download, other"
+        text type "prop, book, gimmick, dvd, download, other, deck, clothing, consumable, accessory"
         text description
         text brand
         text condition "new, good, worn, needs_repair"
@@ -140,6 +140,19 @@ erDiagram
         text notes
         date purchase_date
         numeric purchase_price
+        integer quantity "default 1, >= 0"
+        text creator
+        text url
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    item_tags {
+        uuid id PK "default random"
+        uuid user_id FK
+        uuid item_id FK
+        uuid tag_id FK
         timestamptz created_at
         timestamptz updated_at
         timestamptz deleted_at
@@ -147,6 +160,7 @@ erDiagram
 
     item_tricks {
         uuid id PK "default random"
+        uuid user_id FK
         uuid item_id FK
         uuid trick_id FK
         timestamptz created_at
@@ -209,6 +223,9 @@ erDiagram
     tricks ||--o{ practice_session_tricks : "practiced in"
 
     performances ||--o| setlists : "performed"
+
+    items ||--o{ item_tags : "tagged with"
+    tags ||--o{ item_tags : "applied to"
 
     items ||--o{ item_tricks : "used for"
     tricks ||--o{ item_tricks : "requires"

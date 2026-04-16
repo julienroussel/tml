@@ -128,6 +128,18 @@ const items = new Table({
   // Stored as text to preserve exact decimal precision (server uses numeric(10,2)).
   // Client code must parse this value as a number when displaying.
   purchase_price: column.text,
+  quantity: column.integer,
+  creator: column.text,
+  url: column.text,
+  created_at: column.text,
+  updated_at: column.text,
+  deleted_at: column.text,
+});
+
+const item_tags = new Table({
+  user_id: column.text,
+  item_id: column.text,
+  tag_id: column.text,
   created_at: column.text,
   updated_at: column.text,
   deleted_at: column.text,
@@ -171,6 +183,7 @@ export const appSchema = new Schema({
   practice_session_tricks,
   performances,
   items,
+  item_tags,
   item_tricks,
   goals,
 });

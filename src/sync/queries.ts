@@ -10,6 +10,7 @@
 // synced table having a deleted_at column for soft-delete.
 const SYNCED_TABLE_NAMES = [
   "goals",
+  "item_tags",
   "item_tricks",
   "items",
   "performances",
@@ -42,6 +43,15 @@ const SYNCED_COLUMNS = {
     "updated_at",
     "deleted_at",
   ]),
+  item_tags: new Set([
+    "id",
+    "user_id",
+    "item_id",
+    "tag_id",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+  ]),
   item_tricks: new Set([
     "id",
     "user_id",
@@ -63,6 +73,9 @@ const SYNCED_COLUMNS = {
     "notes",
     "purchase_date",
     "purchase_price",
+    "quantity",
+    "creator",
+    "url",
     "created_at",
     "updated_at",
     "deleted_at",

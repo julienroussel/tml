@@ -80,7 +80,7 @@ graph TB
 | Module | Group | Purpose | Key Entities |
 |---|---|---|---|
 | **Repertoire** | Library | Manage trick library with tags and metadata | tricks, trick_tags |
-| **Collection** | Library | Manage inventory of props and materials | items, item_tricks |
+| **Collection** | Library | Manage inventory of props and materials | items, item_tags, item_tricks |
 | **Improve** | Lab | Log practice sessions, track skill progress | practice_sessions, practice_session_tricks |
 | **Train** | Lab | Set goals, create drills, build streaks | goals |
 | **Plan** | Lab | Build setlists for shows | setlists, setlist_tricks |

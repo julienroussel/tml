@@ -54,6 +54,7 @@
     "trickDeleted": "Truque eliminado",
     "saveFailed": "Falha ao guardar o truque",
     "deleteFailed": "Falha ao eliminar o truque",
+    "loadError": "Falha ao carregar os dados",
     "emptyTitle": "O seu repertório está vazio",
     "emptyDescription": "Adicione o seu primeiro truque para começar a construir o seu repertório.",
     "searchPlaceholder": "Pesquisar truques...",
@@ -178,7 +179,9 @@
       "tooManyTags": "Máximo de 20 etiquetas permitidas",
       "tagNameRequired": "O nome da etiqueta é obrigatório",
       "tagNameTooLong": "O nome da etiqueta deve ter 50 caracteres ou menos"
-    }
+    },
+    "linkedItems": "Objetos associados",
+    "noLinkedItems": "Não está associado a nenhum objeto."
   },
   "landing": {
     "tagline": "Treinar. Planear. Apresentar. Eleve a sua magia.",
@@ -208,7 +211,10 @@
     "fallbackName": "mágico",
     "repertoireTitle": "O Meu Repertório",
     "repertoireDescription": "{count, plural, one {# truque} other {# truques}} na sua coleção",
-    "repertoireLink": "Abrir repertório"
+    "repertoireLink": "Abrir repertório",
+    "collectionTitle": "A Minha Coleção",
+    "collectionDescription": "{count, plural, one {# objeto} other {# objetos}} no seu inventário",
+    "collectionLink": "Abrir coleção"
   },
   "improve": {
     "title": "Melhorar",
@@ -233,7 +239,143 @@
   },
   "collect": {
     "title": "Coleção",
-    "description": "Faça a gestão do seu inventário de adereços, livros, gimmicks e outros itens."
+    "description": "Faça a gestão do seu inventário de adereços, livros, gimmicks e outros itens.",
+    "addItem": "Adicionar objeto",
+    "editItem": "Editar objeto",
+    "deleteItem": "Eliminar objeto",
+    "deleteConfirmTitle": "Eliminar \"{name}\"?",
+    "deleteConfirmDescription": "Este objeto será removido da sua coleção. Esta ação não pode ser desfeita.",
+    "itemCreated": "Objeto adicionado",
+    "itemUpdated": "Objeto atualizado",
+    "itemDeleted": "Objeto eliminado",
+    "saveFailed": "Falha ao guardar o objeto",
+    "deleteFailed": "Falha ao eliminar o objeto",
+    "loadError": "Falha ao carregar os dados",
+    "emptyTitle": "A sua coleção está vazia",
+    "emptyDescription": "Adicione o seu primeiro objeto para começar a construir a sua coleção.",
+    "searchPlaceholder": "Pesquisar objetos...",
+    "sortBy": "Ordenar por",
+    "filterByType": "Filtrar por tipo",
+    "filterByCondition": "Filtrar por estado",
+    "allTypes": "Todos os tipos",
+    "allConditions": "Todos os estados",
+    "noResults": "Nenhum objeto corresponde aos seus filtros.",
+    "unsavedChanges": "Tem alterações por guardar. Descartá-las?",
+    "discardChangesTitle": "Descartar alterações?",
+    "discardAction": "Descartar",
+    "noneSelected": "Nenhum",
+    "itemCount": "{count, plural, one {# objeto} other {# objetos}}",
+    "quantityLabel": "Qtd.: {count}",
+    "linkedTricksCount": "{count, plural, one {Usado em # truque} other {Usado em # truques}}",
+    "type": {
+      "prop": "Adereço",
+      "book": "Livro",
+      "gimmick": "Gimmick",
+      "dvd": "DVD",
+      "download": "Download",
+      "deck": "Baralho",
+      "clothing": "Vestuário",
+      "consumable": "Consumível",
+      "accessory": "Acessório",
+      "other": "Outro"
+    },
+    "condition": {
+      "new": "Novo",
+      "good": "Bom estado",
+      "worn": "Desgastado",
+      "needs_repair": "Necessita reparação"
+    },
+    "sort": {
+      "nameAsc": "Nome A-Z",
+      "nameDesc": "Nome Z-A",
+      "newest": "Mais recente",
+      "oldest": "Mais antigo",
+      "type": "Tipo",
+      "priceAsc": "Preço: menor para maior",
+      "priceDesc": "Preço: maior para menor"
+    },
+    "field": {
+      "name": "Nome",
+      "namePlaceholder": "Invisible Deck, Card College...",
+      "type": "Tipo",
+      "description": "Descrição",
+      "descriptionPlaceholder": "O que é este objeto?",
+      "brand": "Marca",
+      "brandPlaceholder": "Bicycle, Murphy's Magic...",
+      "creator": "Criador",
+      "creatorPlaceholder": "Autor, inventor, designer...",
+      "creatorLabelBook": "Autor",
+      "creatorLabelDefault": "Criador",
+      "condition": "Estado",
+      "location": "Localização",
+      "locationPlaceholder": "Mala de close-up, mala de palco...",
+      "quantity": "Quantidade",
+      "purchaseDate": "Data de compra",
+      "purchasePrice": "Preço de compra",
+      "pricePlaceholder": "0,00",
+      "url": "URL do produto",
+      "urlPlaceholder": "https://...",
+      "tags": "Etiquetas",
+      "linkedTricks": "Usado em truques",
+      "notes": "Notas",
+      "notesPlaceholder": "Notas pessoais, dicas de arrumação..."
+    },
+    "section": {
+      "essentials": "Essencial",
+      "details": "Detalhes",
+      "purchase": "Dados de compra",
+      "reference": "Referência",
+      "organization": "Organização"
+    },
+    "tagPicker": {
+      "search": "Pesquisar etiquetas...",
+      "noResults": "Nenhuma etiqueta encontrada.",
+      "create": "Criar \"{name}\"",
+      "selectedTags": "Etiquetas selecionadas",
+      "remove": "Remover {name}",
+      "addedTag": "Etiqueta {name} adicionada",
+      "removedTag": "Etiqueta {name} removida",
+      "createdTag": "Etiqueta {name} criada e adicionada",
+      "createFailed": "Falha ao criar etiqueta"
+    },
+    "trickPicker": {
+      "search": "Pesquisar truques...",
+      "noResults": "Nenhum truque encontrado.",
+      "selectedTricks": "Truques associados",
+      "remove": "Desassociar {name}",
+      "addedTrick": "{name} associado",
+      "removedTrick": "{name} desassociado"
+    },
+    "validation": {
+      "nameRequired": "O nome é obrigatório",
+      "nameTooLong": "O nome deve ter 200 caracteres ou menos",
+      "descriptionTooLong": "A descrição deve ter 2000 caracteres ou menos",
+      "invalidUrl": "Introduza um URL HTTPS válido",
+      "urlTooLong": "O URL deve ter 2000 caracteres ou menos",
+      "invalidPrice": "Introduza um preço válido (ex.: 29,99)",
+      "invalidDate": "Introduza uma data válida",
+      "quantityMin": "A quantidade deve ser pelo menos 0",
+      "quantityMax": "A quantidade deve ser 9999 ou menos",
+      "tooManyTags": "Não é possível adicionar mais de 20 etiquetas a um objeto.",
+      "tooManyTricks": "Não é possível associar mais de {count} truques a um objeto."
+    },
+    "errors": {
+      "itemMissing": "Este objeto já foi eliminado ou não foi encontrado."
+    },
+    "addItemDescription": "Adicionar um novo objeto à sua coleção.",
+    "editItemDescription": "Editar os detalhes deste objeto.",
+    "cardActions": "Ações",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "deleteConfirm": "Eliminar",
+    "combobox": {
+      "select": "Selecionar...",
+      "clearSelection": "Limpar seleção",
+      "noResults": "Nenhum resultado encontrado.",
+      "useCustom": "Usar \"{value}\""
+    }
   },
   "admin": {
     "title": "Administração",

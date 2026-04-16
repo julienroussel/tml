@@ -38,7 +38,7 @@ const APP_MODULES = [
   {
     slug: "collect",
     icon: Package,
-    enabled: false,
+    enabled: true,
     group: "library",
   },
   {

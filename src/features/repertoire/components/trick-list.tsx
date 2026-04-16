@@ -1,11 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { TrickId } from "@/db/types";
+import type { ItemId, TrickId } from "@/db/types";
 import type { TrickWithTags } from "../types";
 import { TrickCard } from "./trick-card";
 
 interface TrickListProps {
+  itemMap?: Map<TrickId, { id: ItemId; name: string }[]>;
   onDelete: (id: TrickId) => void;
   onEdit: (id: TrickId) => void;
   tricks: TrickWithTags[];
@@ -21,6 +22,7 @@ export function TrickList({
   tricks,
   onEdit,
   onDelete,
+  itemMap,
 }: TrickListProps): React.ReactElement {
   const t = useTranslations("repertoire");
 
@@ -31,7 +33,12 @@ export function TrickList({
     >
       {tricks.map((trick) => (
         <li key={trick.id}>
-          <TrickCard onDelete={onDelete} onEdit={onEdit} trick={trick} />
+          <TrickCard
+            linkedItems={itemMap?.get(trick.id)}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            trick={trick}
+          />
         </li>
       ))}
     </ul>

@@ -54,6 +54,7 @@
     "trickDeleted": "Trick deleted",
     "saveFailed": "Failed to save trick",
     "deleteFailed": "Failed to delete trick",
+    "loadError": "Failed to load data",
     "emptyTitle": "Your repertoire is empty",
     "emptyDescription": "Add your first trick to start building your repertoire.",
     "searchPlaceholder": "Search tricks...",
@@ -178,7 +179,9 @@
       "tooManyTags": "Maximum 20 tags allowed",
       "tagNameRequired": "Tag name is required",
       "tagNameTooLong": "Tag name must be 50 characters or less"
-    }
+    },
+    "linkedItems": "Linked items",
+    "noLinkedItems": "Not linked to any items."
   },
   "landing": {
     "tagline": "Train. Plan. Perform. Elevate your magic.",
@@ -208,7 +211,10 @@
     "fallbackName": "magician",
     "repertoireTitle": "My Repertoire",
     "repertoireDescription": "{count, plural, one {# trick} other {# tricks}} in your collection",
-    "repertoireLink": "Open repertoire"
+    "repertoireLink": "Open repertoire",
+    "collectionTitle": "My Collection",
+    "collectionDescription": "{count, plural, one {# item} other {# items}} in your inventory",
+    "collectionLink": "Open collection"
   },
   "improve": {
     "title": "Improve",
@@ -233,7 +239,143 @@
   },
   "collect": {
     "title": "Collection",
-    "description": "Manage your inventory of props, books, gimmicks, and more."
+    "description": "Manage your inventory of props, books, gimmicks, and more.",
+    "addItem": "Add item",
+    "editItem": "Edit item",
+    "deleteItem": "Delete item",
+    "deleteConfirmTitle": "Delete \"{name}\"?",
+    "deleteConfirmDescription": "This item will be removed from your collection. This action cannot be undone.",
+    "itemCreated": "Item added",
+    "itemUpdated": "Item updated",
+    "itemDeleted": "Item deleted",
+    "saveFailed": "Failed to save item",
+    "deleteFailed": "Failed to delete item",
+    "loadError": "Failed to load data",
+    "emptyTitle": "Your collection is empty",
+    "emptyDescription": "Add your first item to start building your collection.",
+    "searchPlaceholder": "Search items...",
+    "sortBy": "Sort by",
+    "filterByType": "Filter by type",
+    "filterByCondition": "Filter by condition",
+    "allTypes": "All types",
+    "allConditions": "All conditions",
+    "noResults": "No items match your filters.",
+    "unsavedChanges": "You have unsaved changes. Discard them?",
+    "discardChangesTitle": "Discard changes?",
+    "discardAction": "Discard",
+    "noneSelected": "None",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "quantityLabel": "Qty: {count}",
+    "linkedTricksCount": "{count, plural, one {Used in # trick} other {Used in # tricks}}",
+    "type": {
+      "prop": "Prop",
+      "book": "Book",
+      "gimmick": "Gimmick",
+      "dvd": "DVD",
+      "download": "Download",
+      "deck": "Deck",
+      "clothing": "Clothing",
+      "consumable": "Consumable",
+      "accessory": "Accessory",
+      "other": "Other"
+    },
+    "condition": {
+      "new": "New",
+      "good": "Good",
+      "worn": "Worn",
+      "needs_repair": "Needs Repair"
+    },
+    "sort": {
+      "nameAsc": "Name A-Z",
+      "nameDesc": "Name Z-A",
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "type": "Type",
+      "priceAsc": "Price: low to high",
+      "priceDesc": "Price: high to low"
+    },
+    "field": {
+      "name": "Name",
+      "namePlaceholder": "Invisible Deck, Card College...",
+      "type": "Type",
+      "description": "Description",
+      "descriptionPlaceholder": "What is this item?",
+      "brand": "Brand",
+      "brandPlaceholder": "Bicycle, Murphy's Magic...",
+      "creator": "Creator",
+      "creatorPlaceholder": "Author, inventor, designer...",
+      "creatorLabelBook": "Author",
+      "creatorLabelDefault": "Creator",
+      "condition": "Condition",
+      "location": "Location",
+      "locationPlaceholder": "Close-up case, stage case...",
+      "quantity": "Quantity",
+      "purchaseDate": "Purchase date",
+      "purchasePrice": "Purchase price",
+      "pricePlaceholder": "0.00",
+      "url": "Product URL",
+      "urlPlaceholder": "https://...",
+      "tags": "Tags",
+      "linkedTricks": "Used in tricks",
+      "notes": "Notes",
+      "notesPlaceholder": "Personal notes, storage tips..."
+    },
+    "section": {
+      "essentials": "Essentials",
+      "details": "Details",
+      "purchase": "Purchase Info",
+      "reference": "Reference",
+      "organization": "Organization"
+    },
+    "tagPicker": {
+      "search": "Search tags...",
+      "noResults": "No tags found.",
+      "create": "Create \"{name}\"",
+      "selectedTags": "Selected tags",
+      "remove": "Remove {name}",
+      "addedTag": "Added tag {name}",
+      "removedTag": "Removed tag {name}",
+      "createdTag": "Created and added tag {name}",
+      "createFailed": "Failed to create tag"
+    },
+    "trickPicker": {
+      "search": "Search tricks...",
+      "noResults": "No tricks found.",
+      "selectedTricks": "Linked tricks",
+      "remove": "Unlink {name}",
+      "addedTrick": "Linked {name}",
+      "removedTrick": "Unlinked {name}"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must be 200 characters or less",
+      "descriptionTooLong": "Description must be 2,000 characters or less",
+      "invalidUrl": "Please enter a valid HTTPS URL",
+      "urlTooLong": "URL must be 2,000 characters or less",
+      "invalidPrice": "Please enter a valid price (e.g. 29.99)",
+      "invalidDate": "Please enter a valid date",
+      "quantityMin": "Quantity must be at least 0",
+      "quantityMax": "Quantity must be 9,999 or less",
+      "tooManyTags": "Cannot add more than 20 tags to an item.",
+      "tooManyTricks": "Cannot link more than {count} tricks to an item."
+    },
+    "errors": {
+      "itemMissing": "This item was already deleted or not found."
+    },
+    "addItemDescription": "Add a new item to your collection.",
+    "editItemDescription": "Edit the details of this item.",
+    "cardActions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "deleteConfirm": "Delete",
+    "combobox": {
+      "select": "Select...",
+      "clearSelection": "Clear selection",
+      "noResults": "No results found.",
+      "useCustom": "Use \"{value}\""
+    }
   },
   "admin": {
     "title": "Admin",
