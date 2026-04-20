@@ -50,7 +50,7 @@
     "@hookform/resolvers": "5.2.2",
     "@journeyapps/wa-sqlite": "1.6.0",
     "@neondatabase/auth": "0.2.0-beta.1",
-    "@neondatabase/serverless": "1.0.2",
+    "@neondatabase/serverless": "1.1.0",
     "@powersync/common": "1.52.0",
     "@powersync/kysely-driver": "1.3.3",
     "@powersync/react": "1.10.0",
