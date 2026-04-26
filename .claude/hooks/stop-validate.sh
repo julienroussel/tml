@@ -65,6 +65,23 @@ done < <(git status -z 2>/dev/null)
 needs_sync=0
 needs_i18n=0
 needs_journal=0
+needs_typecheck=0
+
+# Helper: classify a path against the watched buckets.
+classify_path() {
+  case "$1" in
+    src/db/schema/*) needs_sync=1 ;;
+    src/i18n/messages/*.json) needs_i18n=1 ;;
+    src/db/migrations/meta/_journal.json) needs_journal=1 ;;
+  esac
+  # Typecheck on any non-test, non-script .ts / .tsx change. Tests run via
+  # vitest separately; scripts/ is tsx-executed, not part of the app build.
+  case "$1" in
+    *.test.ts|*.test.tsx|*.spec.ts|*.spec.tsx) ;;
+    scripts/*) ;;
+    *.ts|*.tsx) needs_typecheck=1 ;;
+  esac
+}
 
 # For renames/copies (R*/C*), the current record holds the NEW path and the
 # next record holds the OLD path — consume both.
@@ -73,23 +90,14 @@ while [ $i -lt ${#changed_records[@]} ]; do
   entry="${changed_records[$i]}"
   status="${entry:0:2}"
   path="${entry:3}"
-  case "$path" in
-    src/db/schema/*) needs_sync=1 ;;
-    src/i18n/messages/*.json) needs_i18n=1 ;;
-    src/db/migrations/meta/_journal.json) needs_journal=1 ;;
-  esac
+  classify_path "$path"
   # For renames/copies, the OLD path is in the next record. Match it too so
   # `git mv src/db/schema/foo.ts src/lib/foo.ts` (rename OUT of watched dir)
   # still triggers the sync check.
   case "$status" in
     R*|C*)
       if [ $((i + 1)) -lt ${#changed_records[@]} ]; then
-        old_path="${changed_records[$((i + 1))]}"
-        case "$old_path" in
-          src/db/schema/*) needs_sync=1 ;;
-          src/i18n/messages/*.json) needs_i18n=1 ;;
-          src/db/migrations/meta/_journal.json) needs_journal=1 ;;
-        esac
+        classify_path "${changed_records[$((i + 1))]}"
       fi
       i=$((i + 1))
       ;;
@@ -97,7 +105,7 @@ while [ $i -lt ${#changed_records[@]} ]; do
   i=$((i + 1))
 done
 
-if [ $needs_sync -eq 0 ] && [ $needs_i18n -eq 0 ] && [ $needs_journal -eq 0 ]; then
+if [ $needs_sync -eq 0 ] && [ $needs_i18n -eq 0 ] && [ $needs_journal -eq 0 ] && [ $needs_typecheck -eq 0 ]; then
   exit 0
 fi
 
@@ -145,6 +153,14 @@ if [ $needs_i18n -eq 1 ]; then
   if ! pnpm i18n:check >"$i18n_log" 2>&1; then
     append_error "✗ pnpm i18n:check failed — locale key parity broken. Add missing keys across all 7 locales."
     log_tail_block "$i18n_log"
+  fi
+fi
+
+if [ $needs_typecheck -eq 1 ]; then
+  typecheck_log="$log_dir/typecheck.log"
+  if ! pnpm typecheck >"$typecheck_log" 2>&1; then
+    append_error "✗ pnpm typecheck failed — fix type errors before declaring done."
+    log_tail_block "$typecheck_log"
   fi
 fi
 

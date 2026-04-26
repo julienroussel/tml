@@ -6,11 +6,6 @@
       "sourceType": "github",
       "computedHash": "967db951c7716b8e362f1f91631bb041a3369bd277af3e706ded6a39dd0eae98"
     },
-    "ccc": {
-      "source": "cocoindex-io/cocoindex-code",
-      "sourceType": "github",
-      "computedHash": "485211ec7ef033f784261d1dba56770fea20163aebdd482950e8d4878b74c6b2"
-    },
     "neon-auth": {
       "source": "neondatabase/ai-rules",
       "sourceType": "github",
