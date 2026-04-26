@@ -37,19 +37,13 @@ Surface area available in this repo. Reach for these before hand-rolling.
 | `mcp__next-devtools__*` | Next.js docs lookup, dev-time browser eval, framework upgrade helpers. |
 | `mcp__docs__*` | PowerSync docs (HTTP MCP). Use for sync-rules / connector questions. |
 
-### Slash commands
-
-Project-level (in `.claude/commands/`):
+### Slash commands (in `.claude/commands/`)
 
 - `/verify` — full validation suite (`lint` + `typecheck` + `test:run` + `sync:check` + `i18n:check`) in parallel. Run before declaring done on non-trivial work.
 - `/real-build-check` — `pnpm build` + inspect actual `.next/server/app/**/*.html`. Use **before** planning anything CSP/HTML/SSR-shape-dependent.
 - `/stale-check` — audit CLAUDE.md claims against repo state.
 - `/memory <topic>` — grep memory files and print bodies inline (faster than re-reading every entry).
 - `/why <path>` — git log + memory entries for a file.
-
-User-level skills (available globally):
-
-- `/ship` — bundled commit + PR + CI watch + merge.
 
 ### Skill-backed workflows (in `.claude/skills/`)
 
