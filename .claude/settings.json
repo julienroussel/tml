@@ -6,7 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "file=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [ -n \"$file\" ] && [ -f \"$file\" ] && pnpm exec ultracite fix -- \"$file\" >/dev/null 2>&1 || true"
+            "command": ".claude/hooks/edit-nudges.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/stop-validate.sh"
           }
         ]
       }

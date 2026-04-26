@@ -94,7 +94,10 @@ function getLastCommitDate(projectRoot: string): string {
     cwd: projectRoot,
     encoding: "utf-8",
   }).trim();
-  return iso.slice(0, 10);
+  // Normalize to UTC so local and CI agree. CI's actions/checkout creates a
+  // synthetic merge commit dated in UTC; using the committer's original TZ
+  // here would flap the date on every PR run for committers east of UTC.
+  return new Date(iso).toISOString().slice(0, 10);
 }
 
 function generateRouteMap(projectRoot: string): string {
