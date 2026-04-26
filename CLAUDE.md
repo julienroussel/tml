@@ -18,33 +18,78 @@ Before asserting any factual claim about this repo, verify it. "Remembered from 
 - **Library availability or version** → read `package.json`. Already installed and easy to miss: `resend`, `@react-email/render` + `react-email`, `sonner`, `cmdk`, `@vercel/firewall`, `@journeyapps/wa-sqlite`, `culori`, `radix-ui` (single umbrella package — not `@radix-ui/react-*`), `@hookform/resolvers` + `react-hook-form`, `drizzle-zod`, `zod`, `web-push`. Reach for these before suggesting alternatives.
 - **Version-sensitive API** → re-read `## Version-Specific Rules` below, then confirm the installed version in `package.json` before quoting any syntax.
 - **HTML / CSP / SSR output shape** → run `pnpm build` and inspect real output. Source-level reasoning has missed production realities before (memory: `feedback_verify_against_real_build.md`).
-- **"Done" claim on non-trivial work** → call `advisor()` before declaring complete. Cheap validation (sync drift, i18n drift) runs automatically in the Stop hook; code-level correctness is still yours.
+- **Tool / MCP existence** → never call `mcp__foo__bar` or assert a slash command exists without confirming its schema is in the current `<functions>` block (or load via `ToolSearch` first). `InputValidationError` follows otherwise.
+- **Memory recall vs current state** → if a memory entry cites a file path, symbol, branch, or version, grep/read it before acting. The "X days old" reminder tells you the snapshot age — newer snapshots ≠ current truth.
+- **"Why does X behave that way?" answers** → cite `file:line` (use `mcp__codebase-memory-mcp__get_code_snippet` or `Read`). Don't paraphrase from training data.
+- **"Done" claim on non-trivial work** → call `advisor()` before declaring complete. Cheap validation (sync drift, i18n drift, migration journal monotonicity) runs automatically in the Stop hook; code-level correctness is still yours.
+
+## Tools & Skills
+
+Surface area available in this repo. Reach for these before hand-rolling.
+
+### MCP servers (configured in `.mcp.json` + global)
+
+| Namespace | Use for |
+|---|---|
+| `mcp__codebase-memory-mcp__*` | Code discovery — `search_graph`, `get_code_snippet`, `trace_path`, `query_graph`, `get_architecture`. **First grep per session is gated to this** (see `~/.claude/hooks/cbm-code-discovery-gate`). Fall back to `Grep`/`Read` only for non-code text. |
+| `mcp__neon__*` | Neon Postgres — list/describe projects, run SQL, prepare migrations, query tuning. Use for schema introspection over `psql`. |
+| `mcp__shadcn__*` | shadcn registry — `list_items_in_registries`, `view_items_in_registries`, `get_add_command_for_items`. Use before adding any UI primitive. |
+| `mcp__next-devtools__*` | Next.js docs lookup, dev-time browser eval, framework upgrade helpers. |
+| `mcp__docs__*` | PowerSync docs (HTTP MCP). Use for sync-rules / connector questions. |
+
+### Slash commands
+
+Project-level (in `.claude/commands/`):
+
+- `/verify` — full validation suite (`lint` + `typecheck` + `test:run` + `sync:check` + `i18n:check`) in parallel. Run before declaring done on non-trivial work.
+- `/real-build-check` — `pnpm build` + inspect actual `.next/server/app/**/*.html`. Use **before** planning anything CSP/HTML/SSR-shape-dependent.
+- `/stale-check` — audit CLAUDE.md claims against repo state.
+- `/memory <topic>` — grep memory files and print bodies inline (faster than re-reading every entry).
+- `/why <path>` — git log + memory entries for a file.
+
+User-level skills (available globally):
+
+- `/ship` — bundled commit + PR + CI watch + merge.
+
+### Skill-backed workflows (in `.claude/skills/`)
+
+- **`/migrations`** — full schema-change workflow (Drizzle → review SQL → migrate → sync codegen → docs). Use this, never hand-roll.
+- **`/new-feature`** — scaffolds feature dir, schema, migration, sync artifacts, route, translations, components (empty/loading/error states), tests, module registry, CSP, docs.
+- **`/sync-engine`** — diff Drizzle vs PowerSync schemas; detect drift.
+- **`/i18n`** — add translation keys across all 7 locales (handles ICU plurals + completeness).
+- **`/shadcn`** — adding/composing shadcn components.
+- **`/powersync`** — sync rules / connector / offline patterns guidance.
+- **`/next-best-practices`** — App Router conventions.
+- **`/ultracite`** — Biome+Ultracite lint/format troubleshooting.
+- **`/notifications`** — push notification system.
+- **`/neon-*`** — `neon-auth`, `neon-drizzle`, `neon-serverless`, `neon-toolkit`, `neon-js`, `add-neon-docs`.
+
+Run `ls .claude/skills/` for the full list.
 
 ## Commands
 
-Full script list is in `package.json`. Non-obvious / high-signal scripts:
+Full script list: `pnpm run`. Project-specific gotchas:
 
 ```bash
-pnpm sync:generate    # Regenerate PowerSync artifacts from Drizzle (REQUIRED after any src/db/schema/** change)
-pnpm sync:check       # Fail if sync artifacts drift from schema (pre-commit + CI gate)
-pnpm sync:validate    # Validate powersync/sync-config.yaml via the PowerSync CLI
-pnpm sync:deploy      # Deploy sync-config to PowerSync Cloud (needs POWERSYNC_ADMIN_TOKEN)
+pnpm sync:generate    # REQUIRED after any src/db/schema/** change — regenerates PowerSync artifacts
+pnpm sync:check       # Fail if sync artifacts drift (pre-commit + CI gate)
 pnpm i18n:check       # Validate all 7 locales share the same keys
-pnpm docs:generate    # Regenerate public/llms{,-full}.txt from docs/
-pnpm email:dev        # React Email preview on :3030
-pnpm screenshots      # Regenerate PWA manifest screenshots (dev server must be running)
-pnpm setup            # First-time project setup (tsx scripts/setup.ts)
+pnpm docs:generate    # Regenerate public/llms{,-full}.txt + docs/diagrams/
 ```
-
-Standard scripts (`dev`, `build`, `start`, `lint`, `fix`, `typecheck`, `test`, `test:run`, `test:coverage`, `test:ui`, `test:e2e`, `test:e2e:ui`, `db:generate`, `db:migrate`, `db:studio`) behave as the names suggest — see `package.json` for exact commands.
 
 Requires Node 24.x and pnpm ≥ 10.
 
 ## Architecture
 
-### Stack (one-line — check `package.json` for pinned versions)
+### Stack
 
-Next.js 16 App Router + React 19 with React Compiler, Tailwind CSS v4 (CSS-first), shadcn/ui (new-york) on `radix-ui` with CVA + `cn()` in `src/lib/utils.ts`, Neon Auth + Neon Postgres (`@neondatabase/serverless`), Drizzle ORM (`src/db/`), PowerSync (offline-first SQLite, `src/sync/`), next-intl (7 locales), next-themes, Lucide React, Geist font, Vercel Analytics + Speed Insights + `@vercel/firewall`, resend + `react-email`, sonner + cmdk, `react-hook-form` + `@hookform/resolvers` + zod, PWA (`src/app/manifest.ts`, `public/sw.js`, `web-push`), Vitest + Testing Library, Biome via Ultracite, Lefthook (pre-commit), Playwright (E2E).
+Pinned versions in `package.json`. Opinionated choices that aren't obvious from the lockfile:
+
+- **shadcn/ui (new-york style)** built on the umbrella `radix-ui` package — never `@radix-ui/react-*` subpackages.
+- **PowerSync direction**: offline-first SQLite is the **primary read source**; Neon is downstream. Don't bypass.
+- **Sync codegen**: `src/sync/schema.ts` and `powersync/sync-config.yaml` are **generated** from Drizzle. Never hand-edit.
+- **Style utility**: `cn()` in `src/lib/utils.ts` (CVA + clsx + tailwind-merge). Use for every conditional-class case.
+- **Lefthook** (not Husky) for pre-commit; **Vitest** (not Jest); **Biome via Ultracite** (no ESLint/Prettier).
 
 ### Route Groups
 
@@ -113,7 +158,7 @@ Never suggest or use deprecated patterns for any of these.
 - **PostCSS plugin** is `@tailwindcss/postcss`.
 - **`@custom-variant`** replaces JS `addVariant` plugins. Content detection is automatic.
 - **Colors use oklch**. Tokens are CSS custom properties mapped via `@theme inline`. Never `theme.extend`.
-- **Class renames from v3**: `shadow-sm`→`shadow-xs`, `shadow`→`shadow-sm`, `ring`→`ring-3`, `blur`→`blur-sm`, `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`.
+- **Class renames from v3** (apply mechanically when porting): `shadow-sm`→`shadow-xs`, `shadow`→`shadow-sm`, `ring`→`ring-3`, `blur`→`blur-sm`, `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`.
 
 ### Biome & Ultracite
 
@@ -144,6 +189,20 @@ Never suggest or use deprecated patterns for any of these.
 - **Exhaustive checks** — `never` in switch/if to catch unhandled cases at compile time.
 - **Functional style over classes**. Factory functions returning object literals.
 
+## Code Quality Standards
+
+These complement Biome — they cover what the linter cannot enforce.
+
+- **Business logic correctness** — Biome can't validate algorithms or domain rules.
+- **Meaningful naming** — descriptive names for functions, variables, types, files.
+- **Architecture decisions** — component boundaries, data flow, API shape.
+- **Edge cases** — boundary conditions, empty/null/error states, race conditions.
+- **Accessibility** — semantic HTML, ARIA, keyboard nav, screen reader support.
+- **Security** — validate user input, avoid `dangerouslySetInnerHTML`, sanitize at system boundaries.
+- **Early returns** to reduce nesting; extract complex conditions into named booleans.
+- **Throw `Error` objects** with descriptive messages — never strings; never catch just to rethrow unchanged.
+- **Tests**: assertions inside `it()`/`test()`; no committed `.only`/`.skip`; flat `describe` nesting.
+
 ## Test Strategy
 
 - **Co-located**: `foo.ts` → `foo.test.ts`.
@@ -165,11 +224,15 @@ Never suggest or use deprecated patterns for any of these.
 
 ## Sync Engine Reference
 
-- **CRITICAL — Offline-first is a core requirement.** The app must work fully offline after initial load. PowerSync's local SQLite is the primary read source — network is optional. Never break offline. The service worker (`public/sw.js`) must cache PowerSync WASM binaries and web workers under `/@powersync/`. `shouldBypass()` must only skip live API traffic (remote sync, auth, analytics), never static assets needed for offline boot.
-- **Server schema**: `src/db/schema/` (Drizzle, Neon Postgres) — **source of truth**.
-- **Client schema**: `src/sync/schema.ts` (PowerSync local SQLite) — **generated**.
-- **Sync config**: `powersync/sync-config.yaml` (Sync Streams edition 3) — **generated**.
-- **Column allowlist**: `src/sync/synced-columns.ts` (`SYNCED_TABLE_NAMES` / `SYNCED_COLUMNS`) — **generated**.
+**CRITICAL — Offline-first is a load-bearing requirement.** App must boot and operate with no network after first load. PowerSync's local SQLite is the primary read source. The service worker (`public/sw.js`) must cache PowerSync WASM + workers under `/@powersync/`; `shouldBypass()` skips only live API traffic (sync/auth/analytics), never static assets.
+
+| Layer | Path | Status |
+|---|---|---|
+| Server schema | `src/db/schema/` (Drizzle, Neon) | **source of truth** |
+| Client schema | `src/sync/schema.ts` | generated |
+| Sync config | `powersync/sync-config.yaml` (Streams edition 3) | generated |
+| Column allowlist | `src/sync/synced-columns.ts` | generated |
+
 - **Write path**: Component → `execute()` → upload queue → `/api/powersync/upload` → Drizzle → Neon.
 - **Read path**: Neon → PowerSync Cloud → client SQLite → `useQuery()` → React.
 - **Conflict resolution**: last-write-wins on `updated_at`.
@@ -240,10 +303,15 @@ Plans for new features must explicitly cover: offline-first behavior, soft-delet
 
 ## Escalation & Memory
 
-- **`advisor()`** — call for non-trivial work before committing to an approach, and before declaring done. It sees the full transcript and catches direction drift.
-- **Auto-memory** at `~/.claude/projects/-Users-jroussel-dev-tml/memory/` is loaded every turn via `MEMORY.md`. It stores "why" context (past incidents, preferences) as triggers into the rules above. Read relevant entries when memory notes apply; update them when facts change. Don't duplicate rules back into CLAUDE.md — memory points here.
-- **Skills** (installed under `.claude/skills/`): prefer invoking over hand-rolling. Key ones: `/migrations`, `/new-feature`, `/sync-engine`, `/i18n`, `/shadcn`, `/powersync`, `/next-best-practices`, `/ultracite`, `/notifications`, `/neon-*`. Run `ls .claude/skills/` to see the full list.
-- **Validation hooks** — the Stop hook runs `pnpm sync:check` / `pnpm i18n:check` / migration journal check automatically when relevant files were touched. PostToolUse emits edit-time advisories on schema/i18n/migration changes. `/verify` runs the full suite manually.
+- **`advisor()`** — call for non-trivial work before committing to an approach, and before declaring done. Sees the full transcript and catches direction drift.
+- **Auto-memory** at `~/.claude/projects/-Users-jroussel-dev-tml/memory/` is loaded every turn via `MEMORY.md`. Stores "why" context (past incidents, preferences). Memory entries should ADD information (incident dates, prior decisions, external context), never duplicate rules already in this file. Use `/memory <topic>` to recall focused entries mid-task without burning context on the full set.
+- **Validation hooks** auto-run on Stop:
+  - `pnpm sync:check` if `src/db/schema/**` changed.
+  - `pnpm i18n:check` if `src/i18n/messages/*.json` changed.
+  - `pnpm typecheck` if any `.ts`/`.tsx` outside tests/scripts changed.
+  - Migration journal monotonicity if `_journal.json` changed.
+- **PostToolUse** emits edit-time advisories on schema, i18n, migration, CSP, service-worker, `next.config.ts`, `package.json`, and `src/proxy.ts` edits. Heed the nudges — they encode past failure modes.
+- **Manual checks**: `/verify` (full suite), `/real-build-check` (production HTML), `/stale-check` (CLAUDE.md vs repo).
 
 ## Follow-up Tracking
 

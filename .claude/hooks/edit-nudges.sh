@@ -156,6 +156,32 @@ case "$rel" in
     ;;
 esac
 
+case "$rel" in
+  next.config.ts)
+    append_nudge "📎 next.config.ts edit detected. Run 'pnpm build' to confirm config parses:
+   • reactCompiler / devIndicators / serverActions go top-level — NOT under 'experimental'.
+   • Proxy config exports must NOT use 'as const' (Turbopack can't statically parse it).
+   • CLAUDE.md → Version-Specific Rules → Next.js 16."
+    ;;
+esac
+
+case "$rel" in
+  package.json)
+    append_nudge "📎 package.json edit detected:
+   • Run 'pnpm install' to update pnpm-lock.yaml.
+   • Before adding a new dep, check it's not already covered: 'radix-ui' (umbrella, not @radix-ui/react-*), 'react-email' (top-level, not @react-email/components), 'resend', 'sonner', 'cmdk', '@hookform/resolvers', 'culori', 'web-push', '@vercel/firewall', '@journeyapps/wa-sqlite' are easy to miss.
+   • CLAUDE.md → Verify Before Cite (Library availability)."
+    ;;
+esac
+
+case "$rel" in
+  src/proxy.ts)
+    append_nudge "📎 proxy.ts edit detected. Confirm with 'pnpm build', not just 'pnpm dev':
+   • Proxy config export must NOT use 'as const' — Turbopack can't statically parse it.
+   • This is Next.js 16's middleware replacement; never rename to middleware.ts."
+    ;;
+esac
+
 if [ -n "$nudges" ]; then
   printf '%s\n' "$nudges" >&2
   exit 2
