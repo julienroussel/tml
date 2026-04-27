@@ -1,7 +1,11 @@
 ---
-name: i18n-add
+name: i18n
 description: "Add translation keys across all 7 locale files (en, fr, es, pt, it, de, nl). Handles namespace creation, ICU plurals, and completeness checks. Use when adding UI strings or creating components with user-facing text."
 user-invocable: true
+paths:
+  - "src/i18n/messages/*.json"
+  - "src/features/**/*.tsx"
+  - "src/components/**/*.tsx"
 ---
 
 # i18n — Add Translation Keys

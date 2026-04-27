@@ -1,7 +1,11 @@
 ---
-name: sync-check
+name: sync-engine
 description: "Compare Drizzle server schema against PowerSync client schema to detect drift. Reports missing tables, missing columns, and type mismatches. Use when touching the data layer or after running migrations."
 user-invocable: true
+paths:
+  - "src/sync/**"
+  - "powersync/**"
+  - "src/db/schema/**"
 ---
 
 # Sync Schema Check

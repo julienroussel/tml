@@ -47,6 +47,14 @@ case "$file" in
   *) exit 0 ;;
 esac
 
+# Skip generated artifacts and lock files — Ultracite shouldn't touch them and
+# no advisory could apply. Cheaper than going through the full nudge pipeline.
+case "$rel" in
+  pnpm-lock.yaml|src/sync/schema.ts|src/sync/synced-columns.ts|powersync/sync-config.yaml|public/llms.txt|public/llms-full.txt)
+    exit 0
+    ;;
+esac
+
 nudges=""
 
 append_nudge() {
@@ -179,6 +187,48 @@ case "$rel" in
     append_nudge "📎 proxy.ts edit detected. Confirm with 'pnpm build', not just 'pnpm dev':
    • Proxy config export must NOT use 'as const' — Turbopack can't statically parse it.
    • This is Next.js 16's middleware replacement; never rename to middleware.ts."
+    ;;
+esac
+
+case "$rel" in
+  drizzle.config.ts)
+    append_nudge "📎 drizzle.config.ts edit detected:
+   • Confirm schema/migration paths still resolve.
+   • Run 'pnpm db:generate' to test codegen with the updated config.
+   • Schema-related rules: .claude/rules/migrations.md."
+    ;;
+esac
+
+case "$rel" in
+  biome.json)
+    append_nudge "📎 biome.json edit detected. Rule-set drift can silently mask issues:
+   • Run 'pnpm lint' to surface any new errors.
+   • Project extends 'ultracite/biome/core' and 'ultracite/biome/next' — keep these in 'extends'."
+    ;;
+esac
+
+case "$rel" in
+  vitest.config.mts|vitest.setup.ts)
+    append_nudge "📎 Vitest config edit detected:
+   • Run 'pnpm test:run' to confirm the config still parses and tests still pass.
+   • Coverage threshold is 80% global — enforce or relax intentionally."
+    ;;
+esac
+
+case "$rel" in
+  lefthook.yml)
+    append_nudge "📎 lefthook.yml edit detected:
+   • Run 'pnpm exec lefthook install' to refresh git hooks.
+   • Test by staging a sample file (e.g. 'git add CLAUDE.md && git commit -m test --dry-run')."
+    ;;
+esac
+
+case "$rel" in
+  .github/workflows/*.yml|.github/workflows/*.yaml)
+    append_nudge "📎 GitHub Actions workflow edit detected. CI/CD changes are not validated locally:
+   • Push to a draft PR to dry-run the workflow.
+   • Audit GITHUB_TOKEN permissions and any new secrets/variables.
+   • If sync-deploy.yml: confirm POWERSYNC_* vars/secrets unchanged."
     ;;
 esac
 

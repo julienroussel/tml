@@ -1,3 +1,17 @@
+---
+name: notifications
+description: "Push and email notifications: web-push (VAPID), Resend + React Email, user preferences. Use when adding notification types, modifying push/email behavior, or updating preferences."
+user-invocable: true
+paths:
+  - "src/db/schema/push-subscriptions.ts"
+  - "src/db/schema/user-preferences.ts"
+  - "src/lib/email*.ts"
+  - "src/emails/**"
+  - "public/sw.js"
+  - "src/app/api/email/**"
+  - "src/app/api/cron/**"
+---
+
 # Notification System
 
 ## When to use this skill
