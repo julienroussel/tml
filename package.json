@@ -102,7 +102,7 @@
     "jsdom": "29.1.0",
     "lefthook": "2.1.6",
     "powersync": "0.9.4",
-    "react-email": "6.0.0",
+    "react-email": "6.0.1",
     "shadcn": "4.5.0",
     "tailwindcss": "4.2.4",
     "tsx": "4.21.0",
