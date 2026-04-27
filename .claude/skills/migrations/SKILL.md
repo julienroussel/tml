@@ -1,7 +1,11 @@
 ---
-name: migrate
+name: migrations
 description: "Run the full database migration workflow: modify Drizzle schema, generate migration SQL, review, apply to Neon, update PowerSync client schema, and regenerate docs. Use when adding/modifying/removing database tables or columns."
 user-invocable: true
+paths:
+  - "src/db/schema/**"
+  - "src/db/migrations/**"
+  - "drizzle.config.ts"
 ---
 
 # Database Migration Workflow

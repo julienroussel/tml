@@ -1034,7 +1034,7 @@ Source: docs/diagrams/route-map.md
 
 # Route Map
 
-<!-- Last verified: 2026-04-26 -->
+<!-- Last verified: 2026-04-27 -->
 
 ## Route Structure
 
