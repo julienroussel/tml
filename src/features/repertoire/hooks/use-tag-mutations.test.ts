@@ -3,10 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // --- Mocks -----------------------------------------------------------
 
 const mockExecute = vi.fn();
+const mockWriteTransaction = vi.fn(
+  async (cb: (tx: { execute: typeof mockExecute }) => Promise<void>) => {
+    await cb({ execute: mockExecute });
+  }
+);
 
 vi.mock("@powersync/react", () => ({
   usePowerSync: vi.fn(() => ({
     execute: mockExecute,
+    writeTransaction: mockWriteTransaction,
   })),
 }));
 
@@ -21,6 +27,24 @@ vi.mock("@/auth/client", () => ({
 
 vi.mock("@/lib/analytics", () => ({
   trackEvent: vi.fn(),
+}));
+
+// logEvent runs inside the same writeTransaction as the domain mutation. The
+// existing test assertions count tx.execute calls; mocking logEvent to a
+// tracking spy lets us assert dual-sink invariants per mutation while keeping
+// those counts stable. `safeLogEvent` is the real call site post-refactor —
+// it swallows logEvent failures so the parent mutation still commits, so the
+// mock mirrors that behavior to keep "logEvent throws" tests meaningful.
+const mockLogEvent = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/events/log", () => ({
+  logEvent: (...args: unknown[]) => mockLogEvent(...args),
+  safeLogEvent: async (...args: unknown[]) => {
+    try {
+      await mockLogEvent(...args);
+    } catch {
+      // swallowed — matches real safeLogEvent semantics
+    }
+  },
 }));
 
 let uuidCounter = 0;
@@ -152,6 +176,49 @@ describe("use-tag-mutations", () => {
       await expect(createTag("opener")).rejects.toThrow(
         "Cannot mutate tags without an authenticated user"
       );
+    });
+
+    it("emits a tag.created event with the normalized name", async () => {
+      const { useTagMutations } = await getHookExports();
+      const { createTag } = useTagMutations();
+
+      await createTag("  Opener  ");
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      const txArg = mockLogEvent.mock.calls[0]?.[0] as {
+        execute: typeof mockExecute;
+      };
+      // Same tx the INSERT was issued on (atomicity).
+      expect(txArg.execute).toBe(mockExecute);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "tag.created",
+          entityType: "tag",
+          payload: expect.objectContaining({ name: "opener" }),
+        })
+      );
+    });
+
+    it("createTag succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useTagMutations } = await getHookExports();
+      const { createTag } = useTagMutations();
+
+      const id = await createTag("opener");
+
+      expect(id).toBe("uuid-1");
+      // The tag INSERT must still have run.
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT INTO tags"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 });

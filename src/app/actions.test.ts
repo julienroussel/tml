@@ -36,6 +36,18 @@ vi.mock("@/auth/server", () => ({
   },
 }));
 
+const mockAfter = vi.fn(async (callback: () => unknown) => {
+  await callback();
+});
+vi.mock("next/server", () => ({
+  after: (callback: () => unknown) => mockAfter(callback),
+}));
+
+const mockLogEventServer = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/events/log-server", () => ({
+  logEventServer: (...args: unknown[]) => mockLogEventServer(...args),
+}));
+
 const mockReturning = vi.fn().mockResolvedValue([{ id: "test-uuid" }]);
 const mockOnConflictDoUpdate = vi.fn(() => ({ returning: mockReturning }));
 const mockInsertValues = vi.fn(() => ({
@@ -300,6 +312,15 @@ describe("server actions", () => {
         error: "Invalid push endpoint",
       });
     });
+
+    it("succeeds when event-log write fails", async () => {
+      mockLogEventServer.mockRejectedValueOnce(new Error("event log down"));
+
+      const { subscribeUser } = await import("./actions");
+      const result = await subscribeUser(validSubscription);
+
+      expect(result).toEqual({ success: true });
+    });
   });
 
   describe("unsubscribeUser", () => {
@@ -355,6 +376,15 @@ describe("server actions", () => {
         success: false,
         error: "Failed to remove subscription",
       });
+    });
+
+    it("succeeds when event-log write fails", async () => {
+      mockLogEventServer.mockRejectedValueOnce(new Error("event log down"));
+
+      const { unsubscribeUser } = await import("./actions");
+      const result = await unsubscribeUser(validSubscription.endpoint);
+
+      expect(result).toEqual({ success: true });
     });
   });
 

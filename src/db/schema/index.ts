@@ -1,4 +1,5 @@
 // biome-ignore lint/performance/noBarrelFile: schema barrel file is intentional for Drizzle config
+export { eventLog } from "./event-log";
 export { goals } from "./goals";
 export { items, itemTags, itemTricks } from "./items";
 export { performances } from "./performances";

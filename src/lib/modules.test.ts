@@ -17,9 +17,10 @@ describe("modules registry", () => {
     expect(slugs).toContain("train");
     expect(slugs).toContain("plan");
     expect(slugs).toContain("perform");
+    expect(slugs).toContain("activity");
     expect(slugs).toContain("enhance");
     expect(slugs).toContain("admin");
-    expect(slugs).toHaveLength(8);
+    expect(slugs).toHaveLength(9);
   });
 
   it("groups combined equal total module count", () => {

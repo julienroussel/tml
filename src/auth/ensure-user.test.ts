@@ -69,6 +69,17 @@ vi.mock("@/lib/email", () => ({
   sendWelcomeEmail: mockSendWelcomeEmail,
 }));
 
+const mockLogEventServer = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/events/log-server", () => ({
+  logEventServer: (...args: unknown[]) => mockLogEventServer(...args),
+}));
+
+const mockReportEventLogFailure = vi.fn();
+vi.mock("@/lib/events/report-failure", () => ({
+  reportEventLogFailure: (...args: unknown[]) =>
+    mockReportEventLogFailure(...args),
+}));
+
 const mockGetSession = vi.fn();
 vi.mock("@/auth/server", () => ({
   auth: {
@@ -300,7 +311,8 @@ describe("ensureUserExists", () => {
     // Invoke the callback captured by after() directly instead of
     // relying on microtask timing
     expect(mockAfter).toHaveBeenCalled();
-    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    // calls[0] is the auth.signed_up after(); calls[1] is the welcome email
+    const afterCallback = mockAfter.mock.calls[1]![0] as () => Promise<void>;
     await afterCallback();
 
     expect(mockSendWelcomeEmail).toHaveBeenCalledWith({
@@ -332,7 +344,8 @@ describe("ensureUserExists", () => {
     await ensureUserExists();
 
     expect(mockAfter).toHaveBeenCalled();
-    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    // calls[0] is the auth.signed_up after(); calls[1] is the welcome email
+    const afterCallback = mockAfter.mock.calls[1]![0] as () => Promise<void>;
     await afterCallback();
 
     expect(mockSendWelcomeEmail).toHaveBeenCalledWith(
@@ -365,7 +378,8 @@ describe("ensureUserExists", () => {
 
     // Invoke the after() callback to exercise the .catch() error handler
     expect(mockAfter).toHaveBeenCalled();
-    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    // calls[0] is the auth.signed_up after(); calls[1] is the welcome email
+    const afterCallback = mockAfter.mock.calls[1]![0] as () => Promise<void>;
     await afterCallback();
 
     expect(mockSendWelcomeEmail).toHaveBeenCalled();
@@ -562,6 +576,130 @@ describe("ensureUserExists", () => {
     const result = await ensureUserExists();
 
     expect(result).toEqual({ locale: "en", theme: "system" });
+  });
+
+  it("emits an auth.signed_up event for new users via after()", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "0",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    // auth.signed_up is the FIRST after() callback registered (welcome email is calls[1])
+    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    await afterCallback();
+
+    expect(mockLogEventServer).toHaveBeenCalledTimes(1);
+    expect(mockLogEventServer).toHaveBeenCalledWith(expect.anything(), {
+      userId: "user-1",
+      type: "auth.signed_up",
+      entityType: "auth",
+      entityId: "user-1",
+      payload: {},
+    });
+  });
+
+  it("does NOT emit auth.signed_up for returning users", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "1",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    await ensureUserExists();
+
+    expect(mockLogEventServer).not.toHaveBeenCalled();
+  });
+
+  it("does NOT emit auth.signed_up for banned users", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: new Date("2026-03-01T00:00:00Z"),
+        xmax: "0",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      // suppress expected warning
+    });
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toBeNull();
+    expect(mockLogEventServer).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it("still resolves and reports failure when logEventServer rejects", async () => {
+    mockReturning.mockResolvedValue([
+      {
+        id: "user-1",
+        locale: "en",
+        theme: "system",
+        bannedAt: null,
+        xmax: "0",
+      },
+    ]);
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {},
+        user: { id: "user-1", email: "test@example.com", name: "Test User" },
+      },
+    });
+    mockLogEventServer.mockRejectedValueOnce(new Error("event log down"));
+
+    const { ensureUserExists } = await import("@/auth/ensure-user");
+    const result = await ensureUserExists();
+
+    expect(result).toEqual({ locale: "en", theme: "system" });
+
+    // Flush the after() callback to exercise the .catch() handler
+    const afterCallback = mockAfter.mock.calls[0]![0] as () => Promise<void>;
+    await afterCallback();
+
+    expect(mockReportEventLogFailure).toHaveBeenCalledTimes(1);
+    expect(mockReportEventLogFailure).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        userId: "user-1",
+        type: "auth.signed_up",
+      })
+    );
   });
 });
 

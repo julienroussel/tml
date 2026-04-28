@@ -34,6 +34,24 @@ vi.mock("@/lib/analytics", () => ({
   trackEvent: vi.fn(),
 }));
 
+// logEvent runs inside the same writeTransaction as the domain mutation. The
+// existing test assertions count tx.execute calls; mocking logEvent to a
+// tracking spy lets us assert dual-sink invariants per mutation while keeping
+// those counts stable. `safeLogEvent` is the real call site post-refactor —
+// it swallows logEvent failures so the parent mutation still commits, so the
+// mock mirrors that behavior to keep "logEvent throws" tests meaningful.
+const mockLogEvent = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/events/log", () => ({
+  logEvent: (...args: unknown[]) => mockLogEvent(...args),
+  safeLogEvent: async (...args: unknown[]) => {
+    try {
+      await mockLogEvent(...args);
+    } catch {
+      // swallowed — matches real safeLogEvent semantics
+    }
+  },
+}));
+
 // Stable UUID for predictable assertions
 let uuidCounter = 0;
 vi.stubGlobal("crypto", {
@@ -551,6 +569,96 @@ describe("use-trick-mutations", () => {
         )
       ).rejects.toThrow("Cannot mutate tricks without an authenticated user");
     });
+
+    it("emits a trick.created event with name/status/category payload", async () => {
+      const { useTrickMutations } = await getHookExports();
+      const { createTrick } = useTrickMutations();
+
+      await createTrick(
+        {
+          name: "Card Warp",
+          description: "",
+          category: "Card",
+          effectType: "",
+          difficulty: null,
+          status: "learning",
+          duration: null,
+          performanceType: null,
+          angleSensitivity: null,
+          props: "",
+          music: "",
+          languages: [],
+          isCameraFriendly: null,
+          isSilent: null,
+          notes: "",
+          source: "",
+          videoUrl: "",
+        },
+        []
+      );
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      // First arg is the same tx the domain INSERT was called against —
+      // its execute method must be the same mock (verifies atomicity).
+      const txArg = mockLogEvent.mock.calls[0]?.[0] as {
+        execute: typeof mockExecute;
+      };
+      expect(txArg.execute).toBe(mockExecute);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "trick.created",
+          entityType: "trick",
+          payload: expect.objectContaining({
+            name: "Card Warp",
+            status: "learning",
+            category: "Card",
+          }),
+        })
+      );
+    });
+
+    it("createTrick succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useTrickMutations } = await getHookExports();
+      const { createTrick } = useTrickMutations();
+
+      const id = await createTrick(
+        {
+          name: "Trick",
+          description: "",
+          category: "",
+          effectType: "",
+          difficulty: null,
+          status: "new",
+          duration: null,
+          performanceType: null,
+          angleSensitivity: null,
+          props: "",
+          music: "",
+          languages: [],
+          isCameraFriendly: null,
+          isSilent: null,
+          notes: "",
+          source: "",
+          videoUrl: "",
+        },
+        []
+      );
+
+      expect(id).toBe("uuid-1");
+      // The trick INSERT must still have run.
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT INTO tricks"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("updateTrick", () => {
@@ -818,11 +926,101 @@ describe("use-trick-mutations", () => {
         )
       ).rejects.toThrow("Cannot mutate tricks without an authenticated user");
     });
+
+    it("emits a trick.updated event with the new name", async () => {
+      const { useTrickMutations } = await getHookExports();
+      const { updateTrick } = useTrickMutations();
+
+      await updateTrick(
+        trickId("trick-1"),
+        {
+          name: "Renamed Trick",
+          description: "",
+          category: "",
+          effectType: "",
+          difficulty: null,
+          status: "new",
+          duration: null,
+          performanceType: null,
+          angleSensitivity: null,
+          props: "",
+          music: "",
+          languages: [],
+          isCameraFriendly: null,
+          isSilent: null,
+          notes: "",
+          source: "",
+          videoUrl: "",
+        },
+        [],
+        []
+      );
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "trick.updated",
+          entityType: "trick",
+          payload: expect.objectContaining({ name: "Renamed Trick" }),
+        })
+      );
+    });
+
+    it("updateTrick succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useTrickMutations } = await getHookExports();
+      const { updateTrick } = useTrickMutations();
+
+      await expect(
+        updateTrick(
+          trickId("trick-1"),
+          {
+            name: "Trick",
+            description: "",
+            category: "",
+            effectType: "",
+            difficulty: null,
+            status: "new",
+            duration: null,
+            performanceType: null,
+            angleSensitivity: null,
+            props: "",
+            music: "",
+            languages: [],
+            isCameraFriendly: null,
+            isSilent: null,
+            notes: "",
+            source: "",
+            videoUrl: "",
+          },
+          [],
+          []
+        )
+      ).resolves.toBeUndefined();
+
+      // The trick UPDATE must still have run.
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE tricks SET"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("deleteTrick", () => {
     beforeEach(() => {
-      mockExecute.mockResolvedValue({ rowsAffected: 1 });
+      // Default: SELECT returns a name, UPDATEs return rowsAffected: 1.
+      // Tests that need different behaviour override per-call.
+      mockExecute.mockResolvedValue({
+        rowsAffected: 1,
+        rows: { item: () => ({ name: "Snapshot Name" }), length: 1 },
+      });
     });
 
     it("executes soft-delete SQL", async () => {
@@ -831,30 +1029,34 @@ describe("use-trick-mutations", () => {
 
       await deleteTrick(trickId("trick-1"));
 
-      // 1 trick soft-delete + 1 trick_tags cascade + 1 item_tricks cascade
-      expect(mockExecute).toHaveBeenCalledTimes(3);
+      // 1 SELECT name snapshot + 1 trick soft-delete + 1 trick_tags cascade
+      // + 1 item_tricks cascade
+      expect(mockExecute).toHaveBeenCalledTimes(4);
 
-      const trickSql = mockExecute.mock.calls[0]?.[0] as string;
+      const selectSql = mockExecute.mock.calls[0]?.[0] as string;
+      expect(selectSql).toContain("SELECT name FROM tricks");
+
+      const trickSql = mockExecute.mock.calls[1]?.[0] as string;
       expect(trickSql).toContain("UPDATE tricks SET deleted_at = ?");
       expect(trickSql).toContain("WHERE id = ?");
       expect(trickSql).toContain("user_id = ?");
 
-      const trickParams = mockExecute.mock.calls[0]?.[1] as unknown[];
+      const trickParams = mockExecute.mock.calls[1]?.[1] as unknown[];
       expect(trickParams[0]).toBe("2025-01-15T12:00:00.000Z"); // deleted_at
       expect(trickParams[1]).toBe("2025-01-15T12:00:00.000Z"); // updated_at
       expect(trickParams[2]).toBe("trick-1"); // id
       expect(trickParams[3]).toBe("user-123"); // user_id
 
-      const tagsSql = mockExecute.mock.calls[1]?.[0] as string;
+      const tagsSql = mockExecute.mock.calls[2]?.[0] as string;
       expect(tagsSql).toContain("UPDATE trick_tags SET deleted_at = ?");
       expect(tagsSql).toContain("WHERE trick_id = ?");
       expect(tagsSql).toContain("user_id = ?");
 
-      const tagsParams = mockExecute.mock.calls[1]?.[1] as unknown[];
+      const tagsParams = mockExecute.mock.calls[2]?.[1] as unknown[];
       expect(tagsParams).toContain("trick-1"); // trick_id
       expect(tagsParams).toContain("user-123"); // user_id
 
-      const itemsSql = mockExecute.mock.calls[2]?.[0] as string;
+      const itemsSql = mockExecute.mock.calls[3]?.[0] as string;
       expect(itemsSql).toContain("UPDATE item_tricks SET deleted_at = ?");
       expect(itemsSql).toContain("WHERE trick_id = ?");
       expect(itemsSql).toContain("user_id = ?");
@@ -893,6 +1095,68 @@ describe("use-trick-mutations", () => {
       await expect(deleteTrick(trickId("trick-1"))).rejects.toThrow(
         "Cannot mutate tricks without an authenticated user"
       );
+    });
+
+    it("emits a trick.deleted event with the snapshotted name", async () => {
+      const { useTrickMutations } = await getHookExports();
+      const { deleteTrick } = useTrickMutations();
+
+      await deleteTrick(trickId("trick-1"));
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "trick.deleted",
+          entityType: "trick",
+          payload: expect.objectContaining({ name: "Snapshot Name" }),
+        })
+      );
+    });
+
+    it("falls back to empty name when the trick row is missing", async () => {
+      mockExecute.mockReset();
+      mockExecute
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          rows: { item: () => undefined, length: 0 },
+        }) // SELECT — no row
+        .mockResolvedValueOnce({ rowsAffected: 1 }) // UPDATE tricks
+        .mockResolvedValueOnce({ rowsAffected: 0 }) // UPDATE trick_tags
+        .mockResolvedValueOnce({ rowsAffected: 0 }); // UPDATE item_tricks
+
+      const { useTrickMutations } = await getHookExports();
+      const { deleteTrick } = useTrickMutations();
+
+      await deleteTrick(trickId("trick-1"));
+
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "trick.deleted",
+          payload: expect.objectContaining({ name: "" }),
+        })
+      );
+    });
+
+    it("deleteTrick succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useTrickMutations } = await getHookExports();
+      const { deleteTrick } = useTrickMutations();
+
+      await expect(deleteTrick(trickId("trick-1"))).resolves.toBeUndefined();
+
+      // The soft-delete UPDATE must still have run.
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE tricks SET deleted_at"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 });

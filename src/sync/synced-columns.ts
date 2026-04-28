@@ -5,6 +5,7 @@
 // user_preferences, push_subscriptions) are excluded — the DELETE handler
 // relies on every synced table having a deleted_at column for soft-delete.
 export const SYNCED_TABLE_NAMES = [
+  "event_log",
   "goals",
   "item_tags",
   "item_tricks",
@@ -26,6 +27,18 @@ export const SYNCED_TABLES: ReadonlySet<SyncedTableName> = new Set(
 );
 
 export const SYNCED_COLUMNS = {
+  event_log: new Set([
+    "id",
+    "user_id",
+    "event_type",
+    "entity_type",
+    "entity_id",
+    "payload",
+    "source",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+  ]),
   goals: new Set([
     "id",
     "user_id",

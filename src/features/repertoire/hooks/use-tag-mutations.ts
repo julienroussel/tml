@@ -2,8 +2,9 @@
 
 import { usePowerSync } from "@powersync/react";
 import { authClient } from "@/auth/client";
-import type { TagId } from "@/db/types";
+import { asTagId, asUserId, type TagId, type UserId } from "@/db/types";
 import { trackEvent } from "@/lib/analytics";
+import { safeLogEvent } from "@/lib/events/log";
 
 interface UseTagMutationsReturn {
   createTag: (name: string, color?: string | null) => Promise<TagId>;
@@ -20,12 +21,12 @@ export function useTagMutations(): UseTagMutationsReturn {
   const db = usePowerSync();
   const { data: session } = authClient.useSession();
 
-  function getUserId(): string {
+  function getUserId(): UserId {
     const userId = session?.user?.id;
     if (!userId) {
       throw new Error("Cannot mutate tags without an authenticated user");
     }
-    return userId;
+    return asUserId(userId);
   }
 
   async function createTag(
@@ -33,7 +34,7 @@ export function useTagMutations(): UseTagMutationsReturn {
     color?: string | null
   ): Promise<TagId> {
     const userId = getUserId();
-    const id = crypto.randomUUID() as TagId;
+    const id = asTagId(crypto.randomUUID());
     const now = new Date().toISOString();
     const normalizedName = name.trim().toLowerCase();
 
@@ -42,10 +43,20 @@ export function useTagMutations(): UseTagMutationsReturn {
     }
 
     try {
-      await db.execute(
-        "INSERT INTO tags (id, user_id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        [id, userId, normalizedName, color ?? null, now, now]
-      );
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(
+          "INSERT INTO tags (id, user_id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+          [id, userId, normalizedName, color ?? null, now, now]
+        );
+        await safeLogEvent(tx, {
+          userId,
+          type: "tag.created",
+          entityType: "tag",
+          entityId: id,
+          payload: { name: normalizedName },
+          now,
+        });
+      });
 
       trackEvent("tag_created");
 

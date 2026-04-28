@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   Dumbbell,
+  HistoryIcon,
   ListChecks,
   Package,
   Settings,
@@ -64,6 +65,12 @@ const APP_MODULES = [
     icon: Star,
     enabled: false,
     group: "lab",
+  },
+  {
+    slug: "activity",
+    icon: HistoryIcon,
+    enabled: true,
+    group: "insights",
   },
   {
     slug: "enhance",

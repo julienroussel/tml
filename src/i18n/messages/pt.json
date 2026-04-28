@@ -37,7 +37,8 @@
     "admin": "Admin",
     "library": "Biblioteca",
     "theLab": "O Laboratório",
-    "insights": "Análises"
+    "insights": "Análises",
+    "activity": "Atividade"
   },
   "repertoire": {
     "title": "Repertório",
@@ -545,5 +546,41 @@
     "tryAgain": "Tentar novamente",
     "authError": "Erro de autenticação",
     "authErrorDesc": "Algo correu mal durante a autenticação."
+  },
+  "activity": {
+    "title": "Atividade",
+    "description": "Um histórico de tudo o que fez no The Magic Lab.",
+    "timelineLabel": "Cronologia de atividade",
+    "emptyTitle": "Ainda sem atividade",
+    "emptyDescription": "Comece por adicionar truques, etiquetas ou objetos — as suas ações aparecerão aqui.",
+    "recentTitle": "Atividade recente",
+    "viewAll": "Ver tudo",
+    "loadError": "Não foi possível carregar a atividade",
+    "filters": {
+      "label": "Mostrar",
+      "placeholder": "Toda a atividade",
+      "entity": {
+        "all": "Toda a atividade",
+        "trick": "Truques",
+        "tag": "Etiquetas",
+        "item": "Objetos",
+        "settings": "Definições"
+      }
+    },
+    "events": {
+      "trick_created": "Truque {name} criado",
+      "trick_updated": "Truque {name} atualizado",
+      "trick_deleted": "Truque {name} eliminado",
+      "tag_created": "Etiqueta {name} criada",
+      "item_created": "Objeto {name} adicionado à sua coleção",
+      "item_updated": "Objeto {name} atualizado",
+      "item_deleted": "Objeto {name} eliminado",
+      "theme_changed": "Tema alterado para {theme, select, dark {Escuro} light {Claro} system {Sistema} other {{theme}}}",
+      "locale_changed": "Idioma alterado para {locale, select, en {English} fr {Français} es {Español} pt {Português} it {Italiano} de {Deutsch} nl {Nederlands} other {{locale}}}",
+      "notifications_subscribed": "Notificações ativadas",
+      "notifications_unsubscribed": "Notificações desativadas",
+      "signed_up": "Juntou-se ao The Magic Lab",
+      "unknown": "Atividade registada"
+    }
   }
 }

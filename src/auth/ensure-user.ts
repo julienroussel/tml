@@ -5,9 +5,12 @@ import { after } from "next/server";
 import { getDb } from "@/db";
 import { userPreferences } from "@/db/schema/user-preferences";
 import { users } from "@/db/schema/users";
+import { asUserId } from "@/db/types";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { sendWelcomeEmail } from "@/lib/email";
+import { logEventServer } from "@/lib/events/log-server";
+import { reportEventLogFailure } from "@/lib/events/report-failure";
 import type { Theme } from "@/lib/theme";
 import { isTheme } from "@/lib/theme";
 import { isUserBanned } from "./ban-check";
@@ -163,6 +166,22 @@ export async function ensureUserExists(
   const isNewUser = row.xmax === "0";
 
   if (isNewUser) {
+    // auth.signed_up fires once per user. Emit via after() so the unauthenticated
+    // sign-up path is not blocked by an extra Neon round-trip — failures route
+    // through reportEventLogFailure for observability.
+    const brandedUserId = asUserId(id);
+    after(() =>
+      logEventServer(getDb(), {
+        userId: brandedUserId,
+        type: "auth.signed_up",
+        entityType: "auth",
+        entityId: brandedUserId,
+        payload: {},
+      }).catch((error: unknown) =>
+        reportEventLogFailure(error, { userId: id, type: "auth.signed_up" })
+      )
+    );
+
     after(() =>
       sendWelcomeEmail({
         to: email,

@@ -9,6 +9,7 @@ import { RepertoireCard } from "@/components/repertoire-card";
 import { getDb } from "@/db";
 import { items } from "@/db/schema/items";
 import { tricks } from "@/db/schema/tricks";
+import { RecentActivityCard } from "@/features/activity/components/recent-activity-card";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -52,6 +53,7 @@ export default async function DashboardPage(): Promise<ReactElement> {
       </div>
       <RepertoireCard trickCount={trickCount} />
       <CollectionCard itemCount={itemCount} />
+      <RecentActivityCard />
       <DashboardGrid />
     </div>
   );

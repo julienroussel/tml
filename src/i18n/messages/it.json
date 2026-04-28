@@ -37,7 +37,8 @@
     "admin": "Admin",
     "library": "Libreria",
     "theLab": "Il Laboratorio",
-    "insights": "Analisi"
+    "insights": "Analisi",
+    "activity": "Attività"
   },
   "repertoire": {
     "title": "Repertorio",
@@ -545,5 +546,41 @@
     "tryAgain": "Riprova",
     "authError": "Errore di autenticazione",
     "authErrorDesc": "Si è verificato un problema durante l'autenticazione."
+  },
+  "activity": {
+    "title": "Attività",
+    "description": "Una cronologia di tutto ciò che hai fatto in The Magic Lab.",
+    "timelineLabel": "Cronologia attività",
+    "emptyTitle": "Ancora nessuna attività",
+    "emptyDescription": "Inizia ad aggiungere trucchi, tag o oggetti — le tue azioni appariranno qui.",
+    "recentTitle": "Attività recente",
+    "viewAll": "Vedi tutto",
+    "loadError": "Impossibile caricare l'attività",
+    "filters": {
+      "label": "Mostra",
+      "placeholder": "Tutta l'attività",
+      "entity": {
+        "all": "Tutta l'attività",
+        "trick": "Trucchi",
+        "tag": "Tag",
+        "item": "Oggetti",
+        "settings": "Impostazioni"
+      }
+    },
+    "events": {
+      "trick_created": "Trucco {name} creato",
+      "trick_updated": "Trucco {name} aggiornato",
+      "trick_deleted": "Trucco {name} eliminato",
+      "tag_created": "Tag {name} creato",
+      "item_created": "Oggetto {name} aggiunto alla tua collezione",
+      "item_updated": "Oggetto {name} aggiornato",
+      "item_deleted": "Oggetto {name} eliminato",
+      "theme_changed": "Tema impostato su {theme, select, dark {Scuro} light {Chiaro} system {Sistema} other {{theme}}}",
+      "locale_changed": "Lingua impostata su {locale, select, en {English} fr {Français} es {Español} pt {Português} it {Italiano} de {Deutsch} nl {Nederlands} other {{locale}}}",
+      "notifications_subscribed": "Notifiche attivate",
+      "notifications_unsubscribed": "Notifiche disattivate",
+      "signed_up": "Iscritto a The Magic Lab",
+      "unknown": "Attività registrata"
+    }
   }
 }

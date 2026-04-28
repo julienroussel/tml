@@ -97,6 +97,35 @@ function buildOperationQuery(
     throw new Error(`Disallowed table: ${table}`);
   }
 
+  // event_log is an append-only audit trail from authenticated clients.
+  // Hard-delete is forbidden (the DB-layer GRANT also withholds DELETE);
+  // soft-delete via PATCH on deleted_at/updated_at is the only mutation path
+  // beyond the initial INSERT. GDPR account-removal hard-delete runs as the
+  // admin role via the users.id ON DELETE CASCADE FK, not via this endpoint.
+  if (table === "event_log") {
+    if (op === OpType.DELETE) {
+      throw new Error(
+        "event_log is append-only: hard-delete is not permitted from clients"
+      );
+    }
+    if (op === OpType.PATCH) {
+      const patchData = isRecord(opData) ? opData : {};
+      const mutatedColumns = Object.keys(patchData);
+      // `source` is intentionally omitted from this allowlist — it is the
+      // trust-label distinguishing client-emitted from server-emitted events.
+      // PUT-side `source = "client"` force at line ~139 stamps it on insert;
+      // any client PATCH attempt to mutate it falls through to the disallowed
+      // branch below and 422s.
+      const allowed = new Set(["deleted_at", "updated_at"]);
+      const disallowed = mutatedColumns.filter((c) => !allowed.has(c));
+      if (disallowed.length > 0) {
+        throw new Error(
+          `event_log PATCH may only mutate deleted_at/updated_at; got: ${disallowed.join(", ")}`
+        );
+      }
+    }
+  }
+
   // DELETE operations don't use record data — they only set deleted_at/updated_at
   if (op === OpType.DELETE) {
     return buildQuery(op, table, id, {}, userId);
@@ -107,6 +136,13 @@ function buildOperationQuery(
   // Force the authenticated user_id — never trust the client value
   if (hasUserIdColumn(table)) {
     record.user_id = userId;
+  }
+
+  // Force event_log.source = 'client' — a client-uploaded row is by definition
+  // client-sourced; only server-side emitters (logEventServer) write 'server'.
+  // Co-located with the user_id force so the trust-boundary rule is in one spot.
+  if (table === "event_log") {
+    record.source = "client";
   }
 
   return buildQuery(op, table, id, record, userId);

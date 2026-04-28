@@ -37,7 +37,8 @@
     "admin": "Admin",
     "library": "Bibliothèque",
     "theLab": "Le Labo",
-    "insights": "Analyses"
+    "insights": "Analyses",
+    "activity": "Activité"
   },
   "repertoire": {
     "title": "Répertoire",
@@ -200,7 +201,7 @@
     "features": "Tout ce qu'il vous faut pour progresser",
     "openSourceTitle": "Open source, magie ouverte",
     "openSourceDesc": "The Magic Lab est gratuit et open source sous licence GPL-3.0. Vos données restent les vôtres. Contribuez, forkez ou auto-hébergez — c'est votre choix.",
-    "ctaTitle": "Prêt à sublimer votre magie\u00a0?",
+    "ctaTitle": "Prêt à sublimer votre magie ?",
     "ctaDesc": "Organisez votre répertoire, planifiez vos programmes et suivez vos progrès — le tout gratuitement.",
     "viewOnGitHub": "Voir sur GitHub"
   },
@@ -470,7 +471,7 @@
     "comingSoon": "Bientôt disponible",
     "openSourceTitle": "Open source, magie ouverte",
     "openSourceDesc": "The Magic Lab est gratuit et open source sous licence GPL-3.0. Vos données restent les vôtres. Contribuez, forkez ou auto-hébergez — c'est votre choix.",
-    "ctaTitle": "Prêt à sublimer votre magie\u00a0?",
+    "ctaTitle": "Prêt à sublimer votre magie ?",
     "ctaDesc": "Organisez votre répertoire, planifiez vos programmes et suivez vos progrès — le tout gratuitement."
   },
   "footer": {
@@ -515,9 +516,9 @@
   "email": {
     "welcomeSubject": "Bienvenue sur The Magic Lab",
     "welcomePreview": "Votre espace de travail est prêt — commencez à organiser votre magie.",
-    "welcomeGreeting": "Bonjour {name}, bienvenue sur The Magic Lab\u00a0!",
-    "welcomeGreetingAnonymous": "Bonjour, bienvenue sur The Magic Lab\u00a0!",
-    "welcomeBody": "Votre espace de travail est prêt. Voici ce que vous pouvez faire\u00a0:",
+    "welcomeGreeting": "Bonjour {name}, bienvenue sur The Magic Lab !",
+    "welcomeGreetingAnonymous": "Bonjour, bienvenue sur The Magic Lab !",
+    "welcomeBody": "Votre espace de travail est prêt. Voici ce que vous pouvez faire :",
     "welcomeFeatureImprove": "Enregistrez vos séances de pratique et suivez vos progrès",
     "welcomeFeaturePlan": "Créez et organisez vos programmes",
     "welcomeFeaturePerform": "Enregistrez et analysez vos performances",
@@ -545,5 +546,41 @@
     "tryAgain": "Réessayer",
     "authError": "Erreur d'authentification",
     "authErrorDesc": "Un problème est survenu lors de l'authentification."
+  },
+  "activity": {
+    "title": "Activité",
+    "description": "L'historique de tout ce que vous avez fait dans The Magic Lab.",
+    "timelineLabel": "Chronologie d'activité",
+    "emptyTitle": "Pas encore d'activité",
+    "emptyDescription": "Ajoutez des tours, des tags ou des objets — vos actions s'afficheront ici.",
+    "recentTitle": "Activité récente",
+    "viewAll": "Tout voir",
+    "loadError": "Impossible de charger l'activité",
+    "filters": {
+      "label": "Afficher",
+      "placeholder": "Toute l'activité",
+      "entity": {
+        "all": "Toute l'activité",
+        "trick": "Tours",
+        "tag": "Tags",
+        "item": "Objets",
+        "settings": "Paramètres"
+      }
+    },
+    "events": {
+      "trick_created": "Tour {name} créé",
+      "trick_updated": "Tour {name} mis à jour",
+      "trick_deleted": "Tour {name} supprimé",
+      "tag_created": "Tag {name} créé",
+      "item_created": "Objet {name} ajouté à votre collection",
+      "item_updated": "Objet {name} mis à jour",
+      "item_deleted": "Objet {name} supprimé",
+      "theme_changed": "Thème modifié : {theme, select, dark {Sombre} light {Clair} system {Système} other {{theme}}}",
+      "locale_changed": "Langue modifiée : {locale, select, en {English} fr {Français} es {Español} pt {Português} it {Italiano} de {Deutsch} nl {Nederlands} other {{locale}}}",
+      "notifications_subscribed": "Notifications activées",
+      "notifications_unsubscribed": "Notifications désactivées",
+      "signed_up": "Vous avez rejoint The Magic Lab",
+      "unknown": "Activité enregistrée"
+    }
   }
 }

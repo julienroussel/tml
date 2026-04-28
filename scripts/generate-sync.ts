@@ -33,8 +33,12 @@ const COMMENT_NUMERIC = [
   "// Stored as text to preserve exact decimal precision (server uses numeric(10,2)).",
   "// Client code must parse this value as a number when displaying.",
 ];
+const COMMENT_JSON = [
+  "// PostgreSQL jsonb is serialized as a JSON string by PowerSync.",
+  "// Client code must JSON.parse() this value to get the object.",
+];
 
-type NeedsComment = "boolean" | "array" | "numeric" | null;
+type NeedsComment = "boolean" | "array" | "numeric" | "json" | null;
 
 export type SyncedColumnInfo = {
   name: string;
@@ -67,6 +71,9 @@ export function mapColumnType(columnType: string): {
       return { psType: "text", needsComment: "array" };
     case "PgNumeric":
       return { psType: "text", needsComment: "numeric" };
+    case "PgJsonb":
+    case "PgJson":
+      return { psType: "text", needsComment: "json" };
     case "PgInteger":
     case "PgSmallInt":
     case "PgSerial":
@@ -168,6 +175,9 @@ function commentLinesFor(needsComment: NeedsComment): readonly string[] {
   }
   if (needsComment === "numeric") {
     return COMMENT_NUMERIC;
+  }
+  if (needsComment === "json") {
+    return COMMENT_JSON;
   }
   return [];
 }

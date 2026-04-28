@@ -37,7 +37,8 @@
     "admin": "Admin",
     "library": "Bibliothek",
     "theLab": "Das Labor",
-    "insights": "Einblicke"
+    "insights": "Einblicke",
+    "activity": "Aktivität"
   },
   "repertoire": {
     "title": "Repertoire",
@@ -446,7 +447,7 @@
     "messageAriaLabel": "Benachrichtigungstext",
     "disable": "Benachrichtigungen deaktivieren",
     "enable": "Benachrichtigungen aktivieren",
-    "iosInstallPrompt": "Um diese App zu installieren, tippe auf die Teilen-Schaltfläche und dann auf \u201EZum Home-Bildschirm\u201C.",
+    "iosInstallPrompt": "Um diese App zu installieren, tippe auf die Teilen-Schaltfläche und dann auf „Zum Home-Bildschirm“.",
     "installApp": "App installieren",
     "installPrompt": "Installiere The Magic Lab für das beste Offline-Erlebnis."
   },
@@ -545,5 +546,41 @@
     "tryAgain": "Erneut versuchen",
     "authError": "Authentifizierungsfehler",
     "authErrorDesc": "Bei der Authentifizierung ist ein Fehler aufgetreten."
+  },
+  "activity": {
+    "title": "Aktivität",
+    "description": "Der Verlauf aller deiner Aktivitäten in The Magic Lab.",
+    "timelineLabel": "Aktivitätsverlauf",
+    "emptyTitle": "Noch keine Aktivität",
+    "emptyDescription": "Füge Tricks, Tags oder Objekte hinzu — deine Aktivitäten erscheinen hier.",
+    "recentTitle": "Neueste Aktivitäten",
+    "viewAll": "Alle anzeigen",
+    "loadError": "Aktivität konnte nicht geladen werden",
+    "filters": {
+      "label": "Anzeigen",
+      "placeholder": "Alle Aktivitäten",
+      "entity": {
+        "all": "Alle Aktivitäten",
+        "trick": "Tricks",
+        "tag": "Tags",
+        "item": "Objekte",
+        "settings": "Einstellungen"
+      }
+    },
+    "events": {
+      "trick_created": "Trick {name} erstellt",
+      "trick_updated": "Trick {name} aktualisiert",
+      "trick_deleted": "Trick {name} gelöscht",
+      "tag_created": "Tag {name} erstellt",
+      "item_created": "Objekt {name} zur Sammlung hinzugefügt",
+      "item_updated": "Objekt {name} aktualisiert",
+      "item_deleted": "Objekt {name} gelöscht",
+      "theme_changed": "Design auf {theme, select, dark {Dunkel} light {Hell} system {System} other {{theme}}} umgestellt",
+      "locale_changed": "Sprache auf {locale, select, en {English} fr {Français} es {Español} pt {Português} it {Italiano} de {Deutsch} nl {Nederlands} other {{locale}}} umgestellt",
+      "notifications_subscribed": "Benachrichtigungen aktiviert",
+      "notifications_unsubscribed": "Benachrichtigungen deaktiviert",
+      "signed_up": "The Magic Lab beigetreten",
+      "unknown": "Aktivität protokolliert"
+    }
   }
 }

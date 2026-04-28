@@ -37,7 +37,8 @@
     "admin": "Admin",
     "library": "Bibliotheek",
     "theLab": "Het Lab",
-    "insights": "Inzichten"
+    "insights": "Inzichten",
+    "activity": "Activiteit"
   },
   "repertoire": {
     "title": "Repertoire",
@@ -545,5 +546,41 @@
     "tryAgain": "Opnieuw proberen",
     "authError": "Authenticatiefout",
     "authErrorDesc": "Er is iets misgegaan tijdens de authenticatie."
+  },
+  "activity": {
+    "title": "Activiteit",
+    "description": "Een tijdlijn van alles wat je hebt gedaan in The Magic Lab.",
+    "timelineLabel": "Activiteitentijdlijn",
+    "emptyTitle": "Nog geen activiteit",
+    "emptyDescription": "Voeg trucs, labels of items toe — je acties verschijnen hier.",
+    "recentTitle": "Recente activiteit",
+    "viewAll": "Alles bekijken",
+    "loadError": "Activiteit kon niet worden geladen",
+    "filters": {
+      "label": "Filteren",
+      "placeholder": "Alle activiteit",
+      "entity": {
+        "all": "Alle activiteit",
+        "trick": "Trucs",
+        "tag": "Labels",
+        "item": "Items",
+        "settings": "Instellingen"
+      }
+    },
+    "events": {
+      "trick_created": "Truc {name} aangemaakt",
+      "trick_updated": "Truc {name} bijgewerkt",
+      "trick_deleted": "Truc {name} verwijderd",
+      "tag_created": "Label {name} aangemaakt",
+      "item_created": "Item {name} toegevoegd aan je collectie",
+      "item_updated": "Item {name} bijgewerkt",
+      "item_deleted": "Item {name} verwijderd",
+      "theme_changed": "Thema ingesteld op {theme, select, dark {Donker} light {Licht} system {Systeem} other {{theme}}}",
+      "locale_changed": "Taal ingesteld op {locale, select, en {English} fr {Français} es {Español} pt {Português} it {Italiano} de {Deutsch} nl {Nederlands} other {{locale}}}",
+      "notifications_subscribed": "Meldingen ingeschakeld",
+      "notifications_unsubscribed": "Meldingen uitgeschakeld",
+      "signed_up": "Lid geworden van The Magic Lab",
+      "unknown": "Onbekende activiteit"
+    }
   }
 }
