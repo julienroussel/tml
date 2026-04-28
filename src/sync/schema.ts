@@ -3,6 +3,20 @@
 
 import { column, Schema, Table } from "@powersync/web";
 
+const event_log = new Table({
+  user_id: column.text,
+  event_type: column.text,
+  entity_type: column.text,
+  entity_id: column.text,
+  // PostgreSQL jsonb is serialized as a JSON string by PowerSync.
+  // Client code must JSON.parse() this value to get the object.
+  payload: column.text,
+  source: column.text,
+  created_at: column.text,
+  updated_at: column.text,
+  deleted_at: column.text,
+});
+
 const goals = new Table({
   user_id: column.text,
   title: column.text,
@@ -177,6 +191,7 @@ const tricks = new Table({
 // Server-only tables (users, user_preferences, push_subscriptions) are
 // intentionally excluded — managed server-side and never sync to the client.
 export const appSchema = new Schema({
+  event_log,
   goals,
   item_tags,
   item_tricks,

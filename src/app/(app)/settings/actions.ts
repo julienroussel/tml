@@ -3,13 +3,17 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { isUserBanned } from "@/auth/ban-check";
 import { auth } from "@/auth/server";
 import { USER_SYNCED_COOKIE } from "@/auth/sync-cookie";
 import { getDb } from "@/db";
 import { users } from "@/db/schema/users";
+import { asUserId } from "@/db/types";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale, isLocale } from "@/i18n/config";
+import { logEventServer } from "@/lib/events/log-server";
+import { reportEventLogFailure } from "@/lib/events/report-failure";
 import type { Theme } from "@/lib/theme";
 import { isTheme } from "@/lib/theme";
 
@@ -47,6 +51,22 @@ export async function updateLocale(locale: string): Promise<ActionResult> {
     if (rows.length === 0) {
       return { success: false, error: "User not found" };
     }
+
+    const userId = asUserId(session.user.id);
+    after(() =>
+      logEventServer(db, {
+        userId,
+        type: "settings.locale_changed",
+        entityType: "settings",
+        entityId: userId,
+        payload: { locale },
+      }).catch((error: unknown) =>
+        reportEventLogFailure(error, {
+          userId: session.user.id,
+          type: "settings.locale_changed",
+        })
+      )
+    );
 
     // Invalidate the user-synced cache so the next page load re-reads from DB
     (await cookies()).delete(USER_SYNCED_COOKIE);
@@ -90,6 +110,24 @@ export async function updateTheme(theme: string): Promise<ActionResult> {
 
     if (rows.length === 0) {
       return { success: false, error: "User not found" };
+    }
+
+    if (theme === "dark" || theme === "light") {
+      const userId = asUserId(session.user.id);
+      after(() =>
+        logEventServer(db, {
+          userId,
+          type: "settings.theme_changed",
+          entityType: "settings",
+          entityId: userId,
+          payload: { theme },
+        }).catch((error: unknown) =>
+          reportEventLogFailure(error, {
+            userId: session.user.id,
+            type: "settings.theme_changed",
+          })
+        )
+      );
     }
 
     // Invalidate the user-synced cache so the next page load re-reads from DB

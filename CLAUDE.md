@@ -106,10 +106,18 @@ Pinned versions in `package.json`. Opinionated choices that aren't obvious from 
 `src/lib/modules.ts` — 4 groups (`MODULE_GROUPS`):
 - **Library**: Repertoire (enabled), Collection (slug `collect`, enabled)
 - **Lab**: Improve, Train, Plan, Perform (all disabled)
-- **Insights**: Enhance (disabled)
+- **Insights**: Activity (enabled), Enhance (disabled)
 - **Admin**: Admin (disabled)
 
 Use `getModulesByGroup(group)`.
+
+### Event log
+
+User-facing activity history + canonical product analytics. Table `event_log`, synced per-user via PowerSync (13 synced tables total). Renders at `/activity` and via the `RecentActivityCard` on `/dashboard`.
+
+**Dual-sink emission rule.** Domain mutations emit to two sinks: `trackEvent()` (`src/lib/analytics.ts`) for funnel dashboards in Vercel, and `logEvent()` / `logEventServer()` (`src/lib/events/`) for the canonical per-user history. Both calls live in the same mutation hook / server action, and **both must be added together** for any new domain mutation. The `event_log` table is the source of truth — Vercel Analytics is a convenience layer.
+
+Client mutations always wrap the event-log write in `safeLogEvent()` (`src/lib/events/log.ts`), which calls `logEvent` inside the surrounding PowerSync `db.writeTransaction(...)` and routes any failure through `reportEventLogFailure`. The event row is **co-located** with the action — a successful event rides the same sync queue and replays offline — but the dual sink is **best-effort on the event side**: an event-log CHECK violation, schema mismatch, or downstream outage must never roll back the primary mutation. The primary table is the source of truth; the event log is the canonical activity history but not load-bearing for correctness. `logEventServer` writes directly to Neon from server actions, route handlers, and `auth/ensure-user.ts` (typically via `after()` so it doesn't block the response). Event taxonomy lives in `src/lib/events/types.ts`. See `docs/features/activity.md` for the full reference.
 
 ### Key Directories
 
@@ -124,6 +132,12 @@ Use `getModulesByGroup(group)`.
 
 - **Prefer Vercel-native features** over third-party when available on the current plan (Vercel WAF rate limiting over Upstash, Vercel KV over external Redis, Vercel Cron over external schedulers). Justify any third-party choice by why Vercel's offering is insufficient.
 - **Environment detection** → `VERCEL_ENV` (not `NODE_ENV`). `NODE_ENV` is `"production"` in both prod and preview deployments.
+
+---
+
+## Plan Mode
+
+- **Default plan-mode exit mode is `acceptEdits`, NOT `bypassPermissions`.** When invoking `ExitPlanMode` in this repo, pass `mode: "acceptEdits"` so file edits auto-approve under plan approval but Bash and MCP-tool calls still respect `permissions.ask` in `.claude/settings.json`. This is load-bearing — the `ask` list (migrations, destructive Neon ops) is the second line of defense after the user's plan review, and `bypassPermissions` would silently skip it. Reserve `bypassPermissions` only for plans the user has explicitly tagged "no further prompts" within the same turn — never as a silent default. Why: a prior PR shipped an `event_log` migration via plan-mode bypass and applied it to dev/julien without per-command consent; the recovery required `mcp__neon__reset_from_parent`. The `ask` list cannot defend against `bypassPermissions`; this rule closes the loophole.
 
 ---
 

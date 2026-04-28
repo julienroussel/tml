@@ -1,4 +1,21 @@
 {
+  "permissions": {
+    "ask": [
+      "Bash(pnpm db:migrate *)",
+      "Bash(pnpm db:generate *)",
+      "Bash(npx drizzle-kit migrate *)",
+      "Bash(npx drizzle-kit push *)",
+      "Bash(pnpm exec drizzle-kit migrate *)",
+      "Bash(pnpm exec drizzle-kit push *)",
+      "mcp__neon__run_sql",
+      "mcp__neon__run_sql_transaction",
+      "mcp__neon__reset_from_parent",
+      "mcp__neon__delete_branch",
+      "mcp__neon__delete_project",
+      "mcp__neon__prepare_database_migration",
+      "mcp__neon__complete_database_migration"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

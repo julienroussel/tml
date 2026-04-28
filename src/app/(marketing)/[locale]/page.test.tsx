@@ -40,14 +40,14 @@ describe("Home (marketing landing page)", () => {
     expect(ctas.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders feature section with all 7 non-admin modules", async () => {
+  it("renders feature section with all 8 non-admin modules", async () => {
     render(await Home(defaultParams));
     const featureSection = document.getElementById("features");
     expect(featureSection).toBeInTheDocument();
     // Each module renders as a link with an h3 heading
     const headings =
       featureSection?.parentElement?.querySelectorAll("h3") ?? [];
-    expect(headings).toHaveLength(7);
+    expect(headings).toHaveLength(8);
   });
 
   it("does not show coming soon badge or aria-label on enabled modules", async () => {

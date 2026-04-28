@@ -11,6 +11,7 @@ import {
   type UserId,
 } from "@/db/types";
 import { trackEvent } from "@/lib/analytics";
+import { safeLogEvent } from "@/lib/events/log";
 import { MAX_TAGS_PER_ITEM, MAX_TRICKS_PER_ITEM } from "../constants";
 import type { ItemFormValues } from "../schema";
 
@@ -313,6 +314,15 @@ export function useItemMutations(): UseItemMutationsReturn {
             [junctionId, userId, id, trickId, now, now]
           );
         }
+
+        await safeLogEvent(tx, {
+          userId,
+          type: "item.created",
+          entityType: "item",
+          entityId: id,
+          payload: { name: data.name, type: data.type },
+          now,
+        });
       });
 
       trackEvent("item_created", { type: data.type });
@@ -396,6 +406,15 @@ export function useItemMutations(): UseItemMutationsReturn {
           userId,
           now
         );
+
+        await safeLogEvent(tx, {
+          userId,
+          type: "item.updated",
+          entityType: "item",
+          entityId: id,
+          payload: { name: data.name },
+          now,
+        });
       });
 
       trackEvent("item_updated");
@@ -415,6 +434,15 @@ export function useItemMutations(): UseItemMutationsReturn {
 
     try {
       await db.writeTransaction(async (tx) => {
+        // Snapshot the name BEFORE soft-delete so the activity feed can show
+        // the user a meaningful label after the row is gone.
+        const nameRow = await tx.execute(
+          "SELECT name FROM items WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+          [id, userId]
+        );
+        const snapshotName =
+          (nameRow.rows?.item(0)?.name as string | undefined) ?? "";
+
         const result = await tx.execute(
           "UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
           [now, now, id, userId]
@@ -430,6 +458,15 @@ export function useItemMutations(): UseItemMutationsReturn {
           "UPDATE item_tricks SET deleted_at = ?, updated_at = ? WHERE item_id = ? AND user_id = ? AND deleted_at IS NULL",
           [now, now, id, userId]
         );
+
+        await safeLogEvent(tx, {
+          userId,
+          type: "item.deleted",
+          entityType: "item",
+          entityId: id,
+          payload: { name: snapshotName },
+          now,
+        });
       });
 
       trackEvent("item_deleted");

@@ -2,11 +2,15 @@
 
 import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { after } from "next/server";
 import webpush from "web-push";
 import { isUserBanned } from "@/auth/ban-check";
 import { auth } from "@/auth/server";
 import { getDb } from "@/db";
 import { pushSubscriptions } from "@/db/schema/push-subscriptions";
+import { asUserId } from "@/db/types";
+import { logEventServer } from "@/lib/events/log-server";
+import { reportEventLogFailure } from "@/lib/events/report-failure";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export type ActionResult =
@@ -142,6 +146,22 @@ export async function subscribeUser(
     if (result.length === 0) {
       return { success: false, error: "Failed to save subscription" };
     }
+
+    const userId = asUserId(session.user.id);
+    after(() =>
+      logEventServer(db, {
+        userId,
+        type: "notifications.subscribed",
+        entityType: "notifications",
+        entityId: userId,
+        payload: {},
+      }).catch((error: unknown) =>
+        reportEventLogFailure(error, {
+          userId: session.user.id,
+          type: "notifications.subscribed",
+        })
+      )
+    );
   } catch (error: unknown) {
     console.error("Failed to save push subscription:", {
       userId: session.user.id,
@@ -177,6 +197,22 @@ export async function unsubscribeUser(endpoint: string): Promise<ActionResult> {
           eq(pushSubscriptions.endpoint, endpoint)
         )
       );
+
+    const userId = asUserId(session.user.id);
+    after(() =>
+      logEventServer(db, {
+        userId,
+        type: "notifications.unsubscribed",
+        entityType: "notifications",
+        entityId: userId,
+        payload: {},
+      }).catch((error: unknown) =>
+        reportEventLogFailure(error, {
+          userId: session.user.id,
+          type: "notifications.unsubscribed",
+        })
+      )
+    );
   } catch (error: unknown) {
     console.error("Failed to remove push subscription:", {
       userId: session.user.id,

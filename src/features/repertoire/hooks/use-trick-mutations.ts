@@ -2,8 +2,15 @@
 
 import { usePowerSync } from "@powersync/react";
 import { authClient } from "@/auth/client";
-import type { TagId, TrickId } from "@/db/types";
+import {
+  asTrickId,
+  asUserId,
+  type TagId,
+  type TrickId,
+  type UserId,
+} from "@/db/types";
 import { trackEvent } from "@/lib/analytics";
+import { safeLogEvent } from "@/lib/events/log";
 import type { TrickFormValues } from "../schema";
 
 interface UseTrickMutationsReturn {
@@ -61,8 +68,8 @@ function booleanToInt(value: boolean | null | undefined): number | null {
  */
 function buildTrickParams(
   data: TrickFormValues,
-  userId: string,
-  id: string,
+  userId: UserId,
+  id: TrickId,
   now: string
 ): (string | number | null)[] {
   return [
@@ -156,12 +163,12 @@ export function useTrickMutations(): UseTrickMutationsReturn {
   const db = usePowerSync();
   const { data: session } = authClient.useSession();
 
-  function getUserId(): string {
+  function getUserId(): UserId {
     const userId = session?.user?.id;
     if (!userId) {
       throw new Error("Cannot mutate tricks without an authenticated user");
     }
-    return userId;
+    return asUserId(userId);
   }
 
   async function createTrick(
@@ -169,7 +176,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
     tagIds: TagId[]
   ): Promise<TrickId> {
     const userId = getUserId();
-    const id = crypto.randomUUID() as TrickId;
+    const id = asTrickId(crypto.randomUUID());
     const now = new Date().toISOString();
 
     try {
@@ -186,6 +193,19 @@ export function useTrickMutations(): UseTrickMutationsReturn {
             [junctionId, userId, id, tagId, now, now]
           );
         }
+
+        await safeLogEvent(tx, {
+          userId,
+          type: "trick.created",
+          entityType: "trick",
+          entityId: id,
+          payload: {
+            name: data.name,
+            status: data.status,
+            category: emptyToNull(data.category),
+          },
+          now,
+        });
       });
 
       trackEvent("trick_created", {
@@ -264,6 +284,15 @@ export function useTrickMutations(): UseTrickMutationsReturn {
             );
           }
         }
+
+        await safeLogEvent(tx, {
+          userId,
+          type: "trick.updated",
+          entityType: "trick",
+          entityId: id,
+          payload: { name: data.name },
+          now,
+        });
       });
 
       trackEvent("trick_updated");
@@ -280,6 +309,15 @@ export function useTrickMutations(): UseTrickMutationsReturn {
 
     try {
       await db.writeTransaction(async (tx) => {
+        // Snapshot the name BEFORE soft-delete so the activity feed can show
+        // the user a meaningful label after the row is gone.
+        const nameRow = await tx.execute(
+          "SELECT name FROM tricks WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+          [id, userId]
+        );
+        const snapshotName =
+          (nameRow.rows?.item(0)?.name as string | undefined) ?? "";
+
         const result = await tx.execute(
           "UPDATE tricks SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
           [now, now, id, userId]
@@ -295,6 +333,15 @@ export function useTrickMutations(): UseTrickMutationsReturn {
           "UPDATE item_tricks SET deleted_at = ?, updated_at = ? WHERE trick_id = ? AND user_id = ? AND deleted_at IS NULL",
           [now, now, id, userId]
         );
+
+        await safeLogEvent(tx, {
+          userId,
+          type: "trick.deleted",
+          entityType: "trick",
+          entityId: id,
+          payload: { name: snapshotName },
+          now,
+        });
       });
 
       trackEvent("trick_deleted");

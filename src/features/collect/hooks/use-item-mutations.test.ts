@@ -35,6 +35,24 @@ vi.mock("@/lib/analytics", () => ({
   trackEvent: vi.fn(),
 }));
 
+// logEvent runs inside the same writeTransaction as the domain mutation. The
+// existing test assertions count tx.execute calls; mocking logEvent to a
+// tracking spy lets us assert dual-sink invariants per mutation while keeping
+// those counts stable. `safeLogEvent` is the real call site post-refactor —
+// it swallows logEvent failures so the parent mutation still commits, so the
+// mock mirrors that behavior to keep "logEvent throws" tests meaningful.
+const mockLogEvent = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/events/log", () => ({
+  logEvent: (...args: unknown[]) => mockLogEvent(...args),
+  safeLogEvent: async (...args: unknown[]) => {
+    try {
+      await mockLogEvent(...args);
+    } catch {
+      // swallowed — matches real safeLogEvent semantics
+    }
+  },
+}));
+
 // Stable UUID for predictable assertions
 let uuidCounter = 0;
 vi.stubGlobal("crypto", {
@@ -604,6 +622,84 @@ describe("use-item-mutations", () => {
         )
       ).rejects.toThrow("MAX_TRICKS");
       expect(mockWriteTransaction).not.toHaveBeenCalled();
+    });
+
+    it("emits an item.created event with name and type", async () => {
+      const { useItemMutations } = await getHookExports();
+      const { createItem } = useItemMutations();
+
+      await createItem(
+        {
+          name: "Invisible Deck",
+          type: "deck",
+          description: "",
+          brand: "",
+          creator: "",
+          condition: null,
+          location: "",
+          quantity: 1,
+          purchaseDate: "",
+          purchasePrice: "",
+          url: "",
+          notes: "",
+        },
+        [],
+        []
+      );
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      const txArg = mockLogEvent.mock.calls[0]?.[0] as {
+        execute: typeof mockExecute;
+      };
+      expect(txArg.execute).toBe(mockExecute);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "item.created",
+          entityType: "item",
+          payload: expect.objectContaining({
+            name: "Invisible Deck",
+            type: "deck",
+          }),
+        })
+      );
+    });
+
+    it("createItem succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useItemMutations } = await getHookExports();
+      const { createItem } = useItemMutations();
+
+      const id = await createItem(
+        {
+          name: "Item",
+          type: "prop",
+          description: "",
+          brand: "",
+          creator: "",
+          condition: null,
+          location: "",
+          quantity: 1,
+          purchaseDate: "",
+          purchasePrice: "",
+          url: "",
+          notes: "",
+        },
+        [],
+        []
+      );
+
+      expect(id).toBe("uuid-1");
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT INTO items"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 
@@ -1359,19 +1455,107 @@ describe("use-item-mutations", () => {
       ).rejects.toThrow("MAX_TRICKS");
       expect(mockWriteTransaction).not.toHaveBeenCalled();
     });
+
+    it("emits an item.updated event with the new name", async () => {
+      const { useItemMutations } = await getHookExports();
+      const { updateItem } = useItemMutations();
+
+      await updateItem(
+        itemId("item-1"),
+        {
+          name: "Renamed",
+          type: "prop",
+          description: "",
+          brand: "",
+          creator: "",
+          condition: null,
+          location: "",
+          quantity: 1,
+          purchaseDate: "",
+          purchasePrice: "",
+          url: "",
+          notes: "",
+        },
+        [],
+        [],
+        [],
+        []
+      );
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "item.updated",
+          entityType: "item",
+          payload: expect.objectContaining({ name: "Renamed" }),
+        })
+      );
+    });
+
+    it("updateItem succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useItemMutations } = await getHookExports();
+      const { updateItem } = useItemMutations();
+
+      await expect(
+        updateItem(
+          itemId("item-1"),
+          {
+            name: "Item",
+            type: "prop",
+            description: "",
+            brand: "",
+            creator: "",
+            condition: null,
+            location: "",
+            quantity: 1,
+            purchaseDate: "",
+            purchasePrice: "",
+            url: "",
+            notes: "",
+          },
+          [],
+          [],
+          [],
+          []
+        )
+      ).resolves.toBeUndefined();
+
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE items SET"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
   // --- deleteItem tests -----------------------------------------------
 
   describe("deleteItem", () => {
+    beforeEach(() => {
+      // Default: SELECT returns a name, UPDATEs return rowsAffected: 1.
+      mockExecute.mockReset();
+      mockExecute.mockResolvedValue({
+        rowsAffected: 1,
+        rows: { item: () => ({ name: "Snapshot Item" }), length: 1 },
+      });
+    });
+
     it("soft-deletes item, item_tags, and item_tricks in one transaction", async () => {
       const { useItemMutations } = await getHookExports();
       const { deleteItem } = useItemMutations();
 
       await deleteItem(itemId("item-1"));
 
-      // 1 item soft-delete + 1 item_tags cascade + 1 item_tricks cascade
-      expect(mockExecute).toHaveBeenCalledTimes(3);
+      // 1 SELECT name snapshot + 1 item soft-delete + 1 item_tags cascade
+      // + 1 item_tricks cascade
+      expect(mockExecute).toHaveBeenCalledTimes(4);
     });
 
     it("soft-deletes the item row with correct params", async () => {
@@ -1380,12 +1564,15 @@ describe("use-item-mutations", () => {
 
       await deleteItem(itemId("item-1"));
 
-      const itemSql = mockExecute.mock.calls[0]?.[0] as string;
+      const selectSql = mockExecute.mock.calls[0]?.[0] as string;
+      expect(selectSql).toContain("SELECT name FROM items");
+
+      const itemSql = mockExecute.mock.calls[1]?.[0] as string;
       expect(itemSql).toContain("UPDATE items SET deleted_at = ?");
       expect(itemSql).toContain("WHERE id = ?");
       expect(itemSql).toContain("user_id = ?");
 
-      const itemParams = mockExecute.mock.calls[0]?.[1] as unknown[];
+      const itemParams = mockExecute.mock.calls[1]?.[1] as unknown[];
       expect(itemParams[0]).toBe("2025-01-15T12:00:00.000Z"); // deleted_at
       expect(itemParams[1]).toBe("2025-01-15T12:00:00.000Z"); // updated_at
       expect(itemParams[2]).toBe("item-1"); // id
@@ -1398,12 +1585,12 @@ describe("use-item-mutations", () => {
 
       await deleteItem(itemId("item-1"));
 
-      const tagsSql = mockExecute.mock.calls[1]?.[0] as string;
+      const tagsSql = mockExecute.mock.calls[2]?.[0] as string;
       expect(tagsSql).toContain("UPDATE item_tags SET deleted_at = ?");
       expect(tagsSql).toContain("WHERE item_id = ?");
       expect(tagsSql).toContain("user_id = ?");
 
-      const tagsParams = mockExecute.mock.calls[1]?.[1] as unknown[];
+      const tagsParams = mockExecute.mock.calls[2]?.[1] as unknown[];
       expect(tagsParams).toContain("item-1"); // item_id
       expect(tagsParams).toContain("user-123"); // user_id
     });
@@ -1414,12 +1601,12 @@ describe("use-item-mutations", () => {
 
       await deleteItem(itemId("item-1"));
 
-      const tricksSql = mockExecute.mock.calls[2]?.[0] as string;
+      const tricksSql = mockExecute.mock.calls[3]?.[0] as string;
       expect(tricksSql).toContain("UPDATE item_tricks SET deleted_at = ?");
       expect(tricksSql).toContain("WHERE item_id = ?");
       expect(tricksSql).toContain("user_id = ?");
 
-      const tricksParams = mockExecute.mock.calls[2]?.[1] as unknown[];
+      const tricksParams = mockExecute.mock.calls[3]?.[1] as unknown[];
       expect(tricksParams).toContain("item-1"); // item_id
       expect(tricksParams).toContain("user-123"); // user_id
     });
@@ -1430,12 +1617,18 @@ describe("use-item-mutations", () => {
 
       await deleteItem(itemId("item-1"));
 
-      const itemSql = mockExecute.mock.calls[0]?.[0] as string;
+      const itemSql = mockExecute.mock.calls[1]?.[0] as string;
       expect(itemSql).toContain("deleted_at IS NULL");
     });
 
     it("throws when item not found or already deleted", async () => {
-      mockExecute.mockResolvedValueOnce({ rowsAffected: 0 });
+      mockExecute.mockReset();
+      mockExecute
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          rows: { item: () => undefined, length: 0 },
+        }) // SELECT
+        .mockResolvedValueOnce({ rowsAffected: 0 }); // UPDATE → 0 rows
       const { useItemMutations } = await getHookExports();
       const { deleteItem } = useItemMutations();
 
@@ -1487,6 +1680,67 @@ describe("use-item-mutations", () => {
       await expect(deleteItem(itemId("item-1"))).rejects.toThrow(
         "Cannot mutate items without an authenticated user"
       );
+    });
+
+    it("emits an item.deleted event with the snapshotted name", async () => {
+      const { useItemMutations } = await getHookExports();
+      const { deleteItem } = useItemMutations();
+
+      await deleteItem(itemId("item-1"));
+
+      expect(mockLogEvent).toHaveBeenCalledTimes(1);
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "item.deleted",
+          entityType: "item",
+          payload: expect.objectContaining({ name: "Snapshot Item" }),
+        })
+      );
+    });
+
+    it("falls back to empty name when the item row is missing", async () => {
+      mockExecute.mockReset();
+      mockExecute
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          rows: { item: () => undefined, length: 0 },
+        }) // SELECT — no row
+        .mockResolvedValueOnce({ rowsAffected: 1 }) // UPDATE items
+        .mockResolvedValueOnce({ rowsAffected: 0 }) // UPDATE item_tags
+        .mockResolvedValueOnce({ rowsAffected: 0 }); // UPDATE item_tricks
+
+      const { useItemMutations } = await getHookExports();
+      const { deleteItem } = useItemMutations();
+
+      await deleteItem(itemId("item-1"));
+
+      expect(mockLogEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "item.deleted",
+          payload: expect.objectContaining({ name: "" }),
+        })
+      );
+    });
+
+    it("deleteItem succeeds even if logEvent throws (best-effort dual-sink)", async () => {
+      mockLogEvent.mockRejectedValueOnce(new Error("event-log boom"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        // suppress expected error output
+      });
+
+      const { useItemMutations } = await getHookExports();
+      const { deleteItem } = useItemMutations();
+
+      await expect(deleteItem(itemId("item-1"))).resolves.toBeUndefined();
+
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE items SET deleted_at"),
+        expect.any(Array)
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 

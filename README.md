@@ -34,6 +34,7 @@
 - **Perform** -- Keep notes on your performances, track audience reactions, and learn from every show.
 - **Enhance** -- Discover insights, revisit what works, and continuously raise the bar.
 - **Collect** -- Register and organize your props, books, gimmicks, and other items.
+- **Activity** -- Browse a timeline of every change you've made (offline-friendly).
 
 ## Tech Stack
 

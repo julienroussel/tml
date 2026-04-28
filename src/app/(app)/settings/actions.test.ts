@@ -26,6 +26,18 @@ vi.mock("next/headers", () => ({
   cookies: mockCookies,
 }));
 
+const mockAfter = vi.fn(async (callback: () => unknown) => {
+  await callback();
+});
+vi.mock("next/server", () => ({
+  after: (callback: () => unknown) => mockAfter(callback),
+}));
+
+const mockLogEventServer = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/events/log-server", () => ({
+  logEventServer: (...args: unknown[]) => mockLogEventServer(...args),
+}));
+
 vi.mock("@/auth/server", () => ({
   auth: {
     getSession: vi.fn().mockResolvedValue(authenticatedSession),
@@ -51,10 +63,14 @@ const mockSelectWhere = vi.fn(() => ({ limit: mockSelectLimit }));
 const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
 const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
 
+const mockInsertValues = vi.fn().mockResolvedValue(undefined);
+const mockInsert = vi.fn(() => ({ values: mockInsertValues }));
+
 vi.mock("@/db", () => ({
   getDb: () => ({
     update: mockUpdate,
     select: mockSelect,
+    insert: mockInsert,
   }),
 }));
 
@@ -181,6 +197,29 @@ describe("settings server actions", () => {
       expect(mockCookieDelete).not.toHaveBeenCalled();
     });
 
+    it("succeeds and still invalidates the cookie when event-log write fails", async () => {
+      mockLogEventServer.mockRejectedValueOnce(new Error("event log down"));
+
+      const { updateLocale } = await import("./actions");
+      const result = await updateLocale("fr");
+
+      expect(result).toEqual({ success: true });
+      expect(mockCookieDelete).toHaveBeenCalledWith("user-synced");
+    });
+
+    it("emits a settings.locale_changed event with the new locale", async () => {
+      const { updateLocale } = await import("./actions");
+      await updateLocale("fr");
+
+      expect(mockLogEventServer).toHaveBeenCalledWith(expect.anything(), {
+        userId: "test-user",
+        type: "settings.locale_changed",
+        entityType: "settings",
+        entityId: "test-user",
+        payload: { locale: "fr" },
+      });
+    });
+
     it("returns error when user is soft-deleted", async () => {
       mockUpdateReturning.mockResolvedValueOnce([]);
 
@@ -274,6 +313,48 @@ describe("settings server actions", () => {
       await updateTheme("dark");
 
       expect(mockCookieDelete).not.toHaveBeenCalled();
+    });
+
+    it("succeeds and still invalidates the cookie when event-log write fails", async () => {
+      mockLogEventServer.mockRejectedValueOnce(new Error("event log down"));
+
+      const { updateTheme } = await import("./actions");
+      const result = await updateTheme("dark");
+
+      expect(result).toEqual({ success: true });
+      expect(mockCookieDelete).toHaveBeenCalledWith("user-synced");
+    });
+
+    it("does not emit a theme event for system theme", async () => {
+      const { updateTheme } = await import("./actions");
+      await updateTheme("system");
+      expect(mockLogEventServer).not.toHaveBeenCalled();
+    });
+
+    it("emits a settings.theme_changed event with theme=dark", async () => {
+      const { updateTheme } = await import("./actions");
+      await updateTheme("dark");
+
+      expect(mockLogEventServer).toHaveBeenCalledWith(expect.anything(), {
+        userId: "test-user",
+        type: "settings.theme_changed",
+        entityType: "settings",
+        entityId: "test-user",
+        payload: { theme: "dark" },
+      });
+    });
+
+    it("emits a settings.theme_changed event with theme=light", async () => {
+      const { updateTheme } = await import("./actions");
+      await updateTheme("light");
+
+      expect(mockLogEventServer).toHaveBeenCalledWith(expect.anything(), {
+        userId: "test-user",
+        type: "settings.theme_changed",
+        entityType: "settings",
+        entityId: "test-user",
+        payload: { theme: "light" },
+      });
     });
 
     it("returns error when user is soft-deleted", async () => {

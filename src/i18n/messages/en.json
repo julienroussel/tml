@@ -37,7 +37,8 @@
     "admin": "Admin",
     "library": "Library",
     "theLab": "The Lab",
-    "insights": "Insights"
+    "insights": "Insights",
+    "activity": "Activity"
   },
   "repertoire": {
     "title": "Repertoire",
@@ -545,5 +546,41 @@
     "tryAgain": "Try again",
     "authError": "Authentication error",
     "authErrorDesc": "Something went wrong during authentication."
+  },
+  "activity": {
+    "title": "Activity",
+    "description": "A timeline of everything you've done in The Magic Lab.",
+    "timelineLabel": "Activity timeline",
+    "emptyTitle": "No activity yet",
+    "emptyDescription": "Start adding tricks, tags, or items — your actions will show up here.",
+    "recentTitle": "Recent activity",
+    "viewAll": "View all",
+    "loadError": "Couldn't load activity",
+    "filters": {
+      "label": "Show",
+      "placeholder": "All activity",
+      "entity": {
+        "all": "All activity",
+        "trick": "Tricks",
+        "tag": "Tags",
+        "item": "Items",
+        "settings": "Settings"
+      }
+    },
+    "events": {
+      "trick_created": "Created trick {name}",
+      "trick_updated": "Updated trick {name}",
+      "trick_deleted": "Deleted trick {name}",
+      "tag_created": "Created tag {name}",
+      "item_created": "Added item {name} to your collection",
+      "item_updated": "Updated item {name}",
+      "item_deleted": "Deleted item {name}",
+      "theme_changed": "Changed theme to {theme, select, dark {Dark} light {Light} system {System} other {{theme}}}",
+      "locale_changed": "Changed language to {locale, select, en {English} fr {Français} es {Español} pt {Português} it {Italiano} de {Deutsch} nl {Nederlands} other {{locale}}}",
+      "notifications_subscribed": "Enabled notifications",
+      "notifications_unsubscribed": "Disabled notifications",
+      "signed_up": "Joined The Magic Lab",
+      "unknown": "Activity recorded"
+    }
   }
 }

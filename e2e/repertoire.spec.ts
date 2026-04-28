@@ -1,5 +1,11 @@
-import { expect, type Page, test } from "@playwright/test";
-import { hasAuthSession } from "./helpers";
+import { expect, test } from "@playwright/test";
+import {
+  ADD_TRICK_RE,
+  createTrick,
+  hasAuthSession,
+  NAME_RE,
+  waitForAddButton,
+} from "./helpers";
 
 /**
  * Repertoire E2E tests.
@@ -8,62 +14,10 @@ import { hasAuthSession } from "./helpers";
  * page to avoid PowerSync sync timing issues between page navigations.
  */
 
-const ADD_TRICK_RE = /add trick/i;
-const NAME_RE = /^name$/i;
 const SEARCH_RE = /search tricks/i;
 const NAME_REQUIRED_RE = /name is required|nameRequired/i;
 const ACTIONS_RE = /actions/i;
 const DELETE_RE = /delete/i;
-
-/** Wait for the repertoire page to be interactive. */
-async function waitForPageReady(page: Page): Promise<void> {
-  await expect(
-    page.getByRole("button", { name: ADD_TRICK_RE }).first()
-  ).toBeVisible({ timeout: 30_000 });
-}
-
-/** Create a trick via the form sheet and wait for it to appear in the list. */
-async function createTrick(page: Page, name: string): Promise<void> {
-  await page.getByRole("button", { name: ADD_TRICK_RE }).first().click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
-
-  const nameInput = page.getByLabel(NAME_RE).first();
-  await nameInput.fill(name);
-
-  // Use requestSubmit() to bypass the Next.js dev overlay that blocks pointer
-  // events on the Save button in dev mode.
-  await page.locator("#trick-form").evaluate((el) => {
-    (el as HTMLFormElement).requestSubmit();
-  });
-
-  // If the dialog stays open, collect diagnostics before failing
-  try {
-    await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 30_000 });
-  } catch {
-    const formErrors = await page
-      .locator("#trick-form [data-slot='form-message']")
-      .allTextContents()
-      .catch(() => []);
-    const toasts = await page
-      .locator("[data-sonner-toast]")
-      .allTextContents()
-      .catch(() => []);
-    const nameValue = await nameInput.inputValue().catch(() => "???");
-    throw new Error(
-      [
-        "Sheet stayed open after save.",
-        `Name value: "${nameValue}"`,
-        `Form validation errors: [${formErrors.join(" | ")}]`,
-        `Toasts: [${toasts.join(" | ")}]`,
-      ].join("\n")
-    );
-  }
-
-  // Wait for the trick to appear as a card in the grid (not just in a toast)
-  await expect(
-    page.locator("[data-slot='card']", { hasText: name })
-  ).toBeVisible({ timeout: 30_000 });
-}
 
 test.describe("Repertoire — Trick CRUD", () => {
   test.beforeEach(() => {
@@ -80,7 +34,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test("can create a trick", async ({ page }) => {
     const name = `E2E Create ${Date.now().toString()}`;
     await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await waitForAddButton(page, ADD_TRICK_RE);
 
     await createTrick(page, name);
 
@@ -109,7 +63,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test("can search for a trick", async ({ page }) => {
     const name = `E2E Search ${Date.now().toString()}`;
     await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await waitForAddButton(page, ADD_TRICK_RE);
 
     // Create a trick first (same page — no sync needed)
     await createTrick(page, name);
@@ -130,7 +84,7 @@ test.describe("Repertoire — Trick CRUD", () => {
     const name = `E2E Edit ${Date.now().toString()}`;
     const updatedName = `${name} (edited)`;
     await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await waitForAddButton(page, ADD_TRICK_RE);
 
     // Create a trick first
     await createTrick(page, name);
@@ -158,7 +112,7 @@ test.describe("Repertoire — Trick CRUD", () => {
   test.fixme("can delete a trick", async ({ page }) => {
     const name = `E2E Delete ${Date.now().toString()}`;
     await page.goto("/repertoire");
-    await waitForPageReady(page);
+    await waitForAddButton(page, ADD_TRICK_RE);
 
     // Create a trick first
     await createTrick(page, name);

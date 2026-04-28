@@ -8,6 +8,7 @@ streams:
   user_data:
     auto_subscribe: true
     queries:
+      - SELECT * FROM event_log WHERE user_id = auth.user_id()
       - SELECT * FROM goals WHERE user_id = auth.user_id()
       - SELECT * FROM item_tags WHERE user_id = auth.user_id()
       - SELECT * FROM item_tricks WHERE user_id = auth.user_id()

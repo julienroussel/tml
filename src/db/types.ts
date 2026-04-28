@@ -1,4 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type { eventLog } from "./schema/event-log";
 import type { goals } from "./schema/goals";
 import type { items, itemTags, itemTricks } from "./schema/items";
 import type { performances } from "./schema/performances";
@@ -34,6 +35,7 @@ type ItemId = string & { readonly __brand: "ItemId" };
 type ItemTagId = string & { readonly __brand: "ItemTagId" };
 type GoalId = string & { readonly __brand: "GoalId" };
 type TagId = string & { readonly __brand: "TagId" };
+type EventLogId = string & { readonly __brand: "EventLogId" };
 
 // Single-location brand constructors. Centralising the cast here means call
 // sites express intent without scattering `as ItemId` casts across the
@@ -49,6 +51,7 @@ const asItemId = (value: string): ItemId => value as ItemId;
 const asTagId = (value: string): TagId => value as TagId;
 const asTrickId = (value: string): TrickId => value as TrickId;
 const asUserId = (value: string): UserId => value as UserId;
+const asEventLogId = (value: string): EventLogId => value as EventLogId;
 
 // Select types (read from DB)
 type User = InferSelectModel<typeof users>;
@@ -61,6 +64,7 @@ type Performance = InferSelectModel<typeof performances>;
 type Item = InferSelectModel<typeof items>;
 type ItemTag = InferSelectModel<typeof itemTags>;
 type ItemTrick = InferSelectModel<typeof itemTricks>;
+type EventLog = InferSelectModel<typeof eventLog>;
 type Goal = InferSelectModel<typeof goals>;
 type Tag = InferSelectModel<typeof tags>;
 type TrickTag = InferSelectModel<typeof trickTags>;
@@ -74,10 +78,13 @@ type NewSetlist = InferInsertModel<typeof setlists>;
 type NewPracticeSession = InferInsertModel<typeof practiceSessions>;
 type NewPerformance = InferInsertModel<typeof performances>;
 type NewItem = InferInsertModel<typeof items>;
+type NewEventLog = InferInsertModel<typeof eventLog>;
 type NewGoal = InferInsertModel<typeof goals>;
 type NewTag = InferInsertModel<typeof tags>;
 
 export type {
+  EventLog,
+  EventLogId,
   Goal,
   GoalId,
   Item,
@@ -85,6 +92,7 @@ export type {
   ItemTag,
   ItemTagId,
   ItemTrick,
+  NewEventLog,
   NewGoal,
   NewItem,
   NewPerformance,
@@ -111,4 +119,4 @@ export type {
   UserId,
   UserPreference,
 };
-export { asItemId, asTagId, asTrickId, asUserId };
+export { asEventLogId, asItemId, asTagId, asTrickId, asUserId };
