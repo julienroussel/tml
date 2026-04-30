@@ -190,13 +190,53 @@ async function sendAndProcessBatch(
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    console.error("Batch upload failed:", response.status, body);
+    let pgCode: string | undefined;
+    let failedIndex: number | undefined;
+    try {
+      const parsed: unknown = JSON.parse(body);
+      if (isRecord(parsed)) {
+        if (typeof parsed.code === "string") {
+          pgCode = parsed.code;
+        }
+        // Reject non-integer / negative / out-of-range failedIndex values so a
+        // malformed server response can't produce misleading log entries like
+        // `failedIndex: NaN, failedTable: undefined` when an operator is debugging.
+        if (
+          typeof parsed.failedIndex === "number" &&
+          Number.isInteger(parsed.failedIndex) &&
+          parsed.failedIndex >= 0 &&
+          parsed.failedIndex < originalOps.length
+        ) {
+          failedIndex = parsed.failedIndex;
+        }
+      }
+    } catch {
+      // body wasn't JSON — fall through and log the raw text
+    }
+    const failedTable =
+      failedIndex === undefined ? undefined : originalOps[failedIndex]?.table;
+    // pgCode is intentionally absent in production AND preview responses (see
+    // the exposeCode env gate in src/app/api/powersync/batch/route.ts). If you
+    // see `pgCode: undefined` here on a deployed environment, that is by design,
+    // not a regression — check the server log for the SQLSTATE.
+    console.error("Batch upload failed:", {
+      httpStatus: response.status,
+      pgCode,
+      failedIndex,
+      failedTable,
+      body,
+    });
     throw new Error("Batch upload failed — will retry");
   }
 
   const json: unknown = await response.json();
   const results = parseBatchResults(json);
   reportPermanentErrors(results, originalOps, onPermanentError);
+}
+
+/** Narrows an unknown JSON-parsed value to a plain record (excludes arrays and null). */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Narrows an unknown JWT payload to an object with a numeric `exp` claim. */

@@ -819,5 +819,223 @@ describe("POST /api/powersync/batch", () => {
 
       expect(response.status).toBe(500);
     });
+
+    describe("SQLSTATE exposure (per-op failure path)", () => {
+      it("includes the Postgres SQLSTATE in the 500 response body for transient DB errors", async () => {
+        // Regression guard for issue #220: 42703 undefined_column was returned as
+        // a generic 500 with no code, hiding schema drift behind PowerSync's retry
+        // loop. The SQLSTATE must round-trip to the client log.
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        // Pin VERCEL_ENV explicitly so the assertion below isn't satisfied
+        // vacuously by a CI runner that happens to set VERCEL_ENV=production.
+        vi.stubEnv("VERCEL_ENV", "development");
+        const undefinedColumnError = new Error(
+          'column "user_id" of relation "item_tricks" does not exist'
+        ) as Error & { code: string };
+        undefinedColumnError.code = "42703";
+        mockClientQuery
+          .mockResolvedValueOnce({ rowCount: 0 }) // BEGIN
+          .mockResolvedValueOnce({ rowCount: 0 }) // SAVEPOINT sp_0
+          .mockRejectedValueOnce(undefinedColumnError)
+          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK
+        const { POST } = await import("./route");
+
+        const response = await POST(
+          createRequest({
+            operations: [
+              putOp("item_tricks", "it-1", {
+                item_id: "i-1",
+                trick_id: "t-1",
+              }),
+            ],
+          })
+        );
+
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body).toMatchObject({
+          error: "Batch execution failed",
+          failedIndex: 0,
+          code: "42703",
+        });
+      });
+
+      it("includes the SQLSTATE when VERCEL_ENV is unset (local pnpm dev without Vercel CLI)", async () => {
+        // The env gate is a negative check (!== "production" && !== "preview"),
+        // so an unset VERCEL_ENV — the most common path for `pnpm dev` —
+        // currently exposes `code`. Pin this behavior so a future refactor to a
+        // positive check (=== "development") doesn't silently break the local
+        // debugging UX that issue #220's diagnostic logging was designed to fix.
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        vi.stubEnv("VERCEL_ENV", "");
+        const undefinedColumnError = new Error(
+          'column "user_id" of relation "item_tricks" does not exist'
+        ) as Error & { code: string };
+        undefinedColumnError.code = "42703";
+        mockClientQuery
+          .mockResolvedValueOnce({ rowCount: 0 }) // BEGIN
+          .mockResolvedValueOnce({ rowCount: 0 }) // SAVEPOINT sp_0
+          .mockRejectedValueOnce(undefinedColumnError)
+          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK
+        const { POST } = await import("./route");
+
+        const response = await POST(
+          createRequest({
+            operations: [
+              putOp("item_tricks", "it-1", {
+                item_id: "i-1",
+                trick_id: "t-1",
+              }),
+            ],
+          })
+        );
+
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body).toMatchObject({
+          error: "Batch execution failed",
+          failedIndex: 0,
+          code: "42703",
+        });
+      });
+
+      it.each([
+        ["production"],
+        ["preview"],
+      ])("omits the SQLSTATE from the response body when VERCEL_ENV=%s (server log retains it)", async (env) => {
+        // Both production AND preview must omit `code` to limit information
+        // disclosure to authenticated users — preview URLs are routinely
+        // shared (PR comments, link previews) and any authenticated user
+        // reaching them could enumerate schema state via SQLSTATE classes.
+        // The SQLSTATE remains in the server log for operators with Vercel
+        // log access. Non-production environments still expose `code` for
+        // fast browser-side debugging during the issue #220 soak.
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        vi.stubEnv("VERCEL_ENV", env);
+        const undefinedColumnError = new Error(
+          'column "user_id" of relation "item_tricks" does not exist'
+        ) as Error & { code: string };
+        undefinedColumnError.code = "42703";
+        mockClientQuery
+          .mockResolvedValueOnce({ rowCount: 0 }) // BEGIN
+          .mockResolvedValueOnce({ rowCount: 0 }) // SAVEPOINT sp_0
+          .mockRejectedValueOnce(undefinedColumnError)
+          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK
+        const { POST } = await import("./route");
+
+        const response = await POST(
+          createRequest({
+            operations: [
+              putOp("item_tricks", "it-1", {
+                item_id: "i-1",
+                trick_id: "t-1",
+              }),
+            ],
+          })
+        );
+
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body).not.toHaveProperty("code");
+        expect(body).toMatchObject({
+          error: "Batch execution failed",
+          failedIndex: 0,
+        });
+      });
+
+      it("omits the code field when the transient error has no SQLSTATE", async () => {
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        // Pin VERCEL_ENV to a non-production value so this assertion isolates
+        // the "no SQLSTATE on the error" code path. Without the stub, a CI
+        // runner setting VERCEL_ENV=production would satisfy the assertion
+        // vacuously via the env gate instead of the no-code branch.
+        vi.stubEnv("VERCEL_ENV", "development");
+        mockClientQuery
+          .mockResolvedValueOnce({ rowCount: 0 }) // BEGIN
+          .mockResolvedValueOnce({ rowCount: 0 }) // SAVEPOINT sp_0
+          .mockRejectedValueOnce(new Error("connection timeout"))
+          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK
+        const { POST } = await import("./route");
+
+        const response = await POST(
+          createRequest({
+            operations: [putOp("tricks", "t-1", { name: "A" })],
+          })
+        );
+
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body).not.toHaveProperty("code");
+      });
+    });
+
+    describe("SQLSTATE exposure (outer catch path)", () => {
+      it("includes the SQLSTATE in the 500 body in non-production", async () => {
+        // Coverage for the outer-catch path (route.ts ~452): when BEGIN itself
+        // throws a DB error, executeBatch re-throws into the POST handler's
+        // outer catch. Verify the env gate behaves the same way as the inner
+        // per-op-failure branch.
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        vi.stubEnv("VERCEL_ENV", "development");
+        const beginError = new Error(
+          "connection terminated unexpectedly"
+        ) as Error & { code: string };
+        // 08006 (connection_failure) is the SQLSTATE Postgres realistically
+        // raises on a failed BEGIN — 25P02 (in_failed_sql_transaction) cannot
+        // be raised by BEGIN itself, only by subsequent statements on an
+        // already-failed connection.
+        beginError.code = "08006";
+        mockClientQuery
+          .mockRejectedValueOnce(beginError) // BEGIN
+          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK in catch
+        const { POST } = await import("./route");
+
+        const response = await POST(
+          createRequest({
+            operations: [putOp("tricks", "t-1", { name: "A" })],
+          })
+        );
+
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body).toMatchObject({
+          error: "Internal server error",
+          code: "08006",
+        });
+      });
+
+      it.each([
+        ["production"],
+        ["preview"],
+      ])("omits the SQLSTATE from the 500 body when VERCEL_ENV=%s", async (env) => {
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        vi.stubEnv("VERCEL_ENV", env);
+        const beginError = new Error(
+          "connection terminated unexpectedly"
+        ) as Error & { code: string };
+        beginError.code = "08006";
+        mockClientQuery
+          .mockRejectedValueOnce(beginError) // BEGIN
+          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK in catch
+        const { POST } = await import("./route");
+
+        const response = await POST(
+          createRequest({
+            operations: [putOp("tricks", "t-1", { name: "A" })],
+          })
+        );
+
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body).not.toHaveProperty("code");
+        expect(body).toMatchObject({ error: "Internal server error" });
+      });
+    });
   });
 });

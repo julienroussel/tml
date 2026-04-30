@@ -78,12 +78,29 @@ function isPermanentDbError(
   return isDatabaseError(error) && PERMANENT_PG_ERROR_CODES.has(error.code);
 }
 
+// Production AND preview omit the SQLSTATE because preview URLs are routinely
+// shared (PR comments, link previews) and any authenticated user reaching them
+// could enumerate schema state via SQLSTATE classes (42703 = undefined column,
+// 42P01 = undefined table). The SQLSTATE stays in the server log for operators.
+// Negative check (rather than === "development") intentionally exposes `code`
+// when VERCEL_ENV is unset, which is the normal `pnpm dev` path.
+function shouldExposeSqlstate(): boolean {
+  return (
+    process.env.VERCEL_ENV !== "production" &&
+    process.env.VERCEL_ENV !== "preview"
+  );
+}
+
 type BatchResult =
   | { ok: true; results: OperationResult[] }
   | {
       ok: false;
       failedIndex: number;
       message: string;
+      // SQLSTATE for transient DB errors — surfaced in the response body and
+      // client-side logs so the next "PowerSync retries forever" symptom names
+      // its underlying Postgres error class instead of staying generic.
+      code?: string;
       results: OperationResult[];
     };
 
@@ -234,8 +251,9 @@ async function executeOperation(
     return { continue: true, result: { index, status: 200 } };
   } catch (error: unknown) {
     if (!isPermanentDbError(error)) {
+      const code = isDatabaseError(error) ? error.code : undefined;
       console.error(
-        `Transient DB error on operation ${index} (table: ${operation.table}, op: ${operation.op}):`,
+        `Transient DB error on operation ${index} (table: ${operation.table}, op: ${operation.op}, code: ${code ?? "none"}):`,
         error instanceof Error ? error.message : String(error)
       );
       await client.query("ROLLBACK");
@@ -245,6 +263,7 @@ async function executeOperation(
           ok: false,
           failedIndex: index,
           message: "Internal error",
+          ...(code !== undefined && { code }),
           results: results.map((r) => ({ ...r, rolledBack: true })),
         },
       };
@@ -422,10 +441,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `Batch execution failed at index ${result.failedIndex}:`,
         result.message
       );
+      const exposeCode = result.code !== undefined && shouldExposeSqlstate();
       return NextResponse.json(
         {
           error: "Batch execution failed",
           failedIndex: result.failedIndex,
+          ...(exposeCode && { code: result.code }),
           results: result.results,
         },
         { status: 500 }
@@ -434,8 +455,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ results: result.results });
   } catch (error: unknown) {
     console.error("Unhandled batch execution error:", error);
+    const code = isDatabaseError(error) ? error.code : undefined;
+    const exposeCode = code !== undefined && shouldExposeSqlstate();
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", ...(exposeCode && { code }) },
       { status: 500 }
     );
   }
