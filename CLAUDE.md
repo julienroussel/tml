@@ -119,6 +119,21 @@ User-facing activity history + canonical product analytics. Table `event_log`, s
 
 Client mutations always wrap the event-log write in `safeLogEvent()` (`src/lib/events/log.ts`), which calls `logEvent` inside the surrounding PowerSync `db.writeTransaction(...)` and routes any failure through `reportEventLogFailure`. The event row is **co-located** with the action — a successful event rides the same sync queue and replays offline — but the dual sink is **best-effort on the event side**: an event-log CHECK violation, schema mismatch, or downstream outage must never roll back the primary mutation. The primary table is the source of truth; the event log is the canonical activity history but not load-bearing for correctness. `logEventServer` writes directly to Neon from server actions, route handlers, and `auth/ensure-user.ts` (typically via `after()` so it doesn't block the response). Event taxonomy lives in `src/lib/events/types.ts`. See `docs/features/activity.md` for the full reference.
 
+### DB grants & roles
+
+Two Postgres roles exist on Neon. Today, **all server-side code paths use `neondb_owner`** — Drizzle (`src/db/index.ts`), server actions, route handlers including the PowerSync upload route (`Pool({ databaseUrl })` at `src/app/api/powersync/batch/route.ts:180`), `logEventServer()`, and `auth/ensure-user.ts`. `neondb_owner` has full DB access and bypasses RLS, so **anything sensitive must be guarded at the application layer**.
+
+The `authenticated` role is currently exercised only by the JWT-aware client paths the codebase does not yet use directly (Neon Data API, JWT-forwarded PowerSync sync — both anticipated, not active). Migration `0020_lockdown_authenticated_grants.sql` (issue #245) hardens what `authenticated` CAN see/do **before** any code path actually authenticates as that role:
+
+- Schema `public` has **no default privileges** for `authenticated`. Every `CREATE TABLE` synced via PowerSync MUST include an explicit `GRANT <subset> ON <table> TO authenticated;` line in the **same migration file**. Future synced tables added without a GRANT will be invisible to any future `authenticated`-role client (PowerSync queries return empty).
+- The canonical per-table grant matrix lives in `0020`. Reference shape:
+  - Standard user-data tables (12): `SELECT, INSERT, UPDATE, DELETE`.
+  - `push_subscriptions`: `SELECT, INSERT, UPDATE` — no `DELETE` for clients (cleanup of expired subs is server-side).
+  - `event_log`: `SELECT, INSERT` + column-level `UPDATE (deleted_at, updated_at)` only — no `DELETE`, no payload mutation. Audit-trail invariant.
+  - Server-only tables (`users`, `user_preferences`): `SELECT` only.
+
+**The 422 gate in `src/app/api/powersync/batch/route.ts:122-144` IS still the only enforcement of the `event_log` audit-trail invariant on the live write path** — because that path runs as `neondb_owner` and bypasses both the new `authenticated` GRANTs and RLS. Do not weaken or remove the 422 gate without first migrating the upload route to a JWT-forwarding `authenticated`-role connection. The DB GRANT lockdown is forward-positioning + hardening against an accidental `DATABASE_URL` swap to a less-privileged role; it is not a replacement for the application-layer check today.
+
 ### Key Directories
 
 - **`scripts/`** — codegen and ops CLIs: `generate-sync.ts`, `check-sync.ts`, `check-i18n.ts`, `generate-docs.ts`, `generate-screenshots.ts`, `powersync.ts`, `setup.ts`. Entry points behind the `pnpm sync:*`, `pnpm i18n:check`, `pnpm docs:generate`, `pnpm screenshots` scripts.
