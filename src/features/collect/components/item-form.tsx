@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import type { TagId, TrickId } from "@/db/types";
 import { CategoryCombobox } from "@/features/repertoire/components/category-combobox";
@@ -91,6 +92,11 @@ interface ItemFormProps {
   onSubmit: (data: ItemFormValues) => void;
   onToggleTag: (tagId: TagId) => void;
   onToggleTrick: (trickId: TrickId) => void;
+  /**
+   * True while the parent's tag/trick join queries are still hydrating during
+   * an Edit session. The pickers are replaced with skeletons. Issue #216.
+   */
+  relationsLoading?: boolean;
   selectedTagIds: TagId[];
   selectedTrickIds: TrickId[];
   userBrands: string[];
@@ -145,6 +151,7 @@ function ItemForm({
   availableTricks,
   onToggleTrick,
   onDirtyChange,
+  relationsLoading = false,
   userBrands,
   userLocations,
 }: ItemFormProps): React.ReactElement {
@@ -184,6 +191,7 @@ function ItemForm({
   return (
     <Form {...form}>
       <form
+        aria-busy={relationsLoading}
         className="flex flex-col gap-4"
         id={formId}
         onSubmit={form.handleSubmit(onSubmit)}
@@ -469,44 +477,77 @@ function ItemForm({
         >
           <div className="flex flex-col gap-4 px-2 pb-2">
             <fieldset
-              aria-describedby="tags-limit-help"
+              aria-busy={relationsLoading}
+              aria-describedby={
+                relationsLoading ? undefined : "tags-limit-help"
+              }
               className="grid gap-2 border-none p-0"
             >
               <legend className="font-medium text-sm">{t("field.tags")}</legend>
-              <TagPicker
-                availableTags={availableTags}
-                maxTags={MAX_TAGS_PER_ITEM}
-                onCreateTag={onCreateTag}
-                onToggleTag={onToggleTag}
-                selectedTagIds={selectedTagIds}
-                translationNamespace="collect"
-              />
-              <p className="text-muted-foreground text-xs" id="tags-limit-help">
-                {selectedTagIds.length}/{MAX_TAGS_PER_ITEM}{" "}
-                {t("field.tags").toLowerCase()}
-              </p>
+              {relationsLoading ? (
+                <>
+                  <Skeleton
+                    aria-label={t("tagPicker.loading")}
+                    className="h-11 w-full"
+                  />
+                  <Skeleton className="h-3 w-20" />
+                </>
+              ) : (
+                <>
+                  <TagPicker
+                    availableTags={availableTags}
+                    maxTags={MAX_TAGS_PER_ITEM}
+                    onCreateTag={onCreateTag}
+                    onToggleTag={onToggleTag}
+                    selectedTagIds={selectedTagIds}
+                    translationNamespace="collect"
+                  />
+                  <p
+                    className="text-muted-foreground text-xs"
+                    id="tags-limit-help"
+                  >
+                    {selectedTagIds.length}/{MAX_TAGS_PER_ITEM}{" "}
+                    {t("field.tags").toLowerCase()}
+                  </p>
+                </>
+              )}
             </fieldset>
 
             <fieldset
-              aria-describedby="tricks-limit-help"
+              aria-busy={relationsLoading}
+              aria-describedby={
+                relationsLoading ? undefined : "tricks-limit-help"
+              }
               className="grid gap-2 border-none p-0"
             >
               <legend className="font-medium text-sm">
                 {t("field.linkedTricks")}
               </legend>
-              <TrickPicker
-                availableTricks={availableTricks}
-                maxTricks={MAX_TRICKS_PER_ITEM}
-                onToggleTrick={onToggleTrick}
-                selectedTrickIds={selectedTrickIds}
-              />
-              <p
-                className="text-muted-foreground text-xs"
-                id="tricks-limit-help"
-              >
-                {selectedTrickIds.length}/{MAX_TRICKS_PER_ITEM}{" "}
-                {t("field.linkedTricks").toLowerCase()}
-              </p>
+              {relationsLoading ? (
+                <>
+                  <Skeleton
+                    aria-label={t("trickPicker.loading")}
+                    className="h-11 w-full"
+                  />
+                  <Skeleton className="h-3 w-20" />
+                </>
+              ) : (
+                <>
+                  <TrickPicker
+                    availableTricks={availableTricks}
+                    maxTricks={MAX_TRICKS_PER_ITEM}
+                    onToggleTrick={onToggleTrick}
+                    selectedTrickIds={selectedTrickIds}
+                  />
+                  <p
+                    className="text-muted-foreground text-xs"
+                    id="tricks-limit-help"
+                  >
+                    {selectedTrickIds.length}/{MAX_TRICKS_PER_ITEM}{" "}
+                    {t("field.linkedTricks").toLowerCase()}
+                  </p>
+                </>
+              )}
             </fieldset>
 
             <FormField

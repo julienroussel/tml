@@ -45,7 +45,7 @@ describe("useTrick", () => {
     const { useTrick } = await getHook();
     const result = useTrick(null);
 
-    expect(result).toEqual({ trick: null, isLoading: false });
+    expect(result).toEqual({ trick: null, isLoading: false, error: null });
     expect(mockUseQuery).toHaveBeenCalledWith("SELECT 1 WHERE 0", []);
   });
 
@@ -79,7 +79,28 @@ describe("useTrick", () => {
       "SELECT * FROM tricks WHERE id = ? AND deleted_at IS NULL",
       ["nonexistent-id"]
     );
-    expect(result).toEqual({ trick: null, isLoading: false });
+    expect(result).toEqual({ trick: null, isLoading: false, error: null });
+  });
+
+  it("surfaces error from useQuery when query fails", async () => {
+    const queryError = new Error("SQLite I/O failure");
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: queryError,
+    });
+
+    const { useTrick } = await getHook();
+    const result = useTrick("trick-abc");
+
+    // Lock the full shape — a regression that propagates `error` but flips
+    // `isLoading` to true (stalling the UI) would not fail a property-only
+    // assertion but does fail this structural lock.
+    expect(result).toEqual({
+      trick: null,
+      isLoading: false,
+      error: queryError,
+    });
   });
 
   it("passes through isLoading from useQuery when id is provided", async () => {

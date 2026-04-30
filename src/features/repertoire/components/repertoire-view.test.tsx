@@ -53,7 +53,7 @@ vi.mock("../hooks/use-tricks", () => ({
 }));
 
 vi.mock("../hooks/use-trick", () => ({
-  useTrick: vi.fn(() => ({ trick: null, isLoading: false })),
+  useTrick: vi.fn(() => ({ trick: null, isLoading: false, error: null })),
 }));
 
 vi.mock("../hooks/use-tags", () => ({
@@ -70,6 +70,9 @@ vi.mock("../hooks/use-trick-mutations", () => ({
     updateTrick: mockUpdateTrick,
     deleteTrick: mockDeleteTrick,
   })),
+  // Real implementation is `null` for non-typed errors and an i18n key for
+  // typed mutation errors. Tests reject with plain Error so null is correct.
+  getMutationErrorKey: vi.fn(() => null),
 }));
 
 vi.mock("../hooks/use-tag-mutations", () => ({
@@ -209,7 +212,11 @@ afterEach(async () => {
     error: null,
     isLoading: false,
   });
-  vi.mocked(useTrick).mockReturnValue({ trick: null, isLoading: false });
+  vi.mocked(useTrick).mockReturnValue({
+    trick: null,
+    isLoading: false,
+    error: null,
+  });
 
   // Restore mutation mock defaults (clearAllMocks strips implementations)
   mockCreateTrick.mockResolvedValue("new-trick-id");
@@ -464,6 +471,7 @@ describe("RepertoireView", () => {
     vi.mocked(useTrick).mockReturnValue({
       trick: makeTrick("trick-upd-1", "Silk Vanish"),
       isLoading: false,
+      error: null,
     });
 
     render(<RepertoireView />);
@@ -552,6 +560,7 @@ describe("RepertoireView", () => {
     vi.mocked(useTrick).mockReturnValue({
       trick: makeTrick("trick-tags-1", "Tagged Trick"),
       isLoading: false,
+      error: null,
     });
 
     render(<RepertoireView />);
@@ -758,6 +767,7 @@ describe("RepertoireView", () => {
     vi.mocked(useTrick).mockReturnValue({
       trick: makeTrick("trick-fail-upd", "Coin Warp"),
       isLoading: false,
+      error: null,
     });
     mockUpdateTrick.mockRejectedValueOnce(new Error("update failed"));
 
@@ -789,5 +799,346 @@ describe("RepertoireView", () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("repertoire.saveFailed");
     });
+  });
+
+  it("routes typed save errors through getMutationErrorKey to a specific toast", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { getMutationErrorKey } = await import(
+      "../hooks/use-trick-mutations"
+    );
+
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick("trick-typed-err", "Vanishing Coin")],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick: makeTrick("trick-typed-err", "Vanishing Coin"),
+      isLoading: false,
+      error: null,
+    });
+
+    const typedError = new Error("trick missing — typed");
+    mockUpdateTrick.mockRejectedValueOnce(typedError);
+    vi.mocked(getMutationErrorKey).mockReturnValueOnce("errors.trickMissing");
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId("edit-trick-typed-err"));
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Vanishing Coin" })
+    );
+
+    expect(getMutationErrorKey).toHaveBeenCalledWith(typedError);
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "repertoire.errors.trickMissing"
+      );
+    });
+    // Generic fallback must not also fire when typed error is mapped.
+    expect(toast.error).not.toHaveBeenCalledWith("repertoire.saveFailed");
+  });
+
+  it("routes typed delete errors through getMutationErrorKey to a specific toast", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { getMutationErrorKey } = await import(
+      "../hooks/use-trick-mutations"
+    );
+
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick("trick-typed-del", "Linking Rings")],
+      error: null,
+      isLoading: false,
+    });
+
+    const typedError = new Error("trick missing — typed");
+    mockDeleteTrick.mockRejectedValueOnce(typedError);
+    vi.mocked(getMutationErrorKey).mockReturnValueOnce("errors.trickMissing");
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId("delete-trick-typed-del"));
+    await userEvent.click(screen.getByTestId("confirm-delete"));
+
+    expect(getMutationErrorKey).toHaveBeenCalledWith(typedError);
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "repertoire.errors.trickMissing"
+      );
+    });
+    expect(toast.error).not.toHaveBeenCalledWith("repertoire.deleteFailed");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #216 — hydration-race regression coverage
+  // ---------------------------------------------------------------------------
+
+  // Helper for the trick-form's submit signature.
+  const makeTrickFormValues = (overrides: Record<string, unknown> = {}) =>
+    ({
+      name: "Test",
+      status: "new",
+      description: "",
+      category: "",
+      effectType: "",
+      difficulty: null,
+      duration: null,
+      performanceType: null,
+      angleSensitivity: null,
+      props: "",
+      music: "",
+      languages: [],
+      isCameraFriendly: null,
+      isSilent: null,
+      source: "",
+      videoUrl: "",
+      notes: "",
+      ...overrides,
+    }) as Parameters<NonNullable<TrickFormSheetProps["onSubmit"]>>[0];
+
+  // (Test B) Mirror of collect-view's headline regression — when Edit is
+  // clicked before trick_tags hydrates, the form sheet is gated and seeding
+  // waits. After hydration, saving without changes emits an empty diff.
+  it("seeds tag selection from hydrated trick_tags and never emits a stale diff (issue #216)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+
+    const trickId = "trick-216-headline";
+    const trick = makeTrick(trickId, "Twirling Cane");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+    });
+    vi.mocked(useQuery).mockReturnValue({
+      data: [],
+      isLoading: true,
+      isFetching: true,
+      error: undefined,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.relationsLoading).toBe(true);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+
+    // Defense-in-depth: keyboard submit while seeding must not call updateTrick.
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Twirling Cane" })
+    );
+    expect(mockUpdateTrick).not.toHaveBeenCalled();
+
+    // Hydrate the join.
+    const t1 = "tag-216-a" as TagId;
+    const t2 = "tag-216-b" as TagId;
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
+        return {
+          data: [
+            { trick_id: trickId, tag_id: t1, tag_name: "A", color: null },
+            { trick_id: trickId, tag_id: t2, tag_name: "B", color: null },
+          ],
+          isLoading: false,
+          isFetching: false,
+          error: undefined,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<RepertoireView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.relationsLoading).toBe(false);
+      expect(capturedFormSheetProps.selectedTagIds).toEqual([t1, t2]);
+    });
+    // Post-seed selected === original, so tagsDirty stays false (no false-
+    // positive discard dialog).
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Twirling Cane" })
+    );
+    expect(mockUpdateTrick).toHaveBeenCalledWith(
+      trickId,
+      expect.any(Object),
+      [],
+      []
+    );
+  });
+
+  // (Test C) Repertoire counterpart of "reopen mid-load".
+  it("re-seeds cleanly when Edit is reopened after closing mid-load (repertoire)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+
+    const trickId = "trick-reopen";
+    const trick = makeTrick(trickId, "Floating Bill");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+    });
+    vi.mocked(useQuery).mockReturnValue({
+      data: [],
+      isLoading: true,
+      isFetching: true,
+      error: undefined,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    expect(capturedFormSheetProps.relationsLoading).toBe(true);
+
+    act(() => {
+      capturedFormSheetProps.onOpenChange?.(false);
+    });
+    expect(capturedFormSheetProps.open).toBe(false);
+
+    const t1 = "tag-reopen-a" as TagId;
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
+        return {
+          data: [{ trick_id: trickId, tag_id: t1, tag_name: "A", color: null }],
+          isLoading: false,
+          isFetching: false,
+          error: undefined,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    await waitFor(() => {
+      expect(capturedFormSheetProps.relationsLoading).toBe(false);
+      expect(capturedFormSheetProps.selectedTagIds).toEqual([t1]);
+    });
+
+    // Submit with no further interaction → diff must be empty. A regression
+    // where `selected` re-seeds but `original` stays stale at [] (or vice
+    // versa) would compute a phantom remove/add here and fail this assertion.
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Floating Bill" })
+    );
+    expect(mockUpdateTrick).toHaveBeenCalledWith(
+      trickId,
+      expect.any(Object),
+      [],
+      []
+    );
+  });
+
+  // (Test E) Background-sync mid-edit — phantom-diff prevention.
+  it("does not emit phantom tag diffs when trick_tags updates from background sync", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+
+    const trickId = "trick-bg-sync";
+    const trick = makeTrick(trickId, "Linking Coins");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+    });
+
+    const t1 = "tag-bg-a" as TagId;
+    const t2 = "tag-bg-b" as TagId;
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
+        return {
+          data: [
+            { trick_id: trickId, tag_id: t1, tag_name: "A", color: null },
+            { trick_id: trickId, tag_id: t2, tag_name: "B", color: null },
+          ],
+          isLoading: false,
+          isFetching: false,
+          error: undefined,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    await waitFor(() => {
+      expect(capturedFormSheetProps.selectedTagIds).toEqual([t1, t2]);
+    });
+
+    // Background sync adds t3.
+    const t3 = "tag-bg-c" as TagId;
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
+        return {
+          data: [
+            { trick_id: trickId, tag_id: t1, tag_name: "A", color: null },
+            { trick_id: trickId, tag_id: t2, tag_name: "B", color: null },
+            { trick_id: trickId, tag_id: t3, tag_name: "C", color: null },
+          ],
+          isLoading: false,
+          isFetching: false,
+          error: undefined,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<RepertoireView />);
+
+    // Save with no user-side changes — diff stays empty, t3 is preserved
+    // by the delta-only mutation hook.
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Linking Coins" })
+    );
+    expect(mockUpdateTrick).toHaveBeenCalledWith(
+      trickId,
+      expect.any(Object),
+      [],
+      []
+    );
   });
 });

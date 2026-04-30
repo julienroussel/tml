@@ -40,6 +40,12 @@ interface ItemFormSheetProps {
   onToggleTag: (tagId: TagId) => void;
   onToggleTrick: (trickId: TrickId) => void;
   open: boolean;
+  /**
+   * True while an Edit session's row + tag/trick joins are still hydrating.
+   * Disables Save (so a keyboard submit cannot fire against an unseeded
+   * baseline) and renders skeletons in place of the pickers. Issue #216.
+   */
+  relationsLoading?: boolean;
   selectedTagIds: TagId[];
   selectedTrickIds: TrickId[];
   tagsDirty?: boolean;
@@ -81,6 +87,7 @@ function ItemFormSheet({
   onSubmit,
   userBrands,
   userLocations,
+  relationsLoading = false,
   tagsDirty = false,
   tricksDirty = false,
 }: ItemFormSheetProps): React.ReactElement {
@@ -159,6 +166,7 @@ function ItemFormSheet({
                 onSubmit={handleFormSubmit}
                 onToggleTag={onToggleTag}
                 onToggleTrick={onToggleTrick}
+                relationsLoading={relationsLoading}
                 selectedTagIds={selectedTagIds}
                 selectedTrickIds={selectedTrickIds}
                 userBrands={userBrands}
@@ -181,7 +189,12 @@ function ItemFormSheet({
             >
               {t("cancel")}
             </Button>
-            <Button disabled={isSubmitting} form={FORM_ID} type="submit">
+            <Button
+              aria-busy={isSubmitting || relationsLoading}
+              disabled={isSubmitting || relationsLoading}
+              form={FORM_ID}
+              type="submit"
+            >
               {t("save")}
             </Button>
           </SheetFooter>

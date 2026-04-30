@@ -24,6 +24,50 @@ interface UseTrickMutationsReturn {
   ) => Promise<void>;
 }
 
+/**
+ * Typed mutation error. The `tag` field discriminates error kinds so the UI
+ * toast boundary can map each tag to a localized message without relying on
+ * the English `message` text. Mirrors the pattern in `use-item-mutations.ts`.
+ */
+class TrickNotFoundError extends Error {
+  readonly tag = "TRICK_NOT_FOUND" as const;
+  constructor() {
+    super("TRICK_NOT_FOUND");
+    this.name = "TrickNotFoundError";
+  }
+}
+
+type TypedMutationError = TrickNotFoundError;
+
+function isTypedMutationError(error: unknown): error is TypedMutationError {
+  return error instanceof TrickNotFoundError;
+}
+
+type TypedMutationErrorTag = TypedMutationError["tag"];
+
+/**
+ * Maps each typed error tag to an i18n key. The `satisfies` clause makes
+ * this map exhaustive at compile time — adding a new typed error class
+ * without updating this map fails `tsc`.
+ */
+const MUTATION_ERROR_I18N_KEYS = {
+  TRICK_NOT_FOUND: "errors.trickMissing",
+} as const satisfies Record<TypedMutationErrorTag, string>;
+
+/**
+ * Maps a caught mutation error to its i18n key, or `null` if it's not a
+ * typed mutation error. Consumers use this at toast boundaries to replace
+ * the `instanceof` chain duplication across call sites.
+ */
+export function getMutationErrorKey(error: unknown): string | null {
+  if (!isTypedMutationError(error)) {
+    return null;
+  }
+  return MUTATION_ERROR_I18N_KEYS[error.tag];
+}
+
+export { TrickNotFoundError };
+
 /** Converts an empty string to null for nullable text columns. */
 function emptyToNull(value: string | undefined): string | null {
   return value?.trim() || null;
@@ -260,18 +304,15 @@ export function useTrickMutations(): UseTrickMutationsReturn {
           userId,
         ];
 
-        await tx.execute(TRICK_UPDATE_SQL, updateParams);
-
-        // Remove tag associations by soft-deleting the junction rows.
-        for (const tagId of removeTagIds) {
-          await tx.execute(
-            "UPDATE trick_tags SET deleted_at = ?, updated_at = ? WHERE trick_id = ? AND tag_id = ? AND user_id = ? AND deleted_at IS NULL",
-            [now, now, id, tagId, userId]
-          );
+        const updateResult = await tx.execute(TRICK_UPDATE_SQL, updateParams);
+        if (!updateResult.rowsAffected) {
+          throw new TrickNotFoundError();
         }
 
-        // Add new tag associations (restore soft-deleted rows first to avoid duplicates).
-        for (const tagId of addTagIds) {
+        // Closure helper to keep the outer function's cognitive complexity
+        // under the linter's threshold. Restores a soft-deleted junction row
+        // if one exists, otherwise inserts a new junction row.
+        async function linkTag(tagId: TagId): Promise<void> {
           const restored = await tx.execute(
             "UPDATE trick_tags SET deleted_at = NULL, updated_at = ? WHERE trick_id = ? AND tag_id = ? AND user_id = ? AND deleted_at IS NOT NULL",
             [now, id, tagId, userId]
@@ -283,6 +324,19 @@ export function useTrickMutations(): UseTrickMutationsReturn {
               [junctionId, userId, id, tagId, now, now]
             );
           }
+        }
+
+        // Remove tag associations by soft-deleting the junction rows.
+        for (const tagId of removeTagIds) {
+          await tx.execute(
+            "UPDATE trick_tags SET deleted_at = ?, updated_at = ? WHERE trick_id = ? AND tag_id = ? AND user_id = ? AND deleted_at IS NULL",
+            [now, now, id, tagId, userId]
+          );
+        }
+
+        // Add new tag associations (restore soft-deleted rows first to avoid duplicates).
+        for (const tagId of addTagIds) {
+          await linkTag(tagId);
         }
 
         await safeLogEvent(tx, {
@@ -297,6 +351,10 @@ export function useTrickMutations(): UseTrickMutationsReturn {
 
       trackEvent("trick_updated");
     } catch (error: unknown) {
+      // Re-throw typed errors so the UI can map them to specific i18n keys.
+      if (isTypedMutationError(error)) {
+        throw error;
+      }
       const message =
         error instanceof Error ? error.message : "Unknown error updating trick";
       throw new Error(`Failed to update trick: ${message}`, { cause: error });
@@ -323,7 +381,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
           [now, now, id, userId]
         );
         if (!result.rowsAffected) {
-          throw new Error("Trick not found or already deleted");
+          throw new TrickNotFoundError();
         }
         await tx.execute(
           "UPDATE trick_tags SET deleted_at = ?, updated_at = ? WHERE trick_id = ? AND user_id = ? AND deleted_at IS NULL",
@@ -346,6 +404,10 @@ export function useTrickMutations(): UseTrickMutationsReturn {
 
       trackEvent("trick_deleted");
     } catch (error: unknown) {
+      // Re-throw typed errors so the UI can map them to specific i18n keys.
+      if (isTypedMutationError(error)) {
+        throw error;
+      }
       const message =
         error instanceof Error ? error.message : "Unknown error deleting trick";
       throw new Error(`Failed to delete trick: ${message}`, { cause: error });
