@@ -97,7 +97,8 @@
       "addedTag": "Tag {name} hinzugefügt",
       "removedTag": "Tag {name} entfernt",
       "createdTag": "Tag {name} erstellt und hinzugefügt",
-      "createFailed": "Tag konnte nicht erstellt werden"
+      "createFailed": "Tag konnte nicht erstellt werden",
+      "loading": "Tags werden geladen…"
     },
     "trickCount": "{count, plural, one {# Trick} other {# Tricks}}",
     "sort": {
@@ -182,7 +183,10 @@
       "tagNameTooLong": "Der Tag-Name darf maximal 50 Zeichen lang sein"
     },
     "linkedItems": "Verknüpfte Objekte",
-    "noLinkedItems": "Nicht mit Objekten verknüpft."
+    "noLinkedItems": "Nicht mit Objekten verknüpft.",
+    "errors": {
+      "trickMissing": "Dieser Trick wurde bereits gelöscht oder nicht gefunden."
+    }
   },
   "landing": {
     "tagline": "Trainieren. Planen. Auftreten. Hebe deine Magie auf ein neues Level.",
@@ -337,7 +341,8 @@
       "addedTag": "Tag {name} hinzugefügt",
       "removedTag": "Tag {name} entfernt",
       "createdTag": "Tag {name} erstellt und hinzugefügt",
-      "createFailed": "Tag konnte nicht erstellt werden"
+      "createFailed": "Tag konnte nicht erstellt werden",
+      "loading": "Tags werden geladen…"
     },
     "trickPicker": {
       "search": "Tricks suchen...",
@@ -345,7 +350,8 @@
       "selectedTricks": "Verknüpfte Tricks",
       "remove": "{name} trennen",
       "addedTrick": "{name} verknüpft",
-      "removedTrick": "{name} getrennt"
+      "removedTrick": "{name} getrennt",
+      "loading": "Tricks werden geladen…"
     },
     "validation": {
       "nameRequired": "Name ist erforderlich",

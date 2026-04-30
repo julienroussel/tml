@@ -7,7 +7,10 @@ const tagId = (id: string) => id as TagId;
 
 // --- Mocks -----------------------------------------------------------
 
-const mockExecute = vi.fn().mockResolvedValue({ rowsAffected: 0 });
+// Default is rowsAffected: 1 because updateTrick now throws TrickNotFoundError
+// when its UPDATE matches no rows. Tests that need a different value override
+// per-call via mockResolvedValueOnce.
+const mockExecute = vi.fn().mockResolvedValue({ rowsAffected: 1 });
 const mockWriteTransaction = vi.fn(
   async (cb: (tx: { execute: typeof mockExecute }) => Promise<void>) => {
     await cb({ execute: mockExecute });
@@ -743,9 +746,10 @@ describe("use-trick-mutations", () => {
     });
 
     it("restores soft-deleted tag association instead of inserting", async () => {
-      // When the restore UPDATE affects a row, no INSERT should follow
+      // When the restore UPDATE affects a row, no INSERT should follow.
+      // Trick UPDATE must return rowsAffected: 1 (otherwise TrickNotFoundError).
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 0 }) // trick UPDATE
+        .mockResolvedValueOnce({ rowsAffected: 1 }) // trick UPDATE
         .mockResolvedValueOnce({ rowsAffected: 1 }); // restore UPDATE hits a row
 
       const { useTrickMutations } = await getHookExports();
@@ -785,6 +789,12 @@ describe("use-trick-mutations", () => {
     });
 
     it("inserts new tag associations", async () => {
+      // Trick UPDATE returns 1 (row matched). Restore UPDATE returns 0 so the
+      // INSERT branch fires.
+      mockExecute
+        .mockResolvedValueOnce({ rowsAffected: 1 }) // trick UPDATE
+        .mockResolvedValueOnce({ rowsAffected: 0 }); // restore UPDATE — no row to restore
+
       const { useTrickMutations } = await getHookExports();
       const { updateTrick } = useTrickMutations();
 
@@ -887,6 +897,44 @@ describe("use-trick-mutations", () => {
           []
         )
       ).rejects.toThrow("Failed to update trick: DB locked");
+    });
+
+    it("throws TrickNotFoundError when the UPDATE matches no rows", async () => {
+      // The trick UPDATE returns rowsAffected: 0 — row was deleted upstream
+      // or never existed. The new guard at use-trick-mutations.ts should
+      // surface this as a typed error so the UI can route through
+      // getMutationErrorKey to a localised toast.
+      mockExecute.mockResolvedValueOnce({ rowsAffected: 0 });
+
+      const { useTrickMutations, TrickNotFoundError } = await getHookExports();
+      const { updateTrick } = useTrickMutations();
+
+      await expect(
+        updateTrick(
+          trickId("trick-missing"),
+          {
+            name: "Trick",
+            description: "",
+            category: "",
+            effectType: "",
+            difficulty: null,
+            status: "new",
+            duration: null,
+            performanceType: null,
+            angleSensitivity: null,
+            props: "",
+            music: "",
+            languages: [],
+            isCameraFriendly: null,
+            isSilent: null,
+            notes: "",
+            source: "",
+            videoUrl: "",
+          },
+          [],
+          []
+        )
+      ).rejects.toBeInstanceOf(TrickNotFoundError);
     });
 
     it("throws when no authenticated user", async () => {
@@ -1072,6 +1120,25 @@ describe("use-trick-mutations", () => {
       expect(trackEvent).toHaveBeenCalledWith("trick_deleted");
     });
 
+    it("throws TrickNotFoundError when soft-delete matches no rows", async () => {
+      // SELECT name returns a row, but the UPDATE that soft-deletes the
+      // trick reports rowsAffected: 0 — race with another deleter or stale
+      // id from the UI. The typed error lets the UI surface a specific toast.
+      mockExecute
+        .mockResolvedValueOnce({
+          rowsAffected: 1,
+          rows: { item: () => ({ name: "Snapshot Name" }), length: 1 },
+        }) // SELECT name
+        .mockResolvedValueOnce({ rowsAffected: 0 }); // UPDATE tricks (soft-delete)
+
+      const { useTrickMutations, TrickNotFoundError } = await getHookExports();
+      const { deleteTrick } = useTrickMutations();
+
+      await expect(
+        deleteTrick(trickId("trick-already-gone"))
+      ).rejects.toBeInstanceOf(TrickNotFoundError);
+    });
+
     it("wraps execution errors with descriptive message", async () => {
       mockExecute.mockRejectedValueOnce(new Error("Connection lost"));
       const { useTrickMutations } = await getHookExports();
@@ -1157,6 +1224,32 @@ describe("use-trick-mutations", () => {
       );
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe("getMutationErrorKey", () => {
+    it("maps TrickNotFoundError to errors.trickMissing", async () => {
+      const { getMutationErrorKey, TrickNotFoundError } =
+        await getHookExports();
+
+      expect(getMutationErrorKey(new TrickNotFoundError())).toBe(
+        "errors.trickMissing"
+      );
+    });
+
+    it("returns null for a generic Error", async () => {
+      const { getMutationErrorKey } = await getHookExports();
+
+      expect(getMutationErrorKey(new Error("network down"))).toBeNull();
+    });
+
+    it("returns null for a non-Error rejection value", async () => {
+      const { getMutationErrorKey } = await getHookExports();
+
+      expect(getMutationErrorKey("oops")).toBeNull();
+      expect(getMutationErrorKey(undefined)).toBeNull();
+      expect(getMutationErrorKey(null)).toBeNull();
+      expect(getMutationErrorKey({ tag: "TRICK_NOT_FOUND" })).toBeNull();
     });
   });
 });

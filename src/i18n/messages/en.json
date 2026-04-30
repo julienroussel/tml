@@ -97,7 +97,8 @@
       "addedTag": "Added tag {name}",
       "removedTag": "Removed tag {name}",
       "createdTag": "Created and added tag {name}",
-      "createFailed": "Failed to create tag"
+      "createFailed": "Failed to create tag",
+      "loading": "Loading tags…"
     },
     "trickCount": "{count, plural, one {# trick} other {# tricks}}",
     "sort": {
@@ -182,7 +183,10 @@
       "tagNameTooLong": "Tag name must be 50 characters or less"
     },
     "linkedItems": "Linked items",
-    "noLinkedItems": "Not linked to any items."
+    "noLinkedItems": "Not linked to any items.",
+    "errors": {
+      "trickMissing": "This trick was already deleted or not found."
+    }
   },
   "landing": {
     "tagline": "Train. Plan. Perform. Elevate your magic.",
@@ -337,7 +341,8 @@
       "addedTag": "Added tag {name}",
       "removedTag": "Removed tag {name}",
       "createdTag": "Created and added tag {name}",
-      "createFailed": "Failed to create tag"
+      "createFailed": "Failed to create tag",
+      "loading": "Loading tags…"
     },
     "trickPicker": {
       "search": "Search tricks...",
@@ -345,7 +350,8 @@
       "selectedTricks": "Linked tricks",
       "remove": "Unlink {name}",
       "addedTrick": "Linked {name}",
-      "removedTrick": "Unlinked {name}"
+      "removedTrick": "Unlinked {name}",
+      "loading": "Loading tricks…"
     },
     "validation": {
       "nameRequired": "Name is required",

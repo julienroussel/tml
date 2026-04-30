@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { TagId } from "@/db/types";
@@ -84,6 +85,11 @@ interface TrickFormProps {
   onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (data: TrickFormValues) => void;
   onToggleTag: (tagId: TagId) => void;
+  /**
+   * True while the parent's tag join is still hydrating during an Edit
+   * session. The picker is replaced with a skeleton. Issue #216.
+   */
+  relationsLoading?: boolean;
   selectedTagIds: TagId[];
   userCategories: string[];
   userEffectTypes: string[];
@@ -145,6 +151,7 @@ function TrickForm({
   onToggleTag,
   onCreateTag,
   onDirtyChange,
+  relationsLoading = false,
   userCategories,
   userEffectTypes,
 }: TrickFormProps): React.ReactElement {
@@ -185,6 +192,7 @@ function TrickForm({
   return (
     <Form {...form}>
       <form
+        aria-busy={relationsLoading}
         className="flex flex-col gap-4"
         id={formId}
         onSubmit={form.handleSubmit(onSubmit)}
@@ -541,15 +549,25 @@ function TrickForm({
           title={t("section.organization")}
         >
           <div className="flex flex-col gap-4 px-2 pb-2">
-            <fieldset className="grid gap-2 border-none p-0">
+            <fieldset
+              aria-busy={relationsLoading}
+              className="grid gap-2 border-none p-0"
+            >
               <legend className="font-medium text-sm">{t("field.tags")}</legend>
-              <TagPicker
-                availableTags={availableTags}
-                maxTags={MAX_TAGS_PER_TRICK}
-                onCreateTag={onCreateTag}
-                onToggleTag={onToggleTag}
-                selectedTagIds={selectedTagIds}
-              />
+              {relationsLoading ? (
+                <Skeleton
+                  aria-label={t("tagPicker.loading")}
+                  className="h-11 w-full"
+                />
+              ) : (
+                <TagPicker
+                  availableTags={availableTags}
+                  maxTags={MAX_TAGS_PER_TRICK}
+                  onCreateTag={onCreateTag}
+                  onToggleTag={onToggleTag}
+                  selectedTagIds={selectedTagIds}
+                />
+              )}
             </fieldset>
 
             <FormField

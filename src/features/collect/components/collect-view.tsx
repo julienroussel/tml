@@ -101,21 +101,17 @@ export function CollectView(): React.ReactElement {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<ItemId | null>(null);
 
-  // ---------------------------------------------------------------------------
-  // Tag selection (local state for the form, not persisted until save)
-  // ---------------------------------------------------------------------------
-  const [selectedTagIds, setSelectedTagIds] = useState<TagId[]>([]);
-
-  // ---------------------------------------------------------------------------
-  // Trick selection (local state for the form, not persisted until save)
-  // ---------------------------------------------------------------------------
-  const [selectedTrickIds, setSelectedTrickIds] = useState<TrickId[]>([]);
-
-  // Snapshot of tag/trick IDs captured when edit form opens (stable diff baseline).
-  // Known cold-start race — if PowerSync join hasn't hydrated at click time, this
-  // starts empty. Tracked in a follow-up issue.
-  const [originalTagIds, setOriginalTagIds] = useState<TagId[]>([]);
-  const [originalTrickIds, setOriginalTrickIds] = useState<TrickId[]>([]);
+  // Selection state. `null` = "edit session not yet seeded from hydrated joins";
+  // a seeding effect below populates these once the join queries finish loading.
+  // Add path bypasses the sentinel: handleAddItem seeds `[]` directly.
+  const [selectedTagIds, setSelectedTagIds] = useState<TagId[] | null>(null);
+  const [selectedTrickIds, setSelectedTrickIds] = useState<TrickId[] | null>(
+    null
+  );
+  const [originalTagIds, setOriginalTagIds] = useState<TagId[] | null>(null);
+  const [originalTrickIds, setOriginalTrickIds] = useState<TrickId[] | null>(
+    null
+  );
 
   // ---------------------------------------------------------------------------
   // Data hooks
@@ -127,7 +123,11 @@ export function CollectView(): React.ReactElement {
     sort,
   });
 
-  const { item: editingItem, error: editingItemError } = useItem(editingItemId);
+  const {
+    item: editingItem,
+    error: editingItemError,
+    isLoading: editingItemLoading,
+  } = useItem(editingItemId);
   const { tags } = useTags();
   const { createItem, updateItem, deleteItem } = useItemMutations();
   const { createTag } = useTagMutations();
@@ -138,7 +138,11 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Item-tags join query (build a Map<itemId, ParsedTag[]>)
   // ---------------------------------------------------------------------------
-  const { data: itemTagRows, error: itemTagError } = useQuery<ItemTagRow>(
+  const {
+    data: itemTagRows,
+    error: itemTagError,
+    isLoading: itemTagsLoading,
+  } = useQuery<ItemTagRow>(
     `SELECT it.item_id, t.id AS tag_id, t.name AS tag_name, t.color
      FROM item_tags it
      JOIN tags t ON it.tag_id = t.id
@@ -150,7 +154,11 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Item-tricks join query (build a Map<itemId, LinkedTrick[]>)
   // ---------------------------------------------------------------------------
-  const { data: itemTrickRows, error: itemTrickError } = useQuery<ItemTrickRow>(
+  const {
+    data: itemTrickRows,
+    error: itemTrickError,
+    isLoading: itemTricksLoading,
+  } = useQuery<ItemTrickRow>(
     `SELECT itr.item_id, tr.id AS trick_id, tr.name AS trick_name
      FROM item_tricks itr
      JOIN tricks tr ON itr.trick_id = tr.id
@@ -158,6 +166,18 @@ export function CollectView(): React.ReactElement {
   );
 
   const itemTrickMap = buildItemTrickMap(itemTrickRows);
+
+  // True while an Edit session is open and any of: the item row, the tag join,
+  // or the trick join is still hydrating from local SQLite. Gates Save (so a
+  // keyboard submit can't write empty diffs against a stale [] baseline) and
+  // swaps the pickers for skeletons. Add path is never gated because
+  // handleAddItem seeds the selection arrays to [] up front.
+  const relationsLoading =
+    editingItemId !== null &&
+    (itemTagsLoading ||
+      itemTricksLoading ||
+      editingItemLoading ||
+      selectedTagIds === null);
 
   // ---------------------------------------------------------------------------
   // Available tricks for the trick picker (only when form sheet is open)
@@ -198,12 +218,46 @@ export function CollectView(): React.ReactElement {
       });
       setSheetOpen(false);
       setEditingItemId(null);
-      setSelectedTagIds([]);
-      setSelectedTrickIds([]);
-      setOriginalTagIds([]);
-      setOriginalTrickIds([]);
+      setSelectedTagIds(null);
+      setSelectedTrickIds(null);
+      setOriginalTagIds(null);
+      setOriginalTrickIds(null);
     }
   }, [editingItemId, editingItemError, t]);
+
+  // ---------------------------------------------------------------------------
+  // Lock-in seeding for an Edit session.
+  // Runs once the row + both join queries have hydrated, copying the current
+  // join slice into selected*/original* via functional setState. The `prev ??`
+  // guard makes seeding idempotent: subsequent re-runs (e.g. when the join map
+  // updates from background sync) leave existing state alone, preserving any
+  // user edits while the sheet is open.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (editingItemId === null) {
+      return;
+    }
+    if (itemTagsLoading || itemTricksLoading || editingItemLoading) {
+      return;
+    }
+
+    const tagSeed = (itemTagMap.get(editingItemId) ?? []).map((tag) => tag.id);
+    setSelectedTagIds((prev) => prev ?? tagSeed);
+    setOriginalTagIds((prev) => prev ?? tagSeed);
+
+    const trickSeed = (itemTrickMap.get(editingItemId) ?? []).map(
+      (trick) => trick.id
+    );
+    setSelectedTrickIds((prev) => prev ?? trickSeed);
+    setOriginalTrickIds((prev) => prev ?? trickSeed);
+  }, [
+    editingItemId,
+    itemTagsLoading,
+    itemTricksLoading,
+    editingItemLoading,
+    itemTagMap,
+    itemTrickMap,
+  ]);
 
   // ---------------------------------------------------------------------------
   // Surface critical query errors as a single, replaceable toast.
@@ -254,17 +308,33 @@ export function CollectView(): React.ReactElement {
       ? null
       : (items.find((item) => item.id === deletingItemId)?.name ?? null);
 
-  // Whether the tag selection has diverged from the snapshot (or is non-empty for new items)
-  const tagsDirty = editingItemId
-    ? selectedTagIds.length !== originalTagIds.length ||
-      selectedTagIds.some((id) => !originalTagIds.includes(id))
-    : selectedTagIds.length > 0;
+  // Whether the tag selection has diverged from the snapshot (or is non-empty for new items).
+  // While an edit session is still seeding (selected/original null), treat as not-dirty.
+  const tagsDirty = (() => {
+    if (editingItemId) {
+      if (selectedTagIds === null || originalTagIds === null) {
+        return false;
+      }
+      return (
+        selectedTagIds.length !== originalTagIds.length ||
+        selectedTagIds.some((id) => !originalTagIds.includes(id))
+      );
+    }
+    return selectedTagIds !== null && selectedTagIds.length > 0;
+  })();
 
-  // Whether the trick selection has diverged from the snapshot (or is non-empty for new items)
-  const tricksDirty = editingItemId
-    ? selectedTrickIds.length !== originalTrickIds.length ||
-      selectedTrickIds.some((id) => !originalTrickIds.includes(id))
-    : selectedTrickIds.length > 0;
+  const tricksDirty = (() => {
+    if (editingItemId) {
+      if (selectedTrickIds === null || originalTrickIds === null) {
+        return false;
+      }
+      return (
+        selectedTrickIds.length !== originalTrickIds.length ||
+        selectedTrickIds.some((id) => !originalTrickIds.includes(id))
+      );
+    }
+    return selectedTrickIds !== null && selectedTrickIds.length > 0;
+  })();
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -280,21 +350,14 @@ export function CollectView(): React.ReactElement {
   }
 
   function handleEditItem(id: ItemId): void {
+    // Defer snapshotting until the seeding effect runs against fully-hydrated
+    // joins. Issue #216: snapshotting here read from a possibly-empty map and
+    // produced silent no-op or silent unlink-of-all on save.
     setEditingItemId(id);
-
-    // Snapshot the current tag/trick IDs as the diff baseline for this edit session.
-    // Cold-start race: if the PowerSync join hasn't hydrated yet, both snapshot and
-    // selection start as []. Tracked as a follow-up issue.
-    const currentTags = itemTagMap.get(id) ?? [];
-    const currentTagIds = currentTags.map((tag) => tag.id);
-    setSelectedTagIds(currentTagIds);
-    setOriginalTagIds(currentTagIds);
-
-    const currentTricks = itemTrickMap.get(id) ?? [];
-    const currentTrickIds = currentTricks.map((trick) => trick.id);
-    setSelectedTrickIds(currentTrickIds);
-    setOriginalTrickIds(currentTrickIds);
-
+    setSelectedTagIds(null);
+    setSelectedTrickIds(null);
+    setOriginalTagIds(null);
+    setOriginalTrickIds(null);
     setSheetOpen(true);
   }
 
@@ -302,16 +365,34 @@ export function CollectView(): React.ReactElement {
     setSheetOpen(open);
     if (!open) {
       setEditingItemId(null);
-      setSelectedTagIds([]);
-      setSelectedTrickIds([]);
-      setOriginalTagIds([]);
-      setOriginalTrickIds([]);
+      setSelectedTagIds(null);
+      setSelectedTrickIds(null);
+      setOriginalTagIds(null);
+      setOriginalTrickIds(null);
     }
   }
 
   async function handleSubmit(data: ItemFormValues): Promise<void> {
     try {
       if (editingItemId) {
+        // Defense-in-depth against keyboard submit before the seeding effect
+        // has hydrated state. The Save button is also disabled via
+        // relationsLoading, but a stray Enter press could still fire submit.
+        if (
+          selectedTagIds === null ||
+          originalTagIds === null ||
+          selectedTrickIds === null ||
+          originalTrickIds === null
+        ) {
+          // Defense-in-depth path. Save is gated via relationsLoading; this
+          // branch should be unreachable. The warn surfaces it in telemetry
+          // if a stray keyboard submit ever beats the gate.
+          console.warn(
+            "[CollectView] Submit blocked: relations not yet hydrated"
+          );
+          return;
+        }
+
         const originalTagSet = new Set(originalTagIds);
         const currentTagSet = new Set(selectedTagIds);
         const addTagIds = selectedTagIds.filter(
@@ -340,16 +421,18 @@ export function CollectView(): React.ReactElement {
         );
         toast.success(t("itemUpdated"));
       } else {
-        await createItem(data, selectedTagIds, selectedTrickIds);
+        // Add path: handleAddItem seeded both selection arrays to [],
+        // so the `?? []` is a type guard, not a runtime fallback.
+        await createItem(data, selectedTagIds ?? [], selectedTrickIds ?? []);
         toast.success(t("itemCreated"));
       }
 
       setSheetOpen(false);
       setEditingItemId(null);
-      setSelectedTagIds([]);
-      setSelectedTrickIds([]);
-      setOriginalTagIds([]);
-      setOriginalTrickIds([]);
+      setSelectedTagIds(null);
+      setSelectedTrickIds(null);
+      setOriginalTagIds(null);
+      setOriginalTrickIds(null);
     } catch (error) {
       console.error("Item save failed:", error);
       const errorKey = getMutationErrorKey(error);
@@ -402,11 +485,16 @@ export function CollectView(): React.ReactElement {
   }
 
   function handleToggleTag(tagId: TagId): void {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId)
+    setSelectedTagIds((prev) => {
+      if (prev === null) {
+        // Unreachable in normal flow — the picker is replaced by a skeleton
+        // while selection is null. Defensive against stray callbacks.
+        return prev;
+      }
+      return prev.includes(tagId)
         ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
-    );
+        : [...prev, tagId];
+    });
   }
 
   async function handleCreateTag(name: string): Promise<TagId> {
@@ -421,11 +509,14 @@ export function CollectView(): React.ReactElement {
   }
 
   function handleToggleTrick(trickId: TrickId): void {
-    setSelectedTrickIds((prev) =>
-      prev.includes(trickId)
+    setSelectedTrickIds((prev) => {
+      if (prev === null) {
+        return prev;
+      }
+      return prev.includes(trickId)
         ? prev.filter((id) => id !== trickId)
-        : [...prev, trickId]
-    );
+        : [...prev, trickId];
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -517,8 +608,9 @@ export function CollectView(): React.ReactElement {
         onToggleTag={handleToggleTag}
         onToggleTrick={handleToggleTrick}
         open={sheetOpen}
-        selectedTagIds={selectedTagIds}
-        selectedTrickIds={selectedTrickIds}
+        relationsLoading={relationsLoading}
+        selectedTagIds={selectedTagIds ?? []}
+        selectedTrickIds={selectedTrickIds ?? []}
         tagsDirty={tagsDirty}
         tricksDirty={tricksDirty}
         userBrands={userBrands}

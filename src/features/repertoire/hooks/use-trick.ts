@@ -5,6 +5,7 @@ import type { ParsedTrick } from "../types";
 import { parseTrickRow, type TrickRow } from "./parse-trick";
 
 interface UseTrickResult {
+  error: Error | null;
   isLoading: boolean;
   trick: ParsedTrick | null;
 }
@@ -20,14 +21,14 @@ export function useTrick(id: string | null): UseTrickResult {
   const sql = id
     ? "SELECT * FROM tricks WHERE id = ? AND deleted_at IS NULL"
     : "SELECT 1 WHERE 0";
-  const { data, isLoading } = useQuery<TrickRow>(sql, id ? [id] : []);
+  const { data, isLoading, error } = useQuery<TrickRow>(sql, id ? [id] : []);
 
   if (!id) {
-    return { trick: null, isLoading: false };
+    return { trick: null, isLoading: false, error: null };
   }
 
   const first = data[0];
   const trick = first ? parseTrickRow(first) : null;
 
-  return { trick, isLoading };
+  return { trick, isLoading, error: error ?? null };
 }

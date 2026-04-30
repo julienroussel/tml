@@ -28,6 +28,12 @@ interface TrickFormSheetProps {
   onSubmit: (data: TrickFormValues) => void;
   onToggleTag: (tagId: TagId) => void;
   open: boolean;
+  /**
+   * True while an Edit session's trick row + tag join are still hydrating.
+   * Disables Save (so a keyboard submit cannot fire against an unseeded
+   * baseline) and renders a skeleton in place of the picker. Issue #216.
+   */
+  relationsLoading?: boolean;
   selectedTagIds: TagId[];
   submitting?: boolean;
   tagsDirty?: boolean;
@@ -68,6 +74,7 @@ function TrickFormSheet({
   onSubmit,
   categories,
   effectTypes,
+  relationsLoading = false,
   submitting = false,
   tagsDirty = false,
 }: TrickFormSheetProps): React.ReactElement {
@@ -110,6 +117,7 @@ function TrickFormSheet({
               onDirtyChange={setFormDirty}
               onSubmit={onSubmit}
               onToggleTag={onToggleTag}
+              relationsLoading={relationsLoading}
               selectedTagIds={selectedTagIds}
               userCategories={categories}
               userEffectTypes={effectTypes}
@@ -131,7 +139,12 @@ function TrickFormSheet({
           >
             {t("cancel")}
           </Button>
-          <Button disabled={submitting} form={FORM_ID} type="submit">
+          <Button
+            aria-busy={submitting || relationsLoading}
+            disabled={submitting || relationsLoading}
+            form={FORM_ID}
+            type="submit"
+          >
             {t("save")}
           </Button>
         </SheetFooter>

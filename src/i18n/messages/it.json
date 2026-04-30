@@ -97,7 +97,8 @@
       "addedTag": "Tag {name} aggiunto",
       "removedTag": "Tag {name} rimosso",
       "createdTag": "Tag {name} creato e aggiunto",
-      "createFailed": "Creazione del tag non riuscita"
+      "createFailed": "Creazione del tag non riuscita",
+      "loading": "Caricamento dei tag…"
     },
     "trickCount": "{count, plural, one {# trucco} other {# trucchi}}",
     "sort": {
@@ -182,7 +183,10 @@
       "tagNameTooLong": "Il nome del tag deve contenere al massimo 50 caratteri"
     },
     "linkedItems": "Oggetti collegati",
-    "noLinkedItems": "Non collegato a nessun oggetto."
+    "noLinkedItems": "Non collegato a nessun oggetto.",
+    "errors": {
+      "trickMissing": "Questo trucco è già stato eliminato o non è stato trovato."
+    }
   },
   "landing": {
     "tagline": "Allenati. Pianifica. Esibisciti. Eleva la tua magia.",
@@ -337,7 +341,8 @@
       "addedTag": "Tag {name} aggiunto",
       "removedTag": "Tag {name} rimosso",
       "createdTag": "Tag {name} creato e aggiunto",
-      "createFailed": "Creazione del tag non riuscita"
+      "createFailed": "Creazione del tag non riuscita",
+      "loading": "Caricamento dei tag…"
     },
     "trickPicker": {
       "search": "Cerca trucchi...",
@@ -345,7 +350,8 @@
       "selectedTricks": "Trucchi collegati",
       "remove": "Scollega {name}",
       "addedTrick": "{name} collegato",
-      "removedTrick": "{name} scollegato"
+      "removedTrick": "{name} scollegato",
+      "loading": "Caricamento dei trucchi…"
     },
     "validation": {
       "nameRequired": "Il nome è obbligatorio",

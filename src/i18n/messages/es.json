@@ -97,7 +97,8 @@
       "addedTag": "Etiqueta {name} añadida",
       "removedTag": "Etiqueta {name} eliminada",
       "createdTag": "Etiqueta {name} creada y añadida",
-      "createFailed": "Error al crear la etiqueta"
+      "createFailed": "Error al crear la etiqueta",
+      "loading": "Cargando etiquetas…"
     },
     "trickCount": "{count, plural, one {# truco} other {# trucos}}",
     "sort": {
@@ -182,7 +183,10 @@
       "tagNameTooLong": "El nombre de la etiqueta debe tener 50 caracteres o menos"
     },
     "linkedItems": "Objetos vinculados",
-    "noLinkedItems": "No está vinculado a ningún objeto."
+    "noLinkedItems": "No está vinculado a ningún objeto.",
+    "errors": {
+      "trickMissing": "Este truco ya se ha eliminado o no se ha encontrado."
+    }
   },
   "landing": {
     "tagline": "Entrena. Planifica. Actúa. Eleva tu magia.",
@@ -337,7 +341,8 @@
       "addedTag": "Etiqueta {name} añadida",
       "removedTag": "Etiqueta {name} eliminada",
       "createdTag": "Etiqueta {name} creada y añadida",
-      "createFailed": "Error al crear la etiqueta"
+      "createFailed": "Error al crear la etiqueta",
+      "loading": "Cargando etiquetas…"
     },
     "trickPicker": {
       "search": "Buscar trucos...",
@@ -345,7 +350,8 @@
       "selectedTricks": "Trucos vinculados",
       "remove": "Desvincular {name}",
       "addedTrick": "{name} vinculado",
-      "removedTrick": "{name} desvinculado"
+      "removedTrick": "{name} desvinculado",
+      "loading": "Cargando trucos…"
     },
     "validation": {
       "nameRequired": "El nombre es obligatorio",

@@ -12,7 +12,10 @@ import { useTags } from "../hooks/use-tags";
 import { useTrick } from "../hooks/use-trick";
 import { useTrickCategories } from "../hooks/use-trick-categories";
 import { useTrickEffectTypes } from "../hooks/use-trick-effect-types";
-import { useTrickMutations } from "../hooks/use-trick-mutations";
+import {
+  getMutationErrorKey,
+  useTrickMutations,
+} from "../hooks/use-trick-mutations";
 import { useTricks } from "../hooks/use-tricks";
 import type { TrickFormValues } from "../schema";
 import type { ParsedTag, TrickWithTags } from "../types";
@@ -66,6 +69,9 @@ interface TrickItemRow {
 /** Debounce delay for the search input (milliseconds). */
 const SEARCH_DEBOUNCE_MS = 300;
 
+/** Stable toast id for the editing-trick load error (separate so it doesn't clobber the relations toast). */
+const LOAD_EDIT_TRICK_ERROR_TOAST_ID = "repertoire-load-edit-trick-error";
+
 /**
  * Main orchestration component for the repertoire feature.
  *
@@ -107,10 +113,12 @@ export function RepertoireView(): React.ReactElement {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingTrickId, setDeletingTrickId] = useState<TrickId | null>(null);
 
-  // ---------------------------------------------------------------------------
-  // Tag selection (local state for the form, not persisted until save)
-  // ---------------------------------------------------------------------------
-  const [selectedTagIds, setSelectedTagIds] = useState<TagId[]>([]);
+  // Tag selection state. `null` = "edit session not yet seeded from hydrated
+  // joins" — the seeding effect below populates these once the trick row +
+  // trick_tags query finish loading. Add path bypasses the sentinel:
+  // handleAddTrick seeds `[]` directly. Issue #216.
+  const [selectedTagIds, setSelectedTagIds] = useState<TagId[] | null>(null);
+  const [originalTagIds, setOriginalTagIds] = useState<TagId[] | null>(null);
 
   // ---------------------------------------------------------------------------
   // Data hooks
@@ -122,7 +130,11 @@ export function RepertoireView(): React.ReactElement {
     sort: SORT_MAP[sort],
   });
 
-  const { trick: editingTrick } = useTrick(editingTrickId);
+  const {
+    trick: editingTrick,
+    error: editingTrickError,
+    isLoading: editingTrickLoading,
+  } = useTrick(editingTrickId);
   const { tags } = useTags();
   const { createTrick, updateTrick, deleteTrick } = useTrickMutations();
   const { createTag } = useTagMutations();
@@ -132,7 +144,11 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Trick-tags join query (build a Map<trickId, ParsedTag[]>)
   // ---------------------------------------------------------------------------
-  const { data: trickTagRows, error: trickTagError } = useQuery<TrickTagRow>(
+  const {
+    data: trickTagRows,
+    error: trickTagError,
+    isLoading: trickTagsLoading,
+  } = useQuery<TrickTagRow>(
     `SELECT tt.trick_id, t.id AS tag_id, t.name AS tag_name, t.color
      FROM trick_tags tt
      JOIN tags t ON tt.tag_id = t.id
@@ -140,6 +156,15 @@ export function RepertoireView(): React.ReactElement {
   );
 
   const trickTagMap = buildTrickTagMap(trickTagRows);
+
+  // True while an Edit session is open and the trick row or trick_tags join
+  // is still hydrating. Gates Save (so a keyboard submit can't write empty
+  // diffs against a stale [] baseline) and swaps the picker for a skeleton.
+  // Add path is never gated because handleAddTrick seeds the selection arrays
+  // up front. Issue #216.
+  const relationsLoading =
+    editingTrickId !== null &&
+    (trickTagsLoading || editingTrickLoading || selectedTagIds === null);
 
   // ---------------------------------------------------------------------------
   // Trick-items join query (build a Map<trickId, LinkedItem[]>)
@@ -159,6 +184,24 @@ export function RepertoireView(): React.ReactElement {
     }
   }, [trickTagError, trickItemError, t]);
 
+  // ---------------------------------------------------------------------------
+  // Editing trick load failure — close the sheet rather than render "add new"
+  // (mirrors collect-view's editingItemError handler).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (editingTrickId && editingTrickError) {
+      console.error("Failed to load trick for editing:", editingTrickError);
+      // Do NOT pass error.message as description — PowerSync/SQLite messages
+      // can carry row context or query fragments. Full error already in
+      // console.error above for developer diagnostics.
+      toast.error(t("loadError"), { id: LOAD_EDIT_TRICK_ERROR_TOAST_ID });
+      setSheetOpen(false);
+      setEditingTrickId(null);
+      setSelectedTagIds(null);
+      setOriginalTagIds(null);
+    }
+  }, [editingTrickId, editingTrickError, t]);
+
   const trickItemMap = buildTrickItemMap(trickItemRows);
 
   const tricksWithTags: TrickWithTags[] = tricks.map((trick) => ({
@@ -172,16 +215,39 @@ export function RepertoireView(): React.ReactElement {
       ? null
       : (tricks.find((trick) => trick.id === deletingTrickId)?.name ?? null);
 
-  // Original tag IDs for the trick being edited (used to compute diff on save)
-  const editingTrickOriginalTagIds = editingTrickId
-    ? (trickTagMap.get(editingTrickId) ?? []).map((tag) => tag.id)
-    : ([] as TagId[]);
+  // Lock-in seeding for an Edit session.
+  // Runs once the trick row and trick_tags join have hydrated, copying the
+  // current join slice into selected/original via functional setState. The
+  // `prev ??` guard makes seeding idempotent: subsequent re-runs (e.g. when
+  // the join map updates from background sync) leave existing state alone,
+  // preserving any user edits while the sheet is open.
+  useEffect(() => {
+    if (editingTrickId === null) {
+      return;
+    }
+    if (trickTagsLoading || editingTrickLoading) {
+      return;
+    }
 
-  // Whether the tag selection has diverged from the original (or is non-empty for new tricks)
-  const tagsDirty = editingTrickId
-    ? selectedTagIds.length !== editingTrickOriginalTagIds.length ||
-      selectedTagIds.some((id) => !editingTrickOriginalTagIds.includes(id))
-    : selectedTagIds.length > 0;
+    const seed = (trickTagMap.get(editingTrickId) ?? []).map((tag) => tag.id);
+    setSelectedTagIds((prev) => prev ?? seed);
+    setOriginalTagIds((prev) => prev ?? seed);
+  }, [editingTrickId, trickTagsLoading, editingTrickLoading, trickTagMap]);
+
+  // Whether the tag selection has diverged from the snapshot (or is non-empty
+  // for new tricks). While an edit session is still seeding, treat as not-dirty.
+  const tagsDirty = (() => {
+    if (editingTrickId) {
+      if (selectedTagIds === null || originalTagIds === null) {
+        return false;
+      }
+      return (
+        selectedTagIds.length !== originalTagIds.length ||
+        selectedTagIds.some((id) => !originalTagIds.includes(id))
+      );
+    }
+    return selectedTagIds !== null && selectedTagIds.length > 0;
+  })();
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -190,16 +256,17 @@ export function RepertoireView(): React.ReactElement {
   function handleAddTrick(): void {
     setEditingTrickId(null);
     setSelectedTagIds([]);
+    setOriginalTagIds([]);
     setSheetOpen(true);
   }
 
   function handleEditTrick(id: TrickId): void {
+    // Defer snapshotting until the seeding effect runs against fully-hydrated
+    // joins. Issue #216: snapshotting here read from a possibly-empty map and
+    // produced a silent unlink window if the user clicked Save very fast.
     setEditingTrickId(id);
-
-    // Preload the current tag selection for this trick
-    const currentTags = trickTagMap.get(id) ?? [];
-    setSelectedTagIds(currentTags.map((tag) => tag.id));
-
+    setSelectedTagIds(null);
+    setOriginalTagIds(null);
     setSheetOpen(true);
   }
 
@@ -207,34 +274,53 @@ export function RepertoireView(): React.ReactElement {
     setSheetOpen(open);
     if (!open) {
       setEditingTrickId(null);
-      setSelectedTagIds([]);
+      setSelectedTagIds(null);
+      setOriginalTagIds(null);
     }
   }
 
   async function handleSubmit(data: TrickFormValues): Promise<void> {
     try {
       if (editingTrickId) {
-        const originalSet = new Set(editingTrickOriginalTagIds);
+        // Defense-in-depth against keyboard submit before the seeding effect
+        // has hydrated state. Save is also disabled via relationsLoading.
+        if (selectedTagIds === null || originalTagIds === null) {
+          // Defense-in-depth path. Save is gated via relationsLoading; this
+          // branch should be unreachable. The warn surfaces it in telemetry
+          // if a stray keyboard submit ever beats the gate.
+          console.warn(
+            "[RepertoireView] Submit blocked: relations not yet hydrated"
+          );
+          return;
+        }
+
+        const originalSet = new Set(originalTagIds);
         const currentSet = new Set(selectedTagIds);
 
         const addTagIds = selectedTagIds.filter((id) => !originalSet.has(id));
-        const removeTagIds = editingTrickOriginalTagIds.filter(
-          (id) => !currentSet.has(id)
-        );
+        const removeTagIds = originalTagIds.filter((id) => !currentSet.has(id));
 
         await updateTrick(editingTrickId, data, addTagIds, removeTagIds);
         toast.success(t("trickUpdated"));
       } else {
-        await createTrick(data, selectedTagIds);
+        // Add path: handleAddTrick seeded selectedTagIds to [],
+        // so the `?? []` is a type guard, not a runtime fallback.
+        await createTrick(data, selectedTagIds ?? []);
         toast.success(t("trickCreated"));
       }
 
       setSheetOpen(false);
       setEditingTrickId(null);
-      setSelectedTagIds([]);
+      setSelectedTagIds(null);
+      setOriginalTagIds(null);
     } catch (error) {
       console.error("Failed to save trick:", error);
-      toast.error(t("saveFailed"));
+      const errorKey = getMutationErrorKey(error);
+      if (errorKey) {
+        toast.error(t(errorKey));
+      } else {
+        toast.error(t("saveFailed"));
+      }
     }
   }
 
@@ -253,7 +339,12 @@ export function RepertoireView(): React.ReactElement {
       toast.success(t("trickDeleted"));
     } catch (error) {
       console.error("Failed to delete trick:", error);
-      toast.error(t("deleteFailed"));
+      const errorKey = getMutationErrorKey(error);
+      if (errorKey) {
+        toast.error(t(errorKey));
+      } else {
+        toast.error(t("deleteFailed"));
+      }
     } finally {
       setDeleteDialogOpen(false);
       setDeletingTrickId(null);
@@ -268,11 +359,16 @@ export function RepertoireView(): React.ReactElement {
   }
 
   function handleToggleTag(tagId: TagId): void {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId)
+    setSelectedTagIds((prev) => {
+      if (prev === null) {
+        // Unreachable in normal flow — the picker is replaced by a skeleton
+        // while selection is null. Defensive against stray callbacks.
+        return prev;
+      }
+      return prev.includes(tagId)
         ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
-    );
+        : [...prev, tagId];
+    });
   }
 
   function handleCreateTag(name: string): Promise<TagId> {
@@ -364,7 +460,8 @@ export function RepertoireView(): React.ReactElement {
         onSubmit={handleSubmit}
         onToggleTag={handleToggleTag}
         open={sheetOpen}
-        selectedTagIds={selectedTagIds}
+        relationsLoading={relationsLoading}
+        selectedTagIds={selectedTagIds ?? []}
         tagsDirty={tagsDirty}
         trick={editingTrick}
       />

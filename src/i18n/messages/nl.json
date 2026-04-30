@@ -97,7 +97,8 @@
       "addedTag": "Tag {name} toegevoegd",
       "removedTag": "Tag {name} verwijderd",
       "createdTag": "Tag {name} aangemaakt en toegevoegd",
-      "createFailed": "Kan tag niet aanmaken"
+      "createFailed": "Kan tag niet aanmaken",
+      "loading": "Tags laden…"
     },
     "trickCount": "{count, plural, one {# truc} other {# trucs}}",
     "sort": {
@@ -182,7 +183,10 @@
       "tagNameTooLong": "Tagnaam mag maximaal 50 tekens bevatten"
     },
     "linkedItems": "Gekoppelde items",
-    "noLinkedItems": "Niet gekoppeld aan items."
+    "noLinkedItems": "Niet gekoppeld aan items.",
+    "errors": {
+      "trickMissing": "Deze truc is al verwijderd of niet gevonden."
+    }
   },
   "landing": {
     "tagline": "Trainen. Plannen. Optreden. Til je magie naar een hoger niveau.",
@@ -337,7 +341,8 @@
       "addedTag": "Tag {name} toegevoegd",
       "removedTag": "Tag {name} verwijderd",
       "createdTag": "Tag {name} aangemaakt en toegevoegd",
-      "createFailed": "Kan tag niet aanmaken"
+      "createFailed": "Kan tag niet aanmaken",
+      "loading": "Tags laden…"
     },
     "trickPicker": {
       "search": "Trucs zoeken...",
@@ -345,7 +350,8 @@
       "selectedTricks": "Gekoppelde trucs",
       "remove": "{name} ontkoppelen",
       "addedTrick": "{name} gekoppeld",
-      "removedTrick": "{name} ontkoppeld"
+      "removedTrick": "{name} ontkoppeld",
+      "loading": "Trucs laden…"
     },
     "validation": {
       "nameRequired": "Naam is verplicht",
