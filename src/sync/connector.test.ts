@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 vi.mock("./events", () => ({
   dispatchSyncError: vi.fn(),
@@ -552,6 +552,182 @@ describe("createNeonConnector", () => {
       const transaction =
         await db.getNextCrudTransaction.mock.results[0]!.value;
       expect(transaction.complete).not.toHaveBeenCalled();
+    });
+
+    describe("500 response — structured error log (issue #220)", () => {
+      // Regression guard: the structured `console.error` payload on the 500
+      // path is the diagnostic surface that lets operators see the Postgres
+      // SQLSTATE on the client side. A silent regression here would re-hide
+      // schema drift behind PowerSync's retry loop.
+      function find500LogCall(
+        spy: MockInstance<typeof console.error>
+      ): Record<string, unknown> | undefined {
+        const call = spy.mock.calls.find(
+          (args) => args[0] === "Batch upload failed:"
+        );
+        return call?.[1] as Record<string, unknown> | undefined;
+      }
+
+      it("logs pgCode and failedTable when the server returns a well-formed 500", async () => {
+        const errorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              error: "Batch execution failed",
+              failedIndex: 0,
+              code: "42703",
+              results: [],
+            }),
+            { status: 500 }
+          )
+        );
+        const mod = await importWithEnv(VALID_ENV);
+        const connector = mod.createNeonConnector(async () => "my-token");
+        const db = createMockDatabase([
+          {
+            id: "trick-1",
+            op: "PUT",
+            table: "tricks",
+            opData: { name: "Test" },
+          },
+        ]);
+
+        await expect(
+          connector.uploadData(
+            db as unknown as Parameters<typeof connector.uploadData>[0]
+          )
+        ).rejects.toThrow("Batch upload failed — will retry");
+
+        const logged = find500LogCall(errorSpy);
+        expect(logged).toMatchObject({
+          httpStatus: 500,
+          pgCode: "42703",
+          failedIndex: 0,
+          failedTable: "tricks",
+        });
+      });
+
+      it.each([
+        ["null (JSON drops NaN)", Number.NaN],
+        ["negative", -1],
+        ["non-integer", 0.5],
+        ["out of range (>= length)", 5],
+      ])("rejects %s failedIndex and logs failedIndex/failedTable as undefined", async (_label, badIndex) => {
+        const errorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              error: "Batch execution failed",
+              failedIndex: badIndex,
+              code: "42703",
+              results: [],
+            }),
+            { status: 500 }
+          )
+        );
+        const mod = await importWithEnv(VALID_ENV);
+        const connector = mod.createNeonConnector(async () => "my-token");
+        const db = createMockDatabase([
+          {
+            id: "trick-1",
+            op: "PUT",
+            table: "tricks",
+            opData: { name: "Test" },
+          },
+        ]);
+
+        await expect(
+          connector.uploadData(
+            db as unknown as Parameters<typeof connector.uploadData>[0]
+          )
+        ).rejects.toThrow("Batch upload failed — will retry");
+
+        const logged = find500LogCall(errorSpy);
+        expect(logged).toMatchObject({
+          httpStatus: 500,
+          pgCode: "42703",
+          failedIndex: undefined,
+          failedTable: undefined,
+        });
+      });
+
+      it("logs pgCode/failedIndex/failedTable as undefined when 500 body is not JSON", async () => {
+        const errorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+          new Response("<html>504 gateway timeout</html>", { status: 500 })
+        );
+        const mod = await importWithEnv(VALID_ENV);
+        const connector = mod.createNeonConnector(async () => "my-token");
+        const db = createMockDatabase([
+          {
+            id: "trick-1",
+            op: "PUT",
+            table: "tricks",
+            opData: { name: "Test" },
+          },
+        ]);
+
+        await expect(
+          connector.uploadData(
+            db as unknown as Parameters<typeof connector.uploadData>[0]
+          )
+        ).rejects.toThrow("Batch upload failed — will retry");
+
+        const logged = find500LogCall(errorSpy);
+        expect(logged).toMatchObject({
+          httpStatus: 500,
+          pgCode: undefined,
+          failedIndex: undefined,
+          failedTable: undefined,
+          body: "<html>504 gateway timeout</html>",
+        });
+      });
+
+      it("omits pgCode when the server response has no code field (production/preview path)", async () => {
+        const errorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              error: "Batch execution failed",
+              failedIndex: 0,
+              results: [],
+            }),
+            { status: 500 }
+          )
+        );
+        const mod = await importWithEnv(VALID_ENV);
+        const connector = mod.createNeonConnector(async () => "my-token");
+        const db = createMockDatabase([
+          {
+            id: "trick-1",
+            op: "PUT",
+            table: "tricks",
+            opData: { name: "Test" },
+          },
+        ]);
+
+        await expect(
+          connector.uploadData(
+            db as unknown as Parameters<typeof connector.uploadData>[0]
+          )
+        ).rejects.toThrow("Batch upload failed — will retry");
+
+        const logged = find500LogCall(errorSpy);
+        expect(logged).toMatchObject({
+          httpStatus: 500,
+          pgCode: undefined,
+          failedIndex: 0,
+          failedTable: "tricks",
+        });
+      });
     });
 
     it("throws on network error", async () => {
