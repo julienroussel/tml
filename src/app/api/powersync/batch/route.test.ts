@@ -308,6 +308,198 @@ describe("POST /api/powersync/batch", () => {
     });
   });
 
+  describe("event_log invariants", () => {
+    // Pin the application-layer audit-trail guard at route.ts:122-144 so a future
+    // refactor of buildOperationQuery cannot silently delete it. The DB-layer GRANT
+    // (migration 0020) is the load-bearing enforcement; this 422 is the friendly UX.
+    it("rejects DELETE on event_log with status 422 (append-only)", async () => {
+      authenticatedSession();
+      vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+      mockClientQuery.mockResolvedValue({ rowCount: 0 });
+      const { POST } = await import("./route");
+
+      const response = await POST(
+        createRequest({
+          operations: [deleteOp("event_log", "evt-1")],
+        })
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.results[0]).toMatchObject({
+        index: 0,
+        status: 422,
+        error: "Validation error",
+      });
+
+      // Validation throws before SAVEPOINT/SQL runs — no DELETE statement hits the wire.
+      const calls = mockClientQuery.mock.calls.map(
+        (call: unknown[]) => call[0]
+      );
+      expect(
+        calls.some((q) => typeof q === "string" && q.includes("DELETE FROM"))
+      ).toBe(false);
+    });
+
+    it.each([
+      // `source` is the trust label distinguishing client-emitted from server-emitted
+      // events — route.ts:131-135 explicitly omits it from the allowlist; this test
+      // pins that decision against future refactors.
+      ["source", { source: "server" }],
+      ["payload", { payload: { x: 1 } }],
+      ["event_type", { event_type: "trick.created" }],
+      ["entity_type", { entity_type: "trick" }],
+    ])("rejects PATCH on event_log mutating disallowed column %s", async (_label, opData) => {
+      authenticatedSession();
+      vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+      mockClientQuery.mockResolvedValue({ rowCount: 0 });
+      const { POST } = await import("./route");
+
+      const response = await POST(
+        createRequest({
+          operations: [patchOp("event_log", "evt-1", opData)],
+        })
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.results[0]).toMatchObject({
+        index: 0,
+        status: 422,
+        error: "Validation error",
+      });
+
+      // Belt-and-braces: validation throws before any SQL is built, so no UPDATE
+      // against event_log should hit the wire. Without this, a refactor that
+      // issues the UPDATE *then* returns 422 would silently violate the invariant.
+      const calls = mockClientQuery.mock.calls.map(
+        (call: unknown[]) => call[0]
+      );
+      expect(
+        calls.some(
+          (q) =>
+            typeof q === "string" &&
+            q.includes("UPDATE") &&
+            q.includes('"event_log"')
+        )
+      ).toBe(false);
+    });
+
+    it("rejects PATCH on event_log mixing allowed + disallowed columns (no partial apply)", async () => {
+      // Guards against a "be liberal in what you accept" refactor that would
+      // silently drop the disallowed columns and proceed with the allowed ones —
+      // every existing test would still pass while the audit-trail invariant is
+      // violated. The whole PATCH must reject; no partial UPDATE may reach the wire.
+      authenticatedSession();
+      vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+      mockClientQuery.mockResolvedValue({ rowCount: 0 });
+      const { POST } = await import("./route");
+
+      const response = await POST(
+        createRequest({
+          operations: [
+            patchOp("event_log", "evt-1", {
+              deleted_at: "2026-04-30T10:00:00Z",
+              payload: "{}",
+            }),
+          ],
+        })
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.results[0]).toMatchObject({
+        index: 0,
+        status: 422,
+        error: "Validation error",
+      });
+
+      const calls = mockClientQuery.mock.calls.map(
+        (call: unknown[]) => call[0]
+      );
+      expect(
+        calls.some(
+          (q) =>
+            typeof q === "string" &&
+            q.includes("UPDATE") &&
+            q.includes('"event_log"')
+        )
+      ).toBe(false);
+    });
+
+    it("permits PATCH on event_log mutating only deleted_at + updated_at (soft-delete path)", async () => {
+      // Positive coverage for the allowlist: a PATCH limited to (deleted_at,
+      // updated_at) is the soft-delete path described at route.ts:117-121 and
+      // must succeed. Without this test, a future over-restriction (e.g.,
+      // "if (op === OpType.PATCH) throw") would pass every negative test while
+      // breaking offline soft-delete sync.
+      authenticatedSession();
+      vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+      mockClientQuery.mockResolvedValue({ rowCount: 1 });
+      const { POST } = await import("./route");
+
+      const response = await POST(
+        createRequest({
+          operations: [
+            patchOp("event_log", "evt-1", {
+              deleted_at: "2026-04-30T10:00:00Z",
+            }),
+          ],
+        })
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.results[0]).toEqual({ index: 0, status: 200 });
+
+      // Confirm the UPDATE actually went to the wire against event_log.
+      const updateCall = mockClientQuery.mock.calls.find(
+        ([sql]) =>
+          typeof sql === "string" &&
+          sql.includes("UPDATE") &&
+          sql.includes('"event_log"')
+      );
+      expect(updateCall).toBeDefined();
+    });
+
+    it("forces source = 'client' on event_log INSERT even when client sends 'server'", async () => {
+      authenticatedSession();
+      vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+      mockClientQuery.mockResolvedValue({ rowCount: 1 });
+      const { POST } = await import("./route");
+
+      await POST(
+        createRequest({
+          operations: [
+            putOp("event_log", "evt-1", {
+              event_type: "trick.created",
+              entity_type: "trick",
+              entity_id: "t-1",
+              // Real clients pre-stringify via JSON.stringify(payload) — see
+              // src/lib/events/log.ts:49. The route validator rejects raw objects.
+              payload: "{}",
+              source: "server",
+            }),
+          ],
+        })
+      );
+
+      // Locate the INSERT by SQL prefix, not by call index — resilient against
+      // pre-INSERT statements like SET LOCAL or SET ROLE that future refactors
+      // could add.
+      const insertCall = mockClientQuery.mock.calls.find(
+        ([sql]) =>
+          typeof sql === "string" &&
+          sql.startsWith("INSERT INTO") &&
+          sql.includes('"event_log"')
+      );
+      expect(insertCall).toBeDefined();
+      const [, params] = insertCall!;
+      expect(params).toContain("client");
+      expect(params).not.toContain("server");
+    });
+  });
+
   describe("database configuration", () => {
     it("returns 500 when DATABASE_URL is not set", async () => {
       authenticatedSession();

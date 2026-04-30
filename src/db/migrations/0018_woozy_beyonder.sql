@@ -1,3 +1,14 @@
+-- HISTORICAL NOTE (added with #245 / migration 0020):
+-- The GRANT statements at the bottom of this file (SELECT, INSERT + UPDATE on
+-- deleted_at/updated_at only) were silently no-op'd by Neon's pg_default_acl on
+-- schema "public", which auto-granted full CRUD to authenticated on every
+-- CREATE TABLE. Migration 0020 REVOKEs the over-grant and ALTER DEFAULT PRIVILEGES
+-- prevents recurrence — but only for the `authenticated` role. The live PowerSync
+-- upload path uses `neondb_owner` via DATABASE_URL Pool (route.ts:180), bypasses
+-- these GRANTs and RLS, so the audit-trail invariant on the live write path is
+-- enforced SOLELY by the 422 gate at src/app/api/powersync/batch/route.ts:122-144.
+-- Do NOT weaken or remove that gate without first migrating the upload route to a
+-- JWT-forwarding `authenticated` connection.
 CREATE TABLE "event_log" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
