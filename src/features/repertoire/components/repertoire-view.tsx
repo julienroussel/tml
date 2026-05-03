@@ -157,9 +157,9 @@ export function RepertoireView(): React.ReactElement {
     editingId: editingTrickId,
     isLoading: trickTagsLoading,
     seed: () =>
-      (trickTagMap.get(editingTrickId ?? ("" as TrickId)) ?? []).map(
-        (tag) => tag.id
-      ),
+      editingTrickId === null
+        ? []
+        : (trickTagMap.get(editingTrickId) ?? []).map((tag) => tag.id),
   });
 
   // True while an Edit session is open and the trick row or trick_tags join

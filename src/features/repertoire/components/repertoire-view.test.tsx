@@ -899,4 +899,94 @@ describe("RepertoireView", () => {
       notes: "",
       ...overrides,
     }) as Parameters<NonNullable<TrickFormSheetProps["onSubmit"]>>[0];
+
+  // (Test D) Adjacent useTrick race: keyboard-submitting before the trick row
+  // hydrates (trick===null) must not invoke updateTrick with RHF defaults.
+  it("gates Save and short-circuits submit while useTrick is still loading (issue #216)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+
+    const trickId = "00000000-0000-4000-8000-0000000ed216";
+    const trick = makeTrick(trickId, "Card Warp");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    // useTrick reports isLoading: true — the row hasn't materialised yet.
+    vi.mocked(useTrick).mockReturnValue({
+      trick: null,
+      error: null,
+      isLoading: true,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    expect(capturedFormSheetProps.relationsLoading).toBe(true);
+
+    // Keyboard submit while still loading — defense in depth.
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Card Warp" })
+    );
+    expect(mockUpdateTrick).not.toHaveBeenCalled();
+
+    // Hydrate the row.
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      error: null,
+      isLoading: false,
+    });
+    rerender(<RepertoireView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.relationsLoading).toBe(false);
+    });
+
+    // Now submit goes through.
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "Card Warp" })
+    );
+    expect(mockUpdateTrick).toHaveBeenCalledWith(
+      trickId,
+      expect.any(Object),
+      [],
+      []
+    );
+  });
+
+  // (Test F) Add path is never gated — relationsLoading must be false even
+  // when the tag-join query is still loading, because handleAddTrick seeds
+  // [] up front via tagsSel.seedEmpty().
+  it("does not gate the Add path while joins are loading", async () => {
+    const { useQuery } = await import("@powersync/react");
+    vi.mocked(useQuery).mockReturnValue({
+      data: [],
+      isLoading: true,
+      isFetching: true,
+      error: undefined,
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.relationsLoading).toBe(false);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+
+    // Submit while joins are still isLoading: true. The Add path is NOT
+    // gated, so createTrick must run with an empty tag array. A regression
+    // that wraps the create branch in a relationsLoading guard would skip
+    // the call here and fail this assertion.
+    await capturedFormSheetProps.onSubmit?.(
+      makeTrickFormValues({ name: "New Trick" })
+    );
+    expect(mockCreateTrick).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "New Trick" }),
+      []
+    );
+  });
 });

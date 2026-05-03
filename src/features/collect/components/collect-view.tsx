@@ -162,17 +162,17 @@ export function CollectView(): React.ReactElement {
     editingId: editingItemId,
     isLoading: itemTagsLoading,
     seed: () =>
-      (itemTagMap.get(editingItemId ?? ("" as ItemId)) ?? []).map(
-        (tag) => tag.id
-      ),
+      editingItemId === null
+        ? []
+        : (itemTagMap.get(editingItemId) ?? []).map((tag) => tag.id),
   });
   const tricksSel = useHydratedSelection<TrickId>({
     editingId: editingItemId,
     isLoading: itemTricksLoading,
     seed: () =>
-      (itemTrickMap.get(editingItemId ?? ("" as ItemId)) ?? []).map(
-        (trick) => trick.id
-      ),
+      editingItemId === null
+        ? []
+        : (itemTrickMap.get(editingItemId) ?? []).map((trick) => trick.id),
   });
 
   // True while an Edit session is open and any of: the item row, the tag join,
