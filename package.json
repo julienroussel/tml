@@ -60,7 +60,7 @@
     "@powersync/web": "1.37.2",
     "@react-email/render": "2.0.8",
     "@vercel/analytics": "2.0.1",
-    "@vercel/firewall": "1.1.4",
+    "@vercel/firewall": "1.2.0",
     "@vercel/speed-insights": "2.0.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -74,16 +74,16 @@
     "radix-ui": "1.4.3",
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "react-hook-form": "7.74.0",
+    "react-hook-form": "7.75.0",
     "resend": "6.12.2",
     "server-only": "0.0.1",
     "sonner": "2.0.7",
     "tailwind-merge": "3.5.0",
     "web-push": "3.6.7",
-    "zod": "4.4.1"
+    "zod": "4.4.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.13",
+    "@biomejs/biome": "2.4.14",
     "@playwright/test": "1.59.1",
     "@react-email/preview-server": "5.2.10",
     "@tailwindcss/postcss": "4.2.4",
