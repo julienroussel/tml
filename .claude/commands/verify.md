@@ -10,7 +10,8 @@ Run these in a single parallel batch (they're independent — save time):
 2. `pnpm typecheck` — tsc -b
 3. `pnpm test:run` — Vitest single run
 4. `pnpm sync:check` — PowerSync artifacts vs Drizzle schema drift
-5. `pnpm i18n:check` — 7-locale key parity
+5. `pnpm sync:check:grants` — synced-table GRANT discipline (issue #254)
+6. `pnpm i18n:check` — 7-locale key parity
 
 For each step: one line — `✓ <step>` on success, or `✗ <step>: <short error>` with the tail of the failing output on a new line.
 

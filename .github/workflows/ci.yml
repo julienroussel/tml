@@ -66,6 +66,9 @@ jobs:
       - name: Sync artifacts staleness check
         run: pnpm sync:check
 
+      - name: Synced-table GRANT discipline check
+        run: pnpm sync:check:grants
+
       - name: Check migration drift
         if: github.event_name == 'push' || github.event.pull_request.user.login != 'dependabot[bot]'
         run: |
