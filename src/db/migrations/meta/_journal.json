@@ -148,6 +148,13 @@
       "when": 1777558792560,
       "tag": "0020_lockdown_authenticated_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777814835235,
+      "tag": "0021_lockdown_sequence_function_acls",
+      "breakpoints": true
     }
   ]
 }

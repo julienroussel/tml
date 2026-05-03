@@ -17,3 +17,8 @@ pre-commit:
         - "src/sync/synced-columns.ts"
         - "powersync/sync-config.yaml"
         - "scripts/generate-sync.ts"
+    - run: pnpm sync:check:grants
+      glob:
+        - "src/db/migrations/*.sql"
+        - "src/sync/synced-columns.ts"
+        - "scripts/check-grants.ts"

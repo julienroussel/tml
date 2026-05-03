@@ -19,6 +19,10 @@ paths:
    - `event_log`: `GRANT SELECT, INSERT` + `GRANT UPDATE (deleted_at, updated_at)` (audit-trail invariant — no DELETE, no payload mutation from clients).
    - Server-only tables (`users`, `user_preferences`): `GRANT SELECT` only.
    - RLS policies stay defense-in-depth on top of GRANTs — the GRANT layer is the new enforcement floor; RLS narrows by `user_id`.
+   - **Enforced statically.** `pnpm sync:check:grants` (issue #254) runs in pre-commit and CI; it parses every `src/db/migrations/*.sql` with index ≥ 21 and fails when a synced-table `CREATE TABLE` lacks a matching `GRANT … TO authenticated;` in the same file. The synced-table list is sourced from `src/sync/synced-columns.ts` (canonical, generated from Drizzle).
+4. **Sequences and `SECURITY DEFINER` functions inherit the same discipline.** As of `0021_lockdown_sequence_function_acls.sql` (issue #253), schema `public` also has no default privileges on sequences or functions for `authenticated`.
+   - Any new `CREATE SEQUENCE` (or sequence-defaulted column) on a synced table MUST include `GRANT USAGE, SELECT ON SEQUENCE <name> TO authenticated;` in the same migration. Without it, `nextval()` fails for `authenticated`-role clients.
+   - Any new `SECURITY DEFINER` function in `public` MUST include `REVOKE EXECUTE ON FUNCTION <name>(...) FROM PUBLIC, authenticated;` and grant `EXECUTE` only to the roles that legitimately need it. The default-ACL revoke neutralizes the auto-grant, but the `PUBLIC` revoke is also needed because `CREATE FUNCTION` grants `EXECUTE` to `PUBLIC` regardless of default ACLs.
 
 ## Rollback / recovery
 

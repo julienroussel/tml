@@ -125,12 +125,15 @@ Two Postgres roles exist on Neon. Today, **all server-side code paths use `neond
 
 The `authenticated` role is currently exercised only by the JWT-aware client paths the codebase does not yet use directly (Neon Data API, JWT-forwarded PowerSync sync — both anticipated, not active). Migration `0020_lockdown_authenticated_grants.sql` (issue #245) hardens what `authenticated` CAN see/do **before** any code path actually authenticates as that role:
 
-- Schema `public` has **no default privileges** for `authenticated`. Every `CREATE TABLE` synced via PowerSync MUST include an explicit `GRANT <subset> ON <table> TO authenticated;` line in the **same migration file**. Future synced tables added without a GRANT will be invisible to any future `authenticated`-role client (PowerSync queries return empty).
+- Schema `public` has **no default privileges** for `authenticated`. Every `CREATE TABLE` synced via PowerSync MUST include an explicit `GRANT <subset> ON <table> TO authenticated;` line in the **same migration file**. Future synced tables added without a GRANT will be invisible to any future `authenticated`-role client (PowerSync queries return empty). Enforced statically by `pnpm sync:check:grants` (issue #254) — runs in pre-commit (Lefthook) and CI; fails the build when a synced-table `CREATE TABLE` lacks a matching `GRANT … TO authenticated;` in the same migration (idx ≥ 21).
 - The canonical per-table grant matrix lives in `0020`. Reference shape:
   - Standard user-data tables (12): `SELECT, INSERT, UPDATE, DELETE`.
   - `push_subscriptions`: `SELECT, INSERT, UPDATE` — no `DELETE` for clients (cleanup of expired subs is server-side).
   - `event_log`: `SELECT, INSERT` + column-level `UPDATE (deleted_at, updated_at)` only — no `DELETE`, no payload mutation. Audit-trail invariant.
   - Server-only tables (`users`, `user_preferences`): `SELECT` only.
+- Migration `0021_lockdown_sequence_function_acls.sql` (issue #253) extends the lockdown to **sequences** (no `USAGE`/`UPDATE` for `authenticated`) and **functions** (no `EXECUTE`). Today the schema uses UUID PKs and has zero `SECURITY DEFINER` functions, so the holes were dormant — but the new defaults guard against future SERIAL/IDENTITY columns and `SECURITY DEFINER` helpers, both of which would otherwise auto-grant privileges that bypass RLS and column-level GRANTs.
+  - Any new `CREATE SEQUENCE` (or sequence-defaulted column) on a synced table MUST include `GRANT USAGE, SELECT ON SEQUENCE <name> TO authenticated;` in the same migration.
+  - Any new `SECURITY DEFINER` function in `public` MUST include explicit `REVOKE EXECUTE ON FUNCTION <name>(...) FROM PUBLIC, authenticated;` plus targeted `GRANT EXECUTE` only to the roles that need it.
 
 **The 422 gate in `src/app/api/powersync/batch/route.ts:122-144` IS still the only enforcement of the `event_log` audit-trail invariant on the live write path** — because that path runs as `neondb_owner` and bypasses both the new `authenticated` GRANTs and RLS. Do not weaken or remove the 422 gate without first migrating the upload route to a JWT-forwarding `authenticated`-role connection. The DB GRANT lockdown is forward-positioning + hardening against an accidental `DATABASE_URL` swap to a less-privileged role; it is not a replacement for the application-layer check today.
 
