@@ -155,6 +155,13 @@
       "when": 1777814835235,
       "tag": "0021_lockdown_sequence_function_acls",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1777823096312,
+      "tag": "0022_revoke_public_function_execute",
+      "breakpoints": true
     }
   ]
 }
