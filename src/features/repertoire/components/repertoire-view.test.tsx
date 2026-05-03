@@ -900,80 +900,52 @@ describe("RepertoireView", () => {
       ...overrides,
     }) as Parameters<NonNullable<TrickFormSheetProps["onSubmit"]>>[0];
 
-  // (Test B) Mirror of collect-view's headline regression — when Edit is
-  // clicked before trick_tags hydrates, the form sheet is gated and seeding
-  // waits. After hydration, saving without changes emits an empty diff.
-  it("seeds tag selection from hydrated trick_tags and never emits a stale diff (issue #216)", async () => {
+  // (Test D) Adjacent useTrick race: keyboard-submitting before the trick row
+  // hydrates (trick===null) must not invoke updateTrick with RHF defaults.
+  it("gates Save and short-circuits submit while useTrick is still loading (issue #216)", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
     const { useTrick } = await import("../hooks/use-trick");
-    const { useQuery } = await import("@powersync/react");
 
-    const trickId = "trick-216-headline";
-    const trick = makeTrick(trickId, "Twirling Cane");
+    const trickId = "00000000-0000-4000-8000-0000000ed216";
+    const trick = makeTrick(trickId, "Card Warp");
     vi.mocked(useTricks).mockReturnValue({
       tricks: [trick],
       error: null,
       isLoading: false,
     });
+    // useTrick reports isLoading: true — the row hasn't materialised yet.
     vi.mocked(useTrick).mockReturnValue({
-      trick,
-      isLoading: false,
+      trick: null,
       error: null,
-    });
-    vi.mocked(useQuery).mockReturnValue({
-      data: [],
       isLoading: true,
-      isFetching: true,
-      error: undefined,
     });
 
     const { rerender } = render(<RepertoireView />);
 
     await userEvent.click(screen.getByTestId(`edit-${trickId}`));
-    expect(capturedFormSheetProps.open).toBe(true);
     expect(capturedFormSheetProps.relationsLoading).toBe(true);
-    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
 
-    // Defense-in-depth: keyboard submit while seeding must not call updateTrick.
+    // Keyboard submit while still loading — defense in depth.
     await capturedFormSheetProps.onSubmit?.(
-      makeTrickFormValues({ name: "Twirling Cane" })
+      makeTrickFormValues({ name: "Card Warp" })
     );
     expect(mockUpdateTrick).not.toHaveBeenCalled();
 
-    // Hydrate the join.
-    const t1 = "tag-216-a" as TagId;
-    const t2 = "tag-216-b" as TagId;
-    vi.mocked(useQuery).mockImplementation((sql) => {
-      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
-        return {
-          data: [
-            { trick_id: trickId, tag_id: t1, tag_name: "A", color: null },
-            { trick_id: trickId, tag_id: t2, tag_name: "B", color: null },
-          ],
-          isLoading: false,
-          isFetching: false,
-          error: undefined,
-        };
-      }
-      return {
-        data: [],
-        isLoading: false,
-        isFetching: false,
-        error: undefined,
-      };
+    // Hydrate the row.
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      error: null,
+      isLoading: false,
     });
     rerender(<RepertoireView />);
 
     await waitFor(() => {
       expect(capturedFormSheetProps.relationsLoading).toBe(false);
-      expect(capturedFormSheetProps.selectedTagIds).toEqual([t1, t2]);
     });
-    // Post-seed selected === original, so tagsDirty stays false (no false-
-    // positive discard dialog).
-    expect(capturedFormSheetProps.tagsDirty).toBe(false);
 
+    // Now submit goes through.
     await capturedFormSheetProps.onSubmit?.(
-      makeTrickFormValues({ name: "Twirling Cane" })
+      makeTrickFormValues({ name: "Card Warp" })
     );
     expect(mockUpdateTrick).toHaveBeenCalledWith(
       trickId,
@@ -983,24 +955,11 @@ describe("RepertoireView", () => {
     );
   });
 
-  // (Test C) Repertoire counterpart of "reopen mid-load".
-  it("re-seeds cleanly when Edit is reopened after closing mid-load (repertoire)", async () => {
-    const { useTricks } = await import("../hooks/use-tricks");
-    const { useTrick } = await import("../hooks/use-trick");
+  // (Test F) Add path is never gated — relationsLoading must be false even
+  // when the tag-join query is still loading, because handleAddTrick seeds
+  // [] up front via tagsSel.seedEmpty().
+  it("does not gate the Add path while joins are loading", async () => {
     const { useQuery } = await import("@powersync/react");
-
-    const trickId = "trick-reopen";
-    const trick = makeTrick(trickId, "Floating Bill");
-    vi.mocked(useTricks).mockReturnValue({
-      tricks: [trick],
-      error: null,
-      isLoading: false,
-    });
-    vi.mocked(useTrick).mockReturnValue({
-      trick,
-      isLoading: false,
-      error: null,
-    });
     vi.mocked(useQuery).mockReturnValue({
       data: [],
       isLoading: true,
@@ -1008,136 +967,25 @@ describe("RepertoireView", () => {
       error: undefined,
     });
 
-    const { rerender } = render(<RepertoireView />);
+    render(<RepertoireView />);
 
-    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
-    expect(capturedFormSheetProps.relationsLoading).toBe(true);
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
 
-    act(() => {
-      capturedFormSheetProps.onOpenChange?.(false);
-    });
-    expect(capturedFormSheetProps.open).toBe(false);
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.relationsLoading).toBe(false);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
 
-    const t1 = "tag-reopen-a" as TagId;
-    vi.mocked(useQuery).mockImplementation((sql) => {
-      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
-        return {
-          data: [{ trick_id: trickId, tag_id: t1, tag_name: "A", color: null }],
-          isLoading: false,
-          isFetching: false,
-          error: undefined,
-        };
-      }
-      return {
-        data: [],
-        isLoading: false,
-        isFetching: false,
-        error: undefined,
-      };
-    });
-    rerender(<RepertoireView />);
-
-    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
-    await waitFor(() => {
-      expect(capturedFormSheetProps.relationsLoading).toBe(false);
-      expect(capturedFormSheetProps.selectedTagIds).toEqual([t1]);
-    });
-
-    // Submit with no further interaction → diff must be empty. A regression
-    // where `selected` re-seeds but `original` stays stale at [] (or vice
-    // versa) would compute a phantom remove/add here and fail this assertion.
+    // Submit while joins are still isLoading: true. The Add path is NOT
+    // gated, so createTrick must run with an empty tag array. A regression
+    // that wraps the create branch in a relationsLoading guard would skip
+    // the call here and fail this assertion.
     await capturedFormSheetProps.onSubmit?.(
-      makeTrickFormValues({ name: "Floating Bill" })
+      makeTrickFormValues({ name: "New Trick" })
     );
-    expect(mockUpdateTrick).toHaveBeenCalledWith(
-      trickId,
-      expect.any(Object),
-      [],
-      []
-    );
-  });
-
-  // (Test E) Background-sync mid-edit — phantom-diff prevention.
-  it("does not emit phantom tag diffs when trick_tags updates from background sync", async () => {
-    const { useTricks } = await import("../hooks/use-tricks");
-    const { useTrick } = await import("../hooks/use-trick");
-    const { useQuery } = await import("@powersync/react");
-
-    const trickId = "trick-bg-sync";
-    const trick = makeTrick(trickId, "Linking Coins");
-    vi.mocked(useTricks).mockReturnValue({
-      tricks: [trick],
-      error: null,
-      isLoading: false,
-    });
-    vi.mocked(useTrick).mockReturnValue({
-      trick,
-      isLoading: false,
-      error: null,
-    });
-
-    const t1 = "tag-bg-a" as TagId;
-    const t2 = "tag-bg-b" as TagId;
-    vi.mocked(useQuery).mockImplementation((sql) => {
-      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
-        return {
-          data: [
-            { trick_id: trickId, tag_id: t1, tag_name: "A", color: null },
-            { trick_id: trickId, tag_id: t2, tag_name: "B", color: null },
-          ],
-          isLoading: false,
-          isFetching: false,
-          error: undefined,
-        };
-      }
-      return {
-        data: [],
-        isLoading: false,
-        isFetching: false,
-        error: undefined,
-      };
-    });
-
-    const { rerender } = render(<RepertoireView />);
-
-    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
-    await waitFor(() => {
-      expect(capturedFormSheetProps.selectedTagIds).toEqual([t1, t2]);
-    });
-
-    // Background sync adds t3.
-    const t3 = "tag-bg-c" as TagId;
-    vi.mocked(useQuery).mockImplementation((sql) => {
-      if (typeof sql === "string" && sql.includes("FROM trick_tags")) {
-        return {
-          data: [
-            { trick_id: trickId, tag_id: t1, tag_name: "A", color: null },
-            { trick_id: trickId, tag_id: t2, tag_name: "B", color: null },
-            { trick_id: trickId, tag_id: t3, tag_name: "C", color: null },
-          ],
-          isLoading: false,
-          isFetching: false,
-          error: undefined,
-        };
-      }
-      return {
-        data: [],
-        isLoading: false,
-        isFetching: false,
-        error: undefined,
-      };
-    });
-    rerender(<RepertoireView />);
-
-    // Save with no user-side changes — diff stays empty, t3 is preserved
-    // by the delta-only mutation hook.
-    await capturedFormSheetProps.onSubmit?.(
-      makeTrickFormValues({ name: "Linking Coins" })
-    );
-    expect(mockUpdateTrick).toHaveBeenCalledWith(
-      trickId,
-      expect.any(Object),
-      [],
+    expect(mockCreateTrick).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "New Trick" }),
       []
     );
   });

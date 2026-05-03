@@ -15,6 +15,7 @@ import {
 } from "@/features/collect/constants";
 import { useTagMutations } from "@/features/repertoire/hooks/use-tag-mutations";
 import { useTags } from "@/features/repertoire/hooks/use-tags";
+import { useHydratedSelection } from "@/hooks/use-hydrated-selection";
 import { useItem } from "../hooks/use-item";
 import { useItemBrands } from "../hooks/use-item-brands";
 import { useItemLocations } from "../hooks/use-item-locations";
@@ -101,18 +102,6 @@ export function CollectView(): React.ReactElement {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<ItemId | null>(null);
 
-  // Selection state. `null` = "edit session not yet seeded from hydrated joins";
-  // a seeding effect below populates these once the join queries finish loading.
-  // Add path bypasses the sentinel: handleAddItem seeds `[]` directly.
-  const [selectedTagIds, setSelectedTagIds] = useState<TagId[] | null>(null);
-  const [selectedTrickIds, setSelectedTrickIds] = useState<TrickId[] | null>(
-    null
-  );
-  const [originalTagIds, setOriginalTagIds] = useState<TagId[] | null>(null);
-  const [originalTrickIds, setOriginalTrickIds] = useState<TrickId[] | null>(
-    null
-  );
-
   // ---------------------------------------------------------------------------
   // Data hooks
   // ---------------------------------------------------------------------------
@@ -167,17 +156,33 @@ export function CollectView(): React.ReactElement {
 
   const itemTrickMap = buildItemTrickMap(itemTrickRows);
 
+  // Selection hooks — sentinel-null + lock-in seeding. See `useHydratedSelection`
+  // and the `.claude/rules/new-feature.md` pointer for the rationale (issue #216).
+  const tagsSel = useHydratedSelection<TagId>({
+    editingId: editingItemId,
+    isLoading: itemTagsLoading,
+    seed: () =>
+      editingItemId === null
+        ? []
+        : (itemTagMap.get(editingItemId) ?? []).map((tag) => tag.id),
+  });
+  const tricksSel = useHydratedSelection<TrickId>({
+    editingId: editingItemId,
+    isLoading: itemTricksLoading,
+    seed: () =>
+      editingItemId === null
+        ? []
+        : (itemTrickMap.get(editingItemId) ?? []).map((trick) => trick.id),
+  });
+
   // True while an Edit session is open and any of: the item row, the tag join,
   // or the trick join is still hydrating from local SQLite. Gates Save (so a
   // keyboard submit can't write empty diffs against a stale [] baseline) and
   // swaps the pickers for skeletons. Add path is never gated because
-  // handleAddItem seeds the selection arrays to [] up front.
+  // handleAddItem seeds the selections to [] up front via seedEmpty().
   const relationsLoading =
     editingItemId !== null &&
-    (itemTagsLoading ||
-      itemTricksLoading ||
-      editingItemLoading ||
-      selectedTagIds === null);
+    (tagsSel.isHydrating || tricksSel.isHydrating || editingItemLoading);
 
   // ---------------------------------------------------------------------------
   // Available tricks for the trick picker (only when form sheet is open)
@@ -218,46 +223,10 @@ export function CollectView(): React.ReactElement {
       });
       setSheetOpen(false);
       setEditingItemId(null);
-      setSelectedTagIds(null);
-      setSelectedTrickIds(null);
-      setOriginalTagIds(null);
-      setOriginalTrickIds(null);
+      tagsSel.reset();
+      tricksSel.reset();
     }
-  }, [editingItemId, editingItemError, t]);
-
-  // ---------------------------------------------------------------------------
-  // Lock-in seeding for an Edit session.
-  // Runs once the row + both join queries have hydrated, copying the current
-  // join slice into selected*/original* via functional setState. The `prev ??`
-  // guard makes seeding idempotent: subsequent re-runs (e.g. when the join map
-  // updates from background sync) leave existing state alone, preserving any
-  // user edits while the sheet is open.
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (editingItemId === null) {
-      return;
-    }
-    if (itemTagsLoading || itemTricksLoading || editingItemLoading) {
-      return;
-    }
-
-    const tagSeed = (itemTagMap.get(editingItemId) ?? []).map((tag) => tag.id);
-    setSelectedTagIds((prev) => prev ?? tagSeed);
-    setOriginalTagIds((prev) => prev ?? tagSeed);
-
-    const trickSeed = (itemTrickMap.get(editingItemId) ?? []).map(
-      (trick) => trick.id
-    );
-    setSelectedTrickIds((prev) => prev ?? trickSeed);
-    setOriginalTrickIds((prev) => prev ?? trickSeed);
-  }, [
-    editingItemId,
-    itemTagsLoading,
-    itemTricksLoading,
-    editingItemLoading,
-    itemTagMap,
-    itemTrickMap,
-  ]);
+  }, [editingItemId, editingItemError, t, tagsSel.reset, tricksSel.reset]);
 
   // ---------------------------------------------------------------------------
   // Surface critical query errors as a single, replaceable toast.
@@ -308,33 +277,16 @@ export function CollectView(): React.ReactElement {
       ? null
       : (items.find((item) => item.id === deletingItemId)?.name ?? null);
 
-  // Whether the tag selection has diverged from the snapshot (or is non-empty for new items).
-  // While an edit session is still seeding (selected/original null), treat as not-dirty.
-  const tagsDirty = (() => {
-    if (editingItemId) {
-      if (selectedTagIds === null || originalTagIds === null) {
-        return false;
-      }
-      return (
-        selectedTagIds.length !== originalTagIds.length ||
-        selectedTagIds.some((id) => !originalTagIds.includes(id))
-      );
-    }
-    return selectedTagIds !== null && selectedTagIds.length > 0;
-  })();
-
-  const tricksDirty = (() => {
-    if (editingItemId) {
-      if (selectedTrickIds === null || originalTrickIds === null) {
-        return false;
-      }
-      return (
-        selectedTrickIds.length !== originalTrickIds.length ||
-        selectedTrickIds.some((id) => !originalTrickIds.includes(id))
-      );
-    }
-    return selectedTrickIds !== null && selectedTrickIds.length > 0;
-  })();
+  // Selection diff vs the seeded baseline (or non-empty for Add). The hook's
+  // isDirty handles the seeded edit case and returns false during hydration;
+  // the Add-mode branch (no editingItemId) compares against the [] baseline
+  // that seedEmpty() laid down.
+  const tagsDirty = editingItemId
+    ? tagsSel.isDirty
+    : tagsSel.selected.length > 0;
+  const tricksDirty = editingItemId
+    ? tricksSel.isDirty
+    : tricksSel.selected.length > 0;
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -342,22 +294,19 @@ export function CollectView(): React.ReactElement {
 
   function handleAddItem(): void {
     setEditingItemId(null);
-    setSelectedTagIds([]);
-    setSelectedTrickIds([]);
-    setOriginalTagIds([]);
-    setOriginalTrickIds([]);
+    tagsSel.seedEmpty();
+    tricksSel.seedEmpty();
     setSheetOpen(true);
   }
 
   function handleEditItem(id: ItemId): void {
-    // Defer snapshotting until the seeding effect runs against fully-hydrated
-    // joins. Issue #216: snapshotting here read from a possibly-empty map and
-    // produced silent no-op or silent unlink-of-all on save.
+    // Reset before switching the id so the next render skeletons rather than
+    // briefly displaying the previous row's selection. The hook's auto-reseed
+    // would otherwise leave stale `selected` visible for one render frame
+    // when switching between Edit-A and Edit-B without closing the sheet.
+    tagsSel.reset();
+    tricksSel.reset();
     setEditingItemId(id);
-    setSelectedTagIds(null);
-    setSelectedTrickIds(null);
-    setOriginalTagIds(null);
-    setOriginalTrickIds(null);
     setSheetOpen(true);
   }
 
@@ -365,49 +314,39 @@ export function CollectView(): React.ReactElement {
     setSheetOpen(open);
     if (!open) {
       setEditingItemId(null);
-      setSelectedTagIds(null);
-      setSelectedTrickIds(null);
-      setOriginalTagIds(null);
-      setOriginalTrickIds(null);
+      tagsSel.reset();
+      tricksSel.reset();
     }
   }
 
   async function handleSubmit(data: ItemFormValues): Promise<void> {
     try {
       if (editingItemId) {
-        // Defense-in-depth against keyboard submit before the seeding effect
-        // has hydrated state. The Save button is also disabled via
-        // relationsLoading, but a stray Enter press could still fire submit.
-        if (
-          selectedTagIds === null ||
-          originalTagIds === null ||
-          selectedTrickIds === null ||
-          originalTrickIds === null
-        ) {
-          // Defense-in-depth path. Save is gated via relationsLoading; this
-          // branch should be unreachable. The warn surfaces it in telemetry
-          // if a stray keyboard submit ever beats the gate.
+        // Defense-in-depth against keyboard submit before hook seeding has
+        // hydrated. Save is also disabled via relationsLoading, but a stray
+        // Enter press could still fire submit.
+        if (relationsLoading) {
           console.warn(
             "[CollectView] Submit blocked: relations not yet hydrated"
           );
           return;
         }
 
-        const originalTagSet = new Set(originalTagIds);
-        const currentTagSet = new Set(selectedTagIds);
-        const addTagIds = selectedTagIds.filter(
+        const originalTagSet = new Set(tagsSel.original);
+        const currentTagSet = new Set(tagsSel.selected);
+        const addTagIds = tagsSel.selected.filter(
           (id) => !originalTagSet.has(id)
         );
-        const removeTagIds = originalTagIds.filter(
+        const removeTagIds = tagsSel.original.filter(
           (id) => !currentTagSet.has(id)
         );
 
-        const originalTrickSet = new Set(originalTrickIds);
-        const currentTrickSet = new Set(selectedTrickIds);
-        const addTrickIds = selectedTrickIds.filter(
+        const originalTrickSet = new Set(tricksSel.original);
+        const currentTrickSet = new Set(tricksSel.selected);
+        const addTrickIds = tricksSel.selected.filter(
           (id) => !originalTrickSet.has(id)
         );
-        const removeTrickIds = originalTrickIds.filter(
+        const removeTrickIds = tricksSel.original.filter(
           (id) => !currentTrickSet.has(id)
         );
 
@@ -421,18 +360,15 @@ export function CollectView(): React.ReactElement {
         );
         toast.success(t("itemUpdated"));
       } else {
-        // Add path: handleAddItem seeded both selection arrays to [],
-        // so the `?? []` is a type guard, not a runtime fallback.
-        await createItem(data, selectedTagIds ?? [], selectedTrickIds ?? []);
+        // Add path: handleAddItem seeded both selections to [] via seedEmpty().
+        await createItem(data, tagsSel.selected, tricksSel.selected);
         toast.success(t("itemCreated"));
       }
 
       setSheetOpen(false);
       setEditingItemId(null);
-      setSelectedTagIds(null);
-      setSelectedTrickIds(null);
-      setOriginalTagIds(null);
-      setOriginalTrickIds(null);
+      tagsSel.reset();
+      tricksSel.reset();
     } catch (error) {
       console.error("Item save failed:", error);
       const errorKey = getMutationErrorKey(error);
@@ -484,19 +420,6 @@ export function CollectView(): React.ReactElement {
     }
   }
 
-  function handleToggleTag(tagId: TagId): void {
-    setSelectedTagIds((prev) => {
-      if (prev === null) {
-        // Unreachable in normal flow — the picker is replaced by a skeleton
-        // while selection is null. Defensive against stray callbacks.
-        return prev;
-      }
-      return prev.includes(tagId)
-        ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId];
-    });
-  }
-
   async function handleCreateTag(name: string): Promise<TagId> {
     try {
       return await createTag(name);
@@ -506,17 +429,6 @@ export function CollectView(): React.ReactElement {
       console.error("Tag create failed:", error);
       throw error;
     }
-  }
-
-  function handleToggleTrick(trickId: TrickId): void {
-    setSelectedTrickIds((prev) => {
-      if (prev === null) {
-        return prev;
-      }
-      return prev.includes(trickId)
-        ? prev.filter((id) => id !== trickId)
-        : [...prev, trickId];
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -605,12 +517,12 @@ export function CollectView(): React.ReactElement {
         onCreateTag={handleCreateTag}
         onOpenChange={handleSheetOpenChange}
         onSubmit={handleSubmit}
-        onToggleTag={handleToggleTag}
-        onToggleTrick={handleToggleTrick}
+        onToggleTag={tagsSel.toggle}
+        onToggleTrick={tricksSel.toggle}
         open={sheetOpen}
         relationsLoading={relationsLoading}
-        selectedTagIds={selectedTagIds ?? []}
-        selectedTrickIds={selectedTrickIds ?? []}
+        selectedTagIds={tagsSel.selected}
+        selectedTrickIds={tricksSel.selected}
         tagsDirty={tagsDirty}
         tricksDirty={tricksDirty}
         userBrands={userBrands}
