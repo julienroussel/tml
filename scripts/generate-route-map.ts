@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import { readdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
@@ -89,24 +88,11 @@ function generateMermaid(appDir: string): string {
   return lines.join("\n");
 }
 
-function getLastCommitDate(projectRoot: string): string {
-  const iso = execSync("git log -1 --format=%cI HEAD", {
-    cwd: projectRoot,
-    encoding: "utf-8",
-  }).trim();
-  // Normalize to UTC so local and CI agree. CI's actions/checkout creates a
-  // synthetic merge commit dated in UTC; using the committer's original TZ
-  // here would flap the date on every PR run for committers east of UTC.
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
 function generateRouteMap(projectRoot: string): string {
   const appDir = join(projectRoot, "src", "app");
   const mermaid = generateMermaid(appDir);
 
   return `# Route Map
-
-<!-- Last verified: ${getLastCommitDate(projectRoot)} -->
 
 ## Route Structure
 

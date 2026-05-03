@@ -20,7 +20,9 @@
   },
   "scripts": {
     "dev": "next dev --experimental-https",
+    "predev": "tsx scripts/generate-llms-txt.ts",
     "build": "next build",
+    "prebuild": "tsx scripts/generate-llms-txt.ts",
     "start": "next start",
     "lint": "ultracite check",
     "test": "vitest",
