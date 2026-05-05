@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { TagId, TrickId } from "@/db/types";
+import type { ItemId, TagId, TrickId } from "@/db/types";
 import type { TrickWithTags } from "../types";
 import { formatDuration, getContrastColor, TrickCard } from "./trick-card";
 
@@ -221,6 +221,70 @@ describe("TrickCard", () => {
       />
     );
     expect(screen.getByRole("img")).toBeInTheDocument();
+  });
+
+  // Issue #218 follow-up — `linkedItemsError` indicator branch.
+  // The icon carries role="img" + aria-label so it's reachable by AT users
+  // without spawning a polite live region per card.
+  it("renders an error indicator (not a live region) when linkedItemsError is true", () => {
+    render(
+      <TrickCard
+        linkedItems={[]}
+        linkedItemsError
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        trick={makeTrick()}
+      />
+    );
+
+    // Labeled icon — accessible name surfaces via aria-label on the icon.
+    expect(
+      screen.getByRole("img", { name: "repertoire.loadError" })
+    ).toBeInTheDocument();
+
+    // No status/alert live region — must NOT spawn polite/assertive regions.
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("renders the linked items list when linkedItemsError is false and items are present", () => {
+    render(
+      <TrickCard
+        linkedItems={[
+          { id: "i1" as ItemId, name: "Card Box" },
+          { id: "i2" as ItemId, name: "Coin Shell" },
+        ]}
+        linkedItemsError={false}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        trick={makeTrick()}
+      />
+    );
+
+    // Linked items render as a single comma-joined text node.
+    expect(screen.getByText("Card Box, Coin Shell")).toBeInTheDocument();
+    // No error indicator when error flag is off, even when caller passes the prop.
+    expect(
+      screen.queryByRole("img", { name: "repertoire.loadError" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders nothing for linked items when linkedItemsError is false and the list is empty", () => {
+    render(
+      <TrickCard
+        linkedItems={[]}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        trick={makeTrick()}
+      />
+    );
+
+    // Neither the error indicator nor a "0 items" listing — distinguishes
+    // "no linked items" from "couldn't load" purely by the absence/presence
+    // of the role="img" loadError node.
+    expect(
+      screen.queryByRole("img", { name: "repertoire.loadError" })
+    ).not.toBeInTheDocument();
   });
 
   it("calls onEdit when Space is pressed on the card", async () => {

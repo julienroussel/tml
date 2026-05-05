@@ -1,6 +1,13 @@
 "use client";
 
-import { Clock, Edit, MoreHorizontal, Package, Trash2 } from "lucide-react";
+import {
+  CircleAlert,
+  Clock,
+  Edit,
+  MoreHorizontal,
+  Package,
+  Trash2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -18,6 +25,13 @@ import { TrickStatusBadge } from "./trick-status-badge";
 
 interface TrickCardProps {
   linkedItems?: { id: ItemId; name: string }[];
+  /**
+   * True when the parent's trick_items query failed. Renders a muted
+   * indicator badge in place of the linked-items list so the user can
+   * distinguish "no linked items" from "failed to load" (issue #218
+   * follow-up).
+   */
+  linkedItemsError?: boolean;
   onDelete: (id: TrickId) => void;
   onEdit: (id: TrickId) => void;
   trick: TrickWithTags;
@@ -46,6 +60,7 @@ export function TrickCard({
   onEdit,
   onDelete,
   linkedItems,
+  linkedItemsError,
 }: TrickCardProps): React.ReactElement {
   const t = useTranslations("repertoire");
 
@@ -183,19 +198,37 @@ export function TrickCard({
           </ul>
         )}
 
-        {/* Linked items */}
-        {linkedItems && linkedItems.length > 0 && (
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-            <Package aria-hidden="true" className="size-3.5 shrink-0" />
-            <span>
-              {linkedItems
-                .slice(0, MAX_VISIBLE_ITEMS)
-                .map((item) => item.name)
-                .join(", ")}
-              {linkedItems.length > MAX_VISIBLE_ITEMS &&
-                `, +${linkedItems.length - MAX_VISIBLE_ITEMS}`}
-            </span>
+        {/* Linked items — when the parent's join query has errored we render a
+            muted indicator so the user can tell "no items" from "couldn't
+            load items" (issue #218 follow-up). The label sits on the icon
+            (role="img") rather than the wrapper (role="status"): a list of
+            N cards would otherwise spawn N polite live regions and queue N
+            announcements; the page-level toast already announces the failure
+            once. aria-label reuses the existing `loadError` translation. */}
+        {linkedItemsError ? (
+          <div className="flex items-center gap-1.5 text-muted-foreground text-sm opacity-50">
+            <CircleAlert
+              aria-label={t("loadError")}
+              className="size-3.5 shrink-0"
+              role="img"
+            />
+            <span aria-hidden="true">—</span>
           </div>
+        ) : (
+          linkedItems &&
+          linkedItems.length > 0 && (
+            <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+              <Package aria-hidden="true" className="size-3.5 shrink-0" />
+              <span>
+                {linkedItems
+                  .slice(0, MAX_VISIBLE_ITEMS)
+                  .map((item) => item.name)
+                  .join(", ")}
+                {linkedItems.length > MAX_VISIBLE_ITEMS &&
+                  `, +${linkedItems.length - MAX_VISIBLE_ITEMS}`}
+              </span>
+            </div>
+          )
         )}
       </CardContent>
     </Card>

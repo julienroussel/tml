@@ -55,9 +55,33 @@ const UUID_RE =
 const LOAD_ITEMS_ERROR_TOAST_ID = "collect-load-items-error";
 /** Stable toast id for the editing-item load error (separate so it doesn't clobber the items toast). */
 const LOAD_EDIT_ITEM_ERROR_TOAST_ID = "collect-load-edit-item-error";
+/**
+ * Stable toast id for critical relation-query failures (item_tags, item_tricks,
+ * or the available-tricks picker source). One id covers all three because they
+ * share the same surfaced message and we never want to stack them. Issue #218.
+ */
+const LOAD_RELATIONS_ERROR_TOAST_ID = "collect-load-relations-error";
 
 /** Debounce delay for the search input (milliseconds). */
 const SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * SQL strings exported as module-level constants so tests can match by
+ * reference equality rather than fragile substring inspection. The exact
+ * whitespace/structure is preserved — PowerSync parses these verbatim.
+ */
+export const ITEM_TAGS_QUERY = `SELECT it.item_id, t.id AS tag_id, t.name AS tag_name, t.color
+     FROM item_tags it
+     JOIN tags t ON it.tag_id = t.id
+     WHERE it.deleted_at IS NULL AND t.deleted_at IS NULL`;
+
+export const ITEM_TRICKS_QUERY = `SELECT itr.item_id, tr.id AS trick_id, tr.name AS trick_name
+     FROM item_tricks itr
+     JOIN tricks tr ON itr.trick_id = tr.id
+     WHERE itr.deleted_at IS NULL AND tr.deleted_at IS NULL`;
+
+export const AVAILABLE_TRICKS_QUERY =
+  "SELECT id, name FROM tricks WHERE deleted_at IS NULL ORDER BY name ASC";
 
 /**
  * Main orchestration component for the collection feature.
@@ -131,12 +155,7 @@ export function CollectView(): React.ReactElement {
     data: itemTagRows,
     error: itemTagError,
     isLoading: itemTagsLoading,
-  } = useQuery<ItemTagRow>(
-    `SELECT it.item_id, t.id AS tag_id, t.name AS tag_name, t.color
-     FROM item_tags it
-     JOIN tags t ON it.tag_id = t.id
-     WHERE it.deleted_at IS NULL AND t.deleted_at IS NULL`
-  );
+  } = useQuery<ItemTagRow>(ITEM_TAGS_QUERY);
 
   const itemTagMap = buildItemTagMap(itemTagRows);
 
@@ -147,12 +166,7 @@ export function CollectView(): React.ReactElement {
     data: itemTrickRows,
     error: itemTrickError,
     isLoading: itemTricksLoading,
-  } = useQuery<ItemTrickRow>(
-    `SELECT itr.item_id, tr.id AS trick_id, tr.name AS trick_name
-     FROM item_tricks itr
-     JOIN tricks tr ON itr.trick_id = tr.id
-     WHERE itr.deleted_at IS NULL AND tr.deleted_at IS NULL`
-  );
+  } = useQuery<ItemTrickRow>(ITEM_TRICKS_QUERY);
 
   const itemTrickMap = buildItemTrickMap(itemTrickRows);
 
@@ -191,9 +205,7 @@ export function CollectView(): React.ReactElement {
   // and gating on sheetOpen caused re-registration churn and an empty-picker
   // flash while the async query hydrated after the sheet opened.
   const { data: availableTrickRows, error: availableTricksError } =
-    useQuery<AvailableTrickRow>(
-      "SELECT id, name FROM tricks WHERE deleted_at IS NULL ORDER BY name ASC"
-    );
+    useQuery<AvailableTrickRow>(AVAILABLE_TRICKS_QUERY);
 
   const availableTricks: LinkedTrick[] = availableTrickRows.flatMap((row) => {
     if (typeof row.id !== "string" || !UUID_RE.test(row.id)) {
@@ -229,8 +241,40 @@ export function CollectView(): React.ReactElement {
   }, [editingItemId, editingItemError, t, tagsSel.reset, tricksSel.reset]);
 
   // ---------------------------------------------------------------------------
-  // Surface critical query errors as a single, replaceable toast.
-  // Supplementary queries (brands, locations, trick-join) only log.
+  // Items list error — toast on the list page since items are the page's data.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (itemsError) {
+      console.error("Items query error:", itemsError);
+      toast.error(t("loadError"), { id: LOAD_ITEMS_ERROR_TOAST_ID });
+    }
+  }, [itemsError, t]);
+
+  // ---------------------------------------------------------------------------
+  // Critical relation-query failures (issue #218). The empty/stale data they
+  // produce feeds useHydratedSelection's seed, which doesn't observe `error` —
+  // a save against the wrong baseline can silently NOT remove an
+  // existing-but-invisible relation, or hit a UNIQUE/PK violation when the
+  // user re-toggles it. Toast always so the user is informed even before
+  // clicking Edit/Add. Stable id so re-renders dedupe.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const error = itemTagError ?? itemTrickError ?? availableTricksError;
+    if (!error) {
+      return;
+    }
+    console.error("[CollectView] Relation query error", {
+      itemTagError,
+      itemTrickError,
+      availableTricksError,
+    });
+    toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
+  }, [itemTagError, itemTrickError, availableTricksError, t]);
+
+  // ---------------------------------------------------------------------------
+  // Supplementary queries — datalist autocomplete only. Log so we can debug
+  // from session reports; do NOT toast (would be alarming for a non-critical
+  // degradation that doesn't affect save correctness).
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (brandsError) {
@@ -239,27 +283,42 @@ export function CollectView(): React.ReactElement {
     if (locationsError) {
       console.error("Locations query error:", locationsError);
     }
-    if (itemTagError) {
-      console.error("Item-tags query error:", itemTagError);
+  }, [brandsError, locationsError]);
+
+  // ---------------------------------------------------------------------------
+  // If a critical relation error fires while the sheet is open, close it
+  // rather than let the user save against potentially corrupted seed data.
+  // Mirrors the editingItemError handler above. Mode-scoped to match the
+  // handler-entry guards (issue #218 matrix):
+  //   - Edit (editingItemId !== null): any of item_tags / item_tricks /
+  //     available_tricks errors → close.
+  //   - Add (editingItemId === null): only available_tricks (picker source)
+  //     matters; the item-scoped joins don't feed the Add path.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!sheetOpen) {
+      return;
     }
-    if (itemTrickError) {
-      console.error("Item-tricks query error:", itemTrickError);
-    }
-    if (availableTricksError) {
-      console.error("Available tricks query error:", availableTricksError);
-    }
-    if (itemsError) {
-      console.error("Items query error:", itemsError);
-      toast.error(t("loadError"), { id: LOAD_ITEMS_ERROR_TOAST_ID });
+    const inEditMode = editingItemId !== null;
+    const shouldClose = Boolean(
+      inEditMode
+        ? itemTagError || itemTrickError || availableTricksError
+        : availableTricksError
+    );
+    if (shouldClose) {
+      setSheetOpen(false);
+      setEditingItemId(null);
+      tagsSel.reset();
+      tricksSel.reset();
     }
   }, [
-    itemsError,
+    sheetOpen,
+    editingItemId,
     itemTagError,
     itemTrickError,
     availableTricksError,
-    brandsError,
-    locationsError,
-    t,
+    tagsSel.reset,
+    tricksSel.reset,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -293,6 +352,13 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
 
   function handleAddItem(): void {
+    // availableTricksError breaks the picker source; without it the user
+    // would create an item with an empty/misleading trick list (issue #218).
+    // The other relation errors are edit-only (item-scoped joins).
+    if (availableTricksError) {
+      toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
+      return;
+    }
     setEditingItemId(null);
     tagsSel.seedEmpty();
     tricksSel.seedEmpty();
@@ -300,6 +366,13 @@ export function CollectView(): React.ReactElement {
   }
 
   function handleEditItem(id: ItemId): void {
+    // Block opening the sheet if relation queries are broken — without
+    // current relations the seed lock-in would be empty, and the user
+    // can't see what they have or remove what they've toggled. Issue #218.
+    if (itemTagError || itemTrickError || availableTricksError) {
+      toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
+      return;
+    }
     // Reset before switching the id so the next render skeletons rather than
     // briefly displaying the previous row's selection. The hook's auto-reseed
     // would otherwise leave stale `selected` visible for one render frame
@@ -329,6 +402,7 @@ export function CollectView(): React.ReactElement {
           console.warn(
             "[CollectView] Submit blocked: relations not yet hydrated"
           );
+          toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
           return;
         }
 

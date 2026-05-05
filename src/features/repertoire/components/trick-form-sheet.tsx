@@ -25,7 +25,7 @@ interface TrickFormSheetProps {
   effectTypes: string[];
   onCreateTag: (name: string) => Promise<TagId>;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: TrickFormValues) => void;
+  onSubmit: (data: TrickFormValues) => void | Promise<void>;
   onToggleTag: (tagId: TagId) => void;
   open: boolean;
   /**
