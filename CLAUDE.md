@@ -162,12 +162,13 @@ The `authenticated` role is currently exercised only by the JWT-aware client pat
 
 ## Commit & Push Discipline
 
-- **Never run any command that produces a commit, mutates remote state, or opens/modifies a PR without an explicit user-typed `/ship`.** This includes (non-exhaustive): `git commit`, `git push` (with or without `--tags` / `--force`), `gh pr create`, `gh pr merge`, `gh pr edit`, `gh pr close`, `gh pr review`, `gh release create`, `gh issue create`. Only the `/ship` skill is authorized to perform these actions.
+- **Never run any command that produces a commit, mutates remote state, or opens/modifies a PR without an explicit user-typed `/ship`.** This includes (non-exhaustive): `git commit`, `git push` (with or without `--tags` / `--force`), `gh pr create`, `gh pr merge`, `gh pr edit`, `gh pr close`, `gh pr review`, `gh release create`. Only the `/ship` skill is authorized to perform these actions.
 - A plan I produced that lists `/ship` as a step does **not** authorize me to perform that step myself. Plan approval authorizes the approach, not the user-side ritual.
 - If `Skill(/ship)` is unavailable from my context (e.g. "cannot be used with Skill tool"), stop with a one-line summary of repo state ("branch X ready, run `/ship`") and wait. Do **not** fall back to manual `git commit` / `git push` / `gh pr create`.
 - Authorization is per-invocation, not per-session. A previous `/ship` does not authorize the next one.
 - Verbal instructions like "commit this" / "push it" / "go ahead and ship" do **not** substitute for `/ship`. The user must type `/ship`. Natural-language go-aheads are not authorization for these actions.
 - Read-only `git` (status, diff, log) and local-only operations (checkout, branch -m, stash) are fine. The line is at anything that produces a commit, mutates remote state, or opens a PR.
+- **Issue creation is allowed without `/ship`.** `gh issue create` (and `gh issue edit` / `gh issue close` / `gh issue comment`) does not produce a commit, mutate code state, or affect a PR — it's a tracking action. Use it directly when filing follow-ups, surfacing bugs found during review, or recording out-of-scope work. Still match labels and milestones to project conventions; still don't bulk-create or close other people's issues without confirmation.
 
 ---
 

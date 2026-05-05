@@ -70,8 +70,32 @@ interface TrickItemRow {
 /** Debounce delay for the search input (milliseconds). */
 const SEARCH_DEBOUNCE_MS = 300;
 
+/**
+ * SQL for the trick_tags + tags join. Exported so tests can match by reference
+ * equality (substring matching is fragile — see finding #8). Whitespace is
+ * preserved verbatim because PowerSync parses these strings.
+ */
+export const TRICK_TAGS_QUERY = `SELECT tt.trick_id, t.id AS tag_id, t.name AS tag_name, t.color
+     FROM trick_tags tt
+     JOIN tags t ON tt.tag_id = t.id
+     WHERE tt.deleted_at IS NULL AND t.deleted_at IS NULL`;
+
+/**
+ * SQL for the item_tricks + items join. Exported alongside TRICK_TAGS_QUERY
+ * for the same reference-equality reason. Whitespace preserved verbatim.
+ */
+export const TRICK_ITEMS_QUERY = `SELECT itr.trick_id, i.id AS item_id, i.name AS item_name
+     FROM item_tricks itr
+     JOIN items i ON itr.item_id = i.id
+     WHERE itr.deleted_at IS NULL AND i.deleted_at IS NULL`;
+
 /** Stable toast id for the editing-trick load error (separate so it doesn't clobber the relations toast). */
 const LOAD_EDIT_TRICK_ERROR_TOAST_ID = "repertoire-load-edit-trick-error";
+/**
+ * Stable toast id for trick_tags / trick_items query failures. One id covers
+ * both — same surfaced message, never want to stack. Issue #218.
+ */
+const LOAD_RELATIONS_ERROR_TOAST_ID = "repertoire-load-relations-error";
 
 /**
  * Main orchestration component for the repertoire feature.
@@ -142,12 +166,7 @@ export function RepertoireView(): React.ReactElement {
     data: trickTagRows,
     error: trickTagError,
     isLoading: trickTagsLoading,
-  } = useQuery<TrickTagRow>(
-    `SELECT tt.trick_id, t.id AS tag_id, t.name AS tag_name, t.color
-     FROM trick_tags tt
-     JOIN tags t ON tt.tag_id = t.id
-     WHERE tt.deleted_at IS NULL AND t.deleted_at IS NULL`
-  );
+  } = useQuery<TrickTagRow>(TRICK_TAGS_QUERY);
 
   const trickTagMap = buildTrickTagMap(trickTagRows);
 
@@ -172,19 +191,28 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Trick-items join query (build a Map<trickId, LinkedItem[]>)
   // ---------------------------------------------------------------------------
-  const { data: trickItemRows, error: trickItemError } = useQuery<TrickItemRow>(
-    `SELECT itr.trick_id, i.id AS item_id, i.name AS item_name
-     FROM item_tricks itr
-     JOIN items i ON itr.item_id = i.id
-     WHERE itr.deleted_at IS NULL AND i.deleted_at IS NULL`
-  );
+  const { data: trickItemRows, error: trickItemError } =
+    useQuery<TrickItemRow>(TRICK_ITEMS_QUERY);
 
+  // ---------------------------------------------------------------------------
+  // Toast on any relation-query failure so the user is informed even before
+  // clicking Edit/Add. Stable id so re-renders dedupe. Mirrors the unified
+  // shape used in collect-view for consistency. The critical-vs-supplementary
+  // asymmetry between the two errors (trickTagError feeds tagsSel seed
+  // lock-in; trickItemError feeds only the inverse-relation badge) only
+  // matters for auto-close behavior — see the next effect — not for toast
+  // surfacing, where both should equally inform the user (issue #218).
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     const error = trickTagError ?? trickItemError;
-    if (error) {
-      console.error("Failed to load trick relations:", error);
-      toast.error(t("loadError"));
+    if (!error) {
+      return;
     }
+    console.error("[RepertoireView] Relation query error", {
+      trickTagError,
+      trickItemError,
+    });
+    toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
   }, [trickTagError, trickItemError, t]);
 
   // ---------------------------------------------------------------------------
@@ -203,6 +231,20 @@ export function RepertoireView(): React.ReactElement {
       tagsSel.reset();
     }
   }, [editingTrickId, editingTrickError, t, tagsSel.reset]);
+
+  // ---------------------------------------------------------------------------
+  // If trickTagError fires while the EDIT sheet is open, close it rather
+  // than let the user save against an empty seed lock-in. Add path is
+  // unaffected — there are no existing relations to seed (issue #218).
+  // trickItemError is intentionally NOT here — it never feeds the edit form.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (sheetOpen && editingTrickId !== null && trickTagError) {
+      setSheetOpen(false);
+      setEditingTrickId(null);
+      tagsSel.reset();
+    }
+  }, [sheetOpen, editingTrickId, trickTagError, tagsSel.reset]);
 
   const trickItemMap = buildTrickItemMap(trickItemRows);
 
@@ -236,6 +278,13 @@ export function RepertoireView(): React.ReactElement {
   }
 
   function handleEditTrick(id: TrickId): void {
+    // Block opening the sheet if trick_tags is broken — without it the seed
+    // lock-in would be empty and the user can't see what they have or
+    // remove what they've toggled. Issue #218.
+    if (trickTagError) {
+      toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
+      return;
+    }
     // Reset before switching the id so the next render skeletons rather than
     // briefly displaying the previous row's selection. The hook's auto-reseed
     // would otherwise leave stale `selected` visible for one render frame
@@ -262,6 +311,7 @@ export function RepertoireView(): React.ReactElement {
           console.warn(
             "[RepertoireView] Submit blocked: relations not yet hydrated"
           );
+          toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
           return;
         }
 
@@ -345,6 +395,7 @@ export function RepertoireView(): React.ReactElement {
       return (
         <TrickList
           itemMap={trickItemMap}
+          linkedItemsError={Boolean(trickItemError)}
           onDelete={handleDeleteTrick}
           onEdit={handleEditTrick}
           tricks={tricksWithTags}

@@ -83,7 +83,7 @@ interface TrickFormProps {
   formId: string;
   onCreateTag: (name: string) => Promise<TagId>;
   onDirtyChange?: (dirty: boolean) => void;
-  onSubmit: (data: TrickFormValues) => void;
+  onSubmit: (data: TrickFormValues) => void | Promise<void>;
   onToggleTag: (tagId: TagId) => void;
   /**
    * True while the parent's tag join is still hydrating during an Edit

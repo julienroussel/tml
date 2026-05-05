@@ -7,6 +7,12 @@ import { TrickCard } from "./trick-card";
 
 interface TrickListProps {
   itemMap?: Map<TrickId, { id: ItemId; name: string }[]>;
+  /**
+   * True when the trick_items join query has errored. When true, TrickCard
+   * shows a muted indicator badge so the user can distinguish "no linked
+   * items" from "failed to load linked items" (issue #218 follow-up).
+   */
+  linkedItemsError?: boolean;
   onDelete: (id: TrickId) => void;
   onEdit: (id: TrickId) => void;
   tricks: TrickWithTags[];
@@ -23,6 +29,7 @@ export function TrickList({
   onEdit,
   onDelete,
   itemMap,
+  linkedItemsError,
 }: TrickListProps): React.ReactElement {
   const t = useTranslations("repertoire");
 
@@ -35,6 +42,7 @@ export function TrickList({
         <li key={trick.id}>
           <TrickCard
             linkedItems={itemMap?.get(trick.id)}
+            linkedItemsError={linkedItemsError}
             onDelete={onDelete}
             onEdit={onEdit}
             trick={trick}

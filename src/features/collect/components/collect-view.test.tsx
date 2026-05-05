@@ -3,7 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ItemId, TagId, TrickId } from "@/db/types";
 import type { ParsedItem } from "../types";
-import { CollectView } from "./collect-view";
+import {
+  AVAILABLE_TRICKS_QUERY,
+  CollectView,
+  ITEM_TAGS_QUERY,
+  ITEM_TRICKS_QUERY,
+} from "./collect-view";
 import type { ItemDeleteDialogProps } from "./item-delete-dialog";
 import type { ItemFiltersProps } from "./item-filters";
 import type { ItemFormSheetProps } from "./item-form-sheet";
@@ -336,7 +341,7 @@ describe("CollectView", () => {
 
     // The first useQuery call is the item_tags join — seed it with two existing tags
     vi.mocked(useQuery).mockImplementation((sql) => {
-      if (typeof sql === "string" && sql.includes("FROM item_tags")) {
+      if (sql === ITEM_TAGS_QUERY) {
         return {
           data: [
             {
@@ -420,7 +425,7 @@ describe("CollectView", () => {
       isLoading: false,
     });
     vi.mocked(useQuery).mockImplementation((sql) => {
-      if (typeof sql === "string" && sql.includes("FROM item_tags")) {
+      if (sql === ITEM_TAGS_QUERY) {
         return {
           data: [
             {
@@ -860,6 +865,554 @@ describe("CollectView", () => {
     expect(toast.error).not.toHaveBeenCalledWith(
       "collect.tagPicker.createFailed",
       expect.anything()
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #218 — silent join-query failures
+  // ---------------------------------------------------------------------------
+
+  it("blocks Edit when item_tags query has errored (issue #218)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useQuery } = await import("@powersync/react");
+    const itemId = "00000000-0000-4000-8000-00000000218a";
+    const item = makeItem(itemId, "Card Force");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+
+    const tagJoinError = new Error("item_tags schema drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    // Sheet must NOT open — guard short-circuits before setSheetOpen(true).
+    expect(capturedFormSheetProps.open).toBe(false);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("blocks Edit when item_tricks query has errored (issue #218)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useQuery } = await import("@powersync/react");
+    const itemId = "00000000-0000-4000-8000-00000000218b";
+    const item = makeItem(itemId, "Coin Vanish");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+
+    const trickJoinError = new Error("item_tricks parse error");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TRICKS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: trickJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.open).toBe(false);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("blocks Edit when available-tricks query has errored (issue #218)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useQuery } = await import("@powersync/react");
+    const itemId = "00000000-0000-4000-8000-00000000218c";
+    const item = makeItem(itemId, "Sponge Bunny");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+
+    const availableTricksError = new Error("tricks query failed");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === AVAILABLE_TRICKS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: availableTricksError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.open).toBe(false);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("blocks Add when available-tricks query has errored (issue #218)", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    const availableTricksError = new Error("tricks query failed");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === AVAILABLE_TRICKS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: availableTricksError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+
+    // Add path also blocks because the picker source is broken.
+    expect(capturedFormSheetProps.open).toBe(false);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("does NOT block Add when only item_tags has errored (asymmetry, issue #218)", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    // item_tags errored, but availableTricks is healthy. Add path doesn't
+    // depend on existing-relation joins — seedEmpty([]) is the intended
+    // baseline.
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: new Error("item_tags broken"),
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+
+    // Sheet OPENS — Add doesn't depend on join data.
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([]);
+  });
+
+  it("does NOT block Add when only item_tricks has errored (asymmetry, issue #218)", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    // item_tricks errored, but availableTricks is healthy. Mirror of the
+    // item_tags-only Add test above — Add path doesn't gate on item-scoped
+    // join failures because seedEmpty([]) is the intended baseline. The
+    // mode-scoped close logic in collect-view.tsx (~line 292) only closes
+    // Add when availableTricksError is set; item_tricks does NOT close.
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TRICKS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: new Error("item_tricks broken"),
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+
+    // Sheet OPENS — Add doesn't depend on item_tricks join.
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([]);
+  });
+
+  it("does NOT toast for brandsError (supplementary autocomplete)", async () => {
+    const { useItemBrands } = await import("../hooks/use-item-brands");
+    vi.mocked(useItemBrands).mockReturnValue({
+      brands: [],
+      error: new Error("brands offline"),
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-items-error" })
+    );
+  });
+
+  it("does NOT toast for locationsError (supplementary autocomplete)", async () => {
+    const { useItemLocations } = await import("../hooks/use-item-locations");
+    const { useItems } = await import("../hooks/use-items");
+    const itemId = "00000000-0000-4000-8000-00000000218d";
+    const item = makeItem(itemId, "Linking Rings");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItemLocations).mockReturnValue({
+      locations: [],
+      error: new Error("locations offline"),
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("auto-closes the sheet when a critical relation error fires after open", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+    const { useQuery } = await import("@powersync/react");
+    const itemId = "00000000-0000-4000-8000-00000000218e";
+    const item = makeItem(itemId, "Cups and Balls");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+    });
+
+    // Healthy initial state — sheet opens cleanly.
+    vi.mocked(useQuery).mockImplementation(() => ({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    }));
+
+    const { rerender } = render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background sync surfaces a join error — Effect B should close the sheet.
+    const tagJoinError = new Error("background sync drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<CollectView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("auto-closes the Add sheet when availableTricks errors after open", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    // Healthy initial state — Add sheet opens cleanly.
+    vi.mocked(useQuery).mockImplementation(() => ({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    }));
+
+    const { rerender } = render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background sync surfaces an availableTricks error — the mode-scoped
+    // close effect should slam the Add sheet shut. In Add mode, only the
+    // picker source (availableTricksError) triggers the close; item-scoped
+    // joins do not.
+    const availableTricksError = new Error("background tricks failure");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === AVAILABLE_TRICKS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: availableTricksError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<CollectView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("uses a stable toast id so re-renders dedupe (idempotency)", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    // Stable error ref held in closure — survives re-renders.
+    const stableError = new Error("persistent schema drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: stableError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    const { rerender } = render(<CollectView />);
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "collect.loadError",
+        expect.objectContaining({ id: "collect-load-relations-error" })
+      );
+    });
+
+    // Every fired call should carry the stable id — sonner dedupes by id.
+    const relationsCalls = vi
+      .mocked(toast.error)
+      .mock.calls.filter(([, opts]) => {
+        if (!opts || typeof opts !== "object") {
+          return false;
+        }
+        return (opts as { id?: string }).id === "collect-load-relations-error";
+      });
+
+    // Upper-bound assertion: a stable error reference + correct deps array
+    // should never produce more than a small constant number of toast calls
+    // for a single render. React strict-mode and any auto-reseed behavior can
+    // legitimately re-invoke the effect, but anything growing with rerender
+    // count is a regression. The bound of 2 leaves a small headroom for
+    // strict-mode double-invoke without masking unbounded toast spam.
+    expect(relationsCalls.length).toBeLessThanOrEqual(2);
+
+    // Force two more renders — the effect's deps are unchanged (same error
+    // ref), so a correctly-deduped effect must NOT add a new call per
+    // rerender. Total call count must remain bounded by a small constant
+    // regardless of rerender count.
+    rerender(<CollectView />);
+    rerender(<CollectView />);
+
+    const allRelationsCalls = vi
+      .mocked(toast.error)
+      .mock.calls.filter(([, opts]) => {
+        if (!opts || typeof opts !== "object") {
+          return false;
+        }
+        return (opts as { id?: string }).id === "collect-load-relations-error";
+      });
+
+    // Total toast call count after 1 render + 2 rerenders must remain
+    // bounded by a small constant. If it grows linearly with rerender count
+    // we've regressed the deps array or lost the stable error reference.
+    // Bound: 2 (initial) + 2 rerenders = 4 conservative ceiling.
+    expect(allRelationsCalls.length).toBeLessThanOrEqual(4);
+
+    // Every relations toast call must carry the stable id (matcher above
+    // already filters by id, so the assertion is "no rogue id-less calls
+    // crept in").
+    expect(
+      allRelationsCalls.every(([msg]) => msg === "collect.loadError")
+    ).toBe(true);
+  });
+
+  it("auto-closes the sheet if a relation query errors mid-edit (issue #218)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useQuery } = await import("@powersync/react");
+    const itemId = "00000000-0000-4000-8000-00000218e218";
+    const item = makeItem(itemId, "Stage Saw");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+
+    // All relation queries healthy — Edit must succeed in opening the sheet.
+    vi.mocked(useQuery).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    });
+
+    const { rerender } = render(<CollectView />);
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(true);
+    });
+
+    // Flip item_tags to errored mid-session and rerender. The auto-close
+    // effect must slam the sheet shut rather than let the user save against
+    // a stale [] seed lock-in. Distinct from the entry-guard tests above:
+    // those pre-mock the error before render so handleEditItem returns
+    // early; this test exercises the useEffect path where the sheet has
+    // already opened.
+    const tagError = new Error("item_tags drifted mid-session");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<CollectView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
     );
   });
 });

@@ -9,7 +9,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TagId, TrickId } from "@/db/types";
 import type { ParsedTrick, TrickWithTags } from "../types";
-import { RepertoireView } from "./repertoire-view";
+import {
+  RepertoireView,
+  TRICK_ITEMS_QUERY,
+  TRICK_TAGS_QUERY,
+} from "./repertoire-view";
 import type { TrickDeleteDialogProps } from "./trick-delete-dialog";
 import type { TrickFiltersProps } from "./trick-filters";
 import type { TrickFormSheetProps } from "./trick-form-sheet";
@@ -873,6 +877,41 @@ describe("RepertoireView", () => {
     expect(toast.error).not.toHaveBeenCalledWith("repertoire.deleteFailed");
   });
 
+  it("closes sheet and clears edit state when useTrick reports an error", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const trickId = "00000000-0000-4000-8000-000000ed7e44";
+    const trick = makeTrick(trickId, "Broken Trick");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+
+    // useTrick reports an error — the sheet must NOT stay open on the
+    // "add new" form when the edit target fails to hydrate.
+    vi.mocked(useTrick).mockReturnValue({
+      trick: null,
+      error: new Error("load failed"),
+      isLoading: false,
+    });
+
+    render(<RepertoireView />);
+
+    // Attempt to open the edit sheet — the load-error effect should slam it shut.
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-edit-trick-error" })
+    );
+  });
+
   // ---------------------------------------------------------------------------
   // Issue #216 — hydration-race regression coverage
   // ---------------------------------------------------------------------------
@@ -931,6 +970,14 @@ describe("RepertoireView", () => {
     );
     expect(mockUpdateTrick).not.toHaveBeenCalled();
 
+    // The block must surface a toast so the user knows submit was dropped.
+    // Stable id so a follow-up rapid re-submit collapses the notification.
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+
     // Hydrate the row.
     vi.mocked(useTrick).mockReturnValue({
       trick,
@@ -987,6 +1034,366 @@ describe("RepertoireView", () => {
     expect(mockCreateTrick).toHaveBeenCalledWith(
       expect.objectContaining({ name: "New Trick" }),
       []
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #218 — silent join-query failures
+  // ---------------------------------------------------------------------------
+
+  it("blocks Edit when trick_tags query has errored (issue #218)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useQuery } = await import("@powersync/react");
+    const trickId = "00000000-0000-4000-8000-00000000218a";
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick(trickId, "Card Force")],
+      error: null,
+      isLoading: false,
+    });
+
+    const tagJoinError = new Error("trick_tags schema drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === TRICK_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    expect(capturedFormSheetProps.open).toBe(false);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  it("does NOT block Edit when only trick_items has errored (asymmetry, issue #218)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+    const trickId = "00000000-0000-4000-8000-00000000218b";
+    const trick = makeTrick(trickId, "Coin Vanish");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+    });
+
+    const itemJoinError = new Error("item_tricks parse error");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      // trickItemError SQL pulls from item_tricks; trick_tags is healthy.
+      if (sql === TRICK_ITEMS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: itemJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    // Sheet OPENS — trickItemError feeds only the inverse-relation display
+    // (TrickList badges), never the edit form. Toast still fires so the
+    // user knows the list is incomplete.
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  it("does NOT block Add when trick_tags has errored (asymmetry, issue #218)", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === TRICK_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: new Error("trick_tags broken"),
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+
+    // Add path doesn't depend on join data — sheet OPENS.
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+  });
+
+  it("auto-closes the EDIT sheet when trick_tags errors after open", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+    const trickId = "00000000-0000-4000-8000-00000000218c";
+    const trick = makeTrick(trickId, "Sponge Bunny");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+    });
+
+    // Healthy initial state.
+    vi.mocked(useQuery).mockImplementation(() => ({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    }));
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background sync surfaces a trick_tags error.
+    const tagJoinError = new Error("background sync drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === TRICK_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<RepertoireView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+  });
+
+  it("does NOT auto-close the ADD sheet when trick_tags errors after open", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    // Healthy initial state.
+    vi.mocked(useQuery).mockImplementation(() => ({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    }));
+
+    const { rerender } = render(<RepertoireView />);
+
+    // Open the Add sheet (no editing target).
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.trick).toBeNull();
+
+    // Background trick_tags error fires — Add mode must remain open.
+    const tagJoinError = new Error("background sync drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === TRICK_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagJoinError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<RepertoireView />);
+
+    // Toast fires (page-level effect always toasts), but Add sheet stays open.
+    expect(capturedFormSheetProps.open).toBe(true);
+  });
+
+  it("uses a stable toast id so re-renders dedupe (idempotency)", async () => {
+    const { useQuery } = await import("@powersync/react");
+
+    const stableError = new Error("persistent schema drift");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === TRICK_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: stableError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "repertoire.loadError",
+        expect.objectContaining({ id: "repertoire-load-relations-error" })
+      );
+    });
+
+    rerender(<RepertoireView />);
+    rerender(<RepertoireView />);
+
+    // Every relations-toast call must carry the stable id, AND the call
+    // count must stay within an upper bound so an unbounded effect-storm
+    // regression (e.g. dropping the stable error reference) fails this
+    // test instead of silently doubling toast volume on every rerender.
+    // The bound mirrors collect-view's idempotency test for parity:
+    // strict-mode double-invoke and any auto-reseed can legitimately
+    // re-fire the effect, but anything growing with rerender count
+    // signals a regression.
+    const relationsCalls = vi
+      .mocked(toast.error)
+      .mock.calls.filter(([, opts]) => {
+        if (!opts || typeof opts !== "object") {
+          return false;
+        }
+        return (
+          (opts as { id?: string }).id === "repertoire-load-relations-error"
+        );
+      });
+
+    // Upper-bound assertion: 1 render + 2 rerenders = 3 cycles, with
+    // headroom for strict-mode double-invoke gives a conservative ceiling
+    // of 4. Anything growing linearly with rerender count breaches this
+    // and surfaces an unbounded toast-storm regression.
+    expect(relationsCalls.length).toBeLessThanOrEqual(4);
+    expect(
+      relationsCalls.every(([msg]) => msg === "repertoire.loadError")
+    ).toBe(true);
+  });
+
+  it("auto-closes the sheet if trick_tags errors mid-edit (issue #218)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useQuery } = await import("@powersync/react");
+    const trickId = "00000000-0000-4000-8000-00000218e218";
+    const trick = makeTrick(trickId, "Card Warp");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      error: null,
+      isLoading: false,
+    });
+
+    // All relation queries healthy — Edit must succeed in opening the sheet.
+    vi.mocked(useQuery).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(true);
+    });
+
+    // Flip trick_tags to errored mid-session and rerender. The auto-close
+    // effect must close the sheet — without trick_tags the seed lock-in
+    // would be empty and the user can't see what they have or remove what
+    // they've toggled. Distinct from the entry-guard tests above: those
+    // pre-mock the error before render so handleEditTrick returns early;
+    // this exercises the useEffect path where the sheet has already opened.
+    // trickItemError is intentionally NOT exercised here — the asymmetric
+    // case (sheet stays open) is covered separately.
+    const tagError = new Error("trick_tags drifted mid-session");
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === TRICK_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: tagError,
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+    rerender(<RepertoireView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
     );
   });
 });
