@@ -13,7 +13,7 @@
     "url": "git+https://github.com/julienroussel/tml.git"
   },
   "author": "Julien Roussel",
-  "packageManager": "pnpm@10.33.3",
+  "packageManager": "pnpm@10.33.4",
   "engines": {
     "node": "24.x",
     "pnpm": ">=10"
@@ -72,10 +72,10 @@
     "next-intl": "4.11.0",
     "next-themes": "0.4.6",
     "radix-ui": "1.4.3",
-    "react": "19.2.5",
-    "react-dom": "19.2.5",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "react-hook-form": "7.75.0",
-    "resend": "6.12.2",
+    "resend": "6.12.3",
     "server-only": "0.0.1",
     "sonner": "2.0.7",
     "tailwind-merge": "3.5.0",
@@ -105,7 +105,7 @@
     "jsdom": "29.1.1",
     "lefthook": "2.1.6",
     "powersync": "0.9.4",
-    "react-email": "6.0.8",
+    "react-email": "6.1.0",
     "shadcn": "4.7.0",
     "tailwindcss": "4.2.4",
     "tsx": "4.21.0",
