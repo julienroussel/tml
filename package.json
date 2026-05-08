@@ -52,7 +52,7 @@
   "dependencies": {
     "@hookform/resolvers": "5.2.2",
     "@journeyapps/wa-sqlite": "1.7.0",
-    "@neondatabase/auth": "0.3.0-beta",
+    "@neondatabase/auth": "0.4.0-beta",
     "@neondatabase/serverless": "1.1.0",
     "@powersync/common": "1.52.0",
     "@powersync/kysely-driver": "1.3.3",
@@ -86,7 +86,7 @@
     "@biomejs/biome": "2.4.14",
     "@playwright/test": "1.59.1",
     "@react-email/preview-server": "5.2.10",
-    "@tailwindcss/postcss": "4.2.4",
+    "@tailwindcss/postcss": "4.3.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
@@ -107,11 +107,11 @@
     "powersync": "0.9.4",
     "react-email": "6.1.1",
     "shadcn": "4.7.0",
-    "tailwindcss": "4.2.4",
+    "tailwindcss": "4.3.0",
     "tsx": "4.21.0",
     "tw-animate-css": "1.4.0",
     "typescript": "6.0.3",
-    "ultracite": "7.6.4",
+    "ultracite": "7.6.5",
     "vitest": "4.1.5"
   },
   "pnpm": {
