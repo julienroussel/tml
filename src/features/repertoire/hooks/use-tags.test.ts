@@ -14,14 +14,15 @@ import { useTags } from "./use-tags";
 
 describe("useTags", () => {
   it("returns empty tags and isLoading false when there are no rows", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false });
+    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: null });
     const { result } = renderHook(() => useTags());
     expect(result.current.tags).toEqual([]);
     expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBeNull();
   });
 
   it("returns isLoading true while loading", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: true });
+    mockUseQuery.mockReturnValue({ data: [], isLoading: true, error: null });
     const { result } = renderHook(() => useTags());
     expect(result.current.isLoading).toBe(true);
   });
@@ -33,6 +34,7 @@ describe("useTags", () => {
         { id: "tag-2", name: "Coin", color: null },
       ],
       isLoading: false,
+      error: null,
     });
     const { result } = renderHook(() => useTags());
     expect(result.current.tags).toEqual([
@@ -41,8 +43,27 @@ describe("useTags", () => {
     ]);
   });
 
+  it("surfaces useQuery error", () => {
+    const err = new Error("query failed");
+    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: err });
+    const { result } = renderHook(() => useTags());
+    expect(result.current.error).toBe(err);
+    expect(result.current.tags).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("returns null error when useQuery error is undefined", () => {
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: undefined,
+    });
+    const { result } = renderHook(() => useTags());
+    expect(result.current.error).toBeNull();
+  });
+
   it("calls useQuery with the correct SQL", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false });
+    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: null });
     renderHook(() => useTags());
     const calledSql: string = mockUseQuery.mock.calls[0]?.[0];
     expect(calledSql).toContain("SELECT id, name, color FROM tags");

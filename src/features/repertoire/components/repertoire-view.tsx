@@ -96,6 +96,8 @@ const LOAD_EDIT_TRICK_ERROR_TOAST_ID = "repertoire-load-edit-trick-error";
  * both — same surfaced message, never want to stack. Issue #218.
  */
 const LOAD_RELATIONS_ERROR_TOAST_ID = "repertoire-load-relations-error";
+/** Stable toast id for the primary tricks-list query error (mirrors collect-view's items-list pattern). */
+const LOAD_TRICKS_ERROR_TOAST_ID = "repertoire-load-tricks-error";
 
 /**
  * Main orchestration component for the repertoire feature.
@@ -141,7 +143,7 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Data hooks
   // ---------------------------------------------------------------------------
-  const { tricks } = useTricks({
+  const { tricks, error: tricksError } = useTricks({
     search: debouncedSearch,
     status: statusFilter,
     category: categoryFilter,
@@ -153,11 +155,11 @@ export function RepertoireView(): React.ReactElement {
     error: editingTrickError,
     isLoading: editingTrickLoading,
   } = useTrick(editingTrickId);
-  const { tags } = useTags();
+  const { tags, error: tagError } = useTags();
   const { createTrick, updateTrick, deleteTrick } = useTrickMutations();
   const { createTag } = useTagMutations();
-  const categories = useTrickCategories();
-  const effectTypes = useTrickEffectTypes();
+  const { categories, error: categoriesError } = useTrickCategories();
+  const { effectTypes, error: effectTypesError } = useTrickEffectTypes();
 
   // ---------------------------------------------------------------------------
   // Trick-tags join query (build a Map<trickId, ParsedTag[]>)
@@ -197,23 +199,64 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   // Toast on any relation-query failure so the user is informed even before
   // clicking Edit/Add. Stable id so re-renders dedupe. Mirrors the unified
-  // shape used in collect-view for consistency. The critical-vs-supplementary
-  // asymmetry between the two errors (trickTagError feeds tagsSel seed
-  // lock-in; trickItemError feeds only the inverse-relation badge) only
-  // matters for auto-close behavior — see the next effect — not for toast
-  // surfacing, where both should equally inform the user (issue #218).
+  // shape used in collect-view for consistency. The asymmetry between these
+  // errors only matters for auto-close behavior (next effect) and handler
+  // gating, not for toast surfacing — all critical errors should inform the
+  // user equally (issue #218 + #263).
+  //
+  // Picker-source vs junction distinction:
+  //   - tagError       → useTags() (the picker source); gates both Add and
+  //                      Edit because the picker is used in both flows.
+  //   - trickTagError  → trick_tags join; gates Edit only (it seeds existing
+  //                      tag selections on the trick; Add uses seedEmpty()).
+  //   - trickItemError → trick_items join; never gates the form at all
+  //                      (feeds only the inverse-relation badge in TrickList).
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const error = trickTagError ?? trickItemError;
+    const error = trickTagError ?? trickItemError ?? tagError;
     if (!error) {
       return;
     }
     console.error("[RepertoireView] Relation query error", {
       trickTagError,
       trickItemError,
+      tagError,
     });
     toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
-  }, [trickTagError, trickItemError, t]);
+  }, [trickTagError, trickItemError, tagError, t]);
+
+  // ---------------------------------------------------------------------------
+  // Tricks list error — toast on the list page since tricks are the page's data.
+  // Mirrors collect-view's items-list error handling (issue #263 sibling).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (tricksError) {
+      console.error("[RepertoireView] Tricks query error:", tricksError);
+      toast.error(t("loadError"), { id: LOAD_TRICKS_ERROR_TOAST_ID });
+    }
+  }, [tricksError, t]);
+
+  // ---------------------------------------------------------------------------
+  // Supplementary queries — combobox autocomplete only. Log so we can debug
+  // from session reports; do NOT toast (the form still works without
+  // category/effect-type suggestions; hardcoded SUGGESTED_* constants in the
+  // form provide a fallback). Mirrors the brands/locations precedent in
+  // collect-view (issue #263).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (categoriesError) {
+      console.error(
+        "[RepertoireView] Categories query error:",
+        categoriesError
+      );
+    }
+    if (effectTypesError) {
+      console.error(
+        "[RepertoireView] Effect types query error:",
+        effectTypesError
+      );
+    }
+  }, [categoriesError, effectTypesError]);
 
   // ---------------------------------------------------------------------------
   // Editing trick load failure — close the sheet rather than render "add new"
@@ -221,7 +264,10 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (editingTrickId && editingTrickError) {
-      console.error("Failed to load trick for editing:", editingTrickError);
+      console.error(
+        "[RepertoireView] Failed to load trick for editing:",
+        editingTrickError
+      );
       // Do NOT pass error.message as description — PowerSync/SQLite messages
       // can carry row context or query fragments. Full error already in
       // console.error above for developer diagnostics.
@@ -233,18 +279,30 @@ export function RepertoireView(): React.ReactElement {
   }, [editingTrickId, editingTrickError, t, tagsSel.reset]);
 
   // ---------------------------------------------------------------------------
-  // If trickTagError fires while the EDIT sheet is open, close it rather
-  // than let the user save against an empty seed lock-in. Add path is
-  // unaffected — there are no existing relations to seed (issue #218).
-  // trickItemError is intentionally NOT here — it never feeds the edit form.
+  // If a critical error fires while the sheet is open, close it rather than
+  // let the user save against an empty seed lock-in or an empty tag picker.
+  // Mode-scoped to match the handler-entry guards (issue #218 + #263 matrix):
+  //   - Edit (editingTrickId !== null): trickTagError (existing-tag seed)
+  //     or tagError (picker source) → close.
+  //   - Add  (editingTrickId === null): only tagError matters — the picker
+  //     source is used in both flows; trick_tags doesn't feed Add (seedEmpty).
+  // trickItemError is intentionally NOT in either branch — it feeds only the
+  // inverse-relation badge in TrickList, never the edit form.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (sheetOpen && editingTrickId !== null && trickTagError) {
+    if (!sheetOpen) {
+      return;
+    }
+    const inEditMode = editingTrickId !== null;
+    const shouldClose = Boolean(
+      inEditMode ? trickTagError || tagError : tagError
+    );
+    if (shouldClose) {
       setSheetOpen(false);
       setEditingTrickId(null);
       tagsSel.reset();
     }
-  }, [sheetOpen, editingTrickId, trickTagError, tagsSel.reset]);
+  }, [sheetOpen, editingTrickId, trickTagError, tagError, tagsSel.reset]);
 
   const trickItemMap = buildTrickItemMap(trickItemRows);
 
@@ -272,6 +330,13 @@ export function RepertoireView(): React.ReactElement {
   // ---------------------------------------------------------------------------
 
   function handleAddTrick(): void {
+    // tagError breaks the picker source; without it the user would create a
+    // trick they can't tag (issue #263). The trick-scoped join (trickTagError)
+    // is edit-only and not checked here — Add seeds via seedEmpty().
+    if (tagError) {
+      toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
+      return;
+    }
     setEditingTrickId(null);
     tagsSel.seedEmpty();
     setSheetOpen(true);
@@ -280,8 +345,9 @@ export function RepertoireView(): React.ReactElement {
   function handleEditTrick(id: TrickId): void {
     // Block opening the sheet if trick_tags is broken — without it the seed
     // lock-in would be empty and the user can't see what they have or
-    // remove what they've toggled. Issue #218.
-    if (trickTagError) {
+    // remove what they've toggled (issue #218). tagError additionally blocks
+    // because the picker has no tags to render even with a valid seed (#263).
+    if (trickTagError || tagError) {
       toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
       return;
     }
@@ -335,7 +401,7 @@ export function RepertoireView(): React.ReactElement {
       setEditingTrickId(null);
       tagsSel.reset();
     } catch (error) {
-      console.error("Failed to save trick:", error);
+      console.error("[RepertoireView] Failed to save trick:", error);
       const errorKey = getMutationErrorKey(error);
       if (errorKey) {
         toast.error(t(errorKey));
@@ -359,7 +425,7 @@ export function RepertoireView(): React.ReactElement {
       await deleteTrick(deletingTrickId);
       toast.success(t("trickDeleted"));
     } catch (error) {
-      console.error("Failed to delete trick:", error);
+      console.error("[RepertoireView] Failed to delete trick:", error);
       const errorKey = getMutationErrorKey(error);
       if (errorKey) {
         toast.error(t(errorKey));
@@ -379,8 +445,15 @@ export function RepertoireView(): React.ReactElement {
     }
   }
 
-  function handleCreateTag(name: string): Promise<TagId> {
-    return createTag(name);
+  async function handleCreateTag(name: string): Promise<TagId> {
+    try {
+      return await createTag(name);
+    } catch (error) {
+      // TagPicker owns the user-facing toast; we only log and rethrow so the
+      // child component can reset its UI state. Avoid duplicate toasts here.
+      console.error("[RepertoireView] Tag create failed:", error);
+      throw error;
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -11,6 +11,7 @@ interface TagRow {
 }
 
 interface UseTagsResult {
+  error: Error | null;
   isLoading: boolean;
   tags: ParsedTag[];
 }
@@ -22,7 +23,7 @@ interface UseTagsResult {
  * Data is re-fetched automatically by PowerSync whenever the `tags` table changes.
  */
 export function useTags(): UseTagsResult {
-  const { data, isLoading } = useQuery<TagRow>(
+  const { data, error, isLoading } = useQuery<TagRow>(
     "SELECT id, name, color FROM tags WHERE deleted_at IS NULL ORDER BY name ASC"
   );
 
@@ -32,5 +33,5 @@ export function useTags(): UseTagsResult {
     color: row.color,
   }));
 
-  return { tags, isLoading };
+  return { tags, isLoading, error: error ?? null };
 }
