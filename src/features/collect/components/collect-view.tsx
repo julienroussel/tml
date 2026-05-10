@@ -141,7 +141,7 @@ export function CollectView(): React.ReactElement {
     error: editingItemError,
     isLoading: editingItemLoading,
   } = useItem(editingItemId);
-  const { tags } = useTags();
+  const { tags, error: tagError } = useTags();
   const { createItem, updateItem, deleteItem } = useItemMutations();
   const { createTag } = useTagMutations();
   const { brands: userBrands, error: brandsError } = useItemBrands();
@@ -225,7 +225,10 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (editingItemId && editingItemError) {
-      console.error("Failed to load item for editing:", editingItemError);
+      console.error(
+        "[CollectView] Failed to load item for editing:",
+        editingItemError
+      );
       // Do NOT pass editingItemError.message as description — PowerSync/SQLite
       // error messages can contain row context, query fragments, or user-supplied
       // values. The full error is already in the console.error above for
@@ -245,21 +248,29 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (itemsError) {
-      console.error("Items query error:", itemsError);
+      console.error("[CollectView] Items query error:", itemsError);
       toast.error(t("loadError"), { id: LOAD_ITEMS_ERROR_TOAST_ID });
     }
   }, [itemsError, t]);
 
   // ---------------------------------------------------------------------------
-  // Critical relation-query failures (issue #218). The empty/stale data they
-  // produce feeds useHydratedSelection's seed, which doesn't observe `error` —
-  // a save against the wrong baseline can silently NOT remove an
-  // existing-but-invisible relation, or hit a UNIQUE/PK violation when the
-  // user re-toggles it. Toast always so the user is informed even before
-  // clicking Edit/Add. Stable id so re-renders dedupe.
+  // Critical relation-query failures (issue #218 + #263). The empty/stale data
+  // they produce feeds useHydratedSelection's seed (and the picker source for
+  // tagError/availableTricksError), which doesn't observe `error` — a save
+  // against the wrong baseline can silently NOT remove an existing-but-invisible
+  // relation, or hit a UNIQUE/PK violation when the user re-toggles it. Toast
+  // always so the user is informed even before clicking Edit/Add. Stable id so
+  // re-renders dedupe.
+  //
+  // Picker-source vs junction distinction:
+  //   - tagError / availableTricksError → no available items to PICK from;
+  //     gates both Add and Edit (the picker is used in both flows).
+  //   - itemTagError / itemTrickError   → can't seed EXISTING relations on the
+  //     item being edited; gates Edit only (Add seeds via seedEmpty()).
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const error = itemTagError ?? itemTrickError ?? availableTricksError;
+    const error =
+      itemTagError ?? itemTrickError ?? availableTricksError ?? tagError;
     if (!error) {
       return;
     }
@@ -267,9 +278,10 @@ export function CollectView(): React.ReactElement {
       itemTagError,
       itemTrickError,
       availableTricksError,
+      tagError,
     });
     toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
-  }, [itemTagError, itemTrickError, availableTricksError, t]);
+  }, [itemTagError, itemTrickError, availableTricksError, tagError, t]);
 
   // ---------------------------------------------------------------------------
   // Supplementary queries — datalist autocomplete only. Log so we can debug
@@ -278,10 +290,10 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (brandsError) {
-      console.error("Brands query error:", brandsError);
+      console.error("[CollectView] Brands query error:", brandsError);
     }
     if (locationsError) {
-      console.error("Locations query error:", locationsError);
+      console.error("[CollectView] Locations query error:", locationsError);
     }
   }, [brandsError, locationsError]);
 
@@ -289,11 +301,12 @@ export function CollectView(): React.ReactElement {
   // If a critical relation error fires while the sheet is open, close it
   // rather than let the user save against potentially corrupted seed data.
   // Mirrors the editingItemError handler above. Mode-scoped to match the
-  // handler-entry guards (issue #218 matrix):
+  // handler-entry guards (issue #218 + #263 matrix):
   //   - Edit (editingItemId !== null): any of item_tags / item_tricks /
-  //     available_tricks errors → close.
-  //   - Add (editingItemId === null): only available_tricks (picker source)
-  //     matters; the item-scoped joins don't feed the Add path.
+  //     available_tricks / tags errors → close.
+  //   - Add (editingItemId === null): only the picker sources matter —
+  //     available_tricks (trick picker) and tags (tag picker). The
+  //     item-scoped joins (item_tags / item_tricks) don't feed the Add path.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!sheetOpen) {
@@ -302,8 +315,8 @@ export function CollectView(): React.ReactElement {
     const inEditMode = editingItemId !== null;
     const shouldClose = Boolean(
       inEditMode
-        ? itemTagError || itemTrickError || availableTricksError
-        : availableTricksError
+        ? itemTagError || itemTrickError || availableTricksError || tagError
+        : availableTricksError || tagError
     );
     if (shouldClose) {
       setSheetOpen(false);
@@ -317,6 +330,7 @@ export function CollectView(): React.ReactElement {
     itemTagError,
     itemTrickError,
     availableTricksError,
+    tagError,
     tagsSel.reset,
     tricksSel.reset,
   ]);
@@ -352,10 +366,11 @@ export function CollectView(): React.ReactElement {
   // ---------------------------------------------------------------------------
 
   function handleAddItem(): void {
-    // availableTricksError breaks the picker source; without it the user
-    // would create an item with an empty/misleading trick list (issue #218).
-    // The other relation errors are edit-only (item-scoped joins).
-    if (availableTricksError) {
+    // Picker sources (availableTricks + tags) feed both Add and Edit; without
+    // them the user would create an item with an empty/misleading trick list
+    // or no tag picker (issue #218 + #263). The item-scoped junction errors
+    // (itemTagError / itemTrickError) are edit-only and not checked here.
+    if (availableTricksError || tagError) {
       toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
       return;
     }
@@ -368,8 +383,10 @@ export function CollectView(): React.ReactElement {
   function handleEditItem(id: ItemId): void {
     // Block opening the sheet if relation queries are broken — without
     // current relations the seed lock-in would be empty, and the user
-    // can't see what they have or remove what they've toggled. Issue #218.
-    if (itemTagError || itemTrickError || availableTricksError) {
+    // can't see what they have or remove what they've toggled (issue #218).
+    // tagError additionally blocks because the picker has no tags to render
+    // even if the existing-tag seed is intact (issue #263).
+    if (itemTagError || itemTrickError || availableTricksError || tagError) {
       toast.error(t("loadError"), { id: LOAD_RELATIONS_ERROR_TOAST_ID });
       return;
     }
@@ -444,7 +461,7 @@ export function CollectView(): React.ReactElement {
       tagsSel.reset();
       tricksSel.reset();
     } catch (error) {
-      console.error("Item save failed:", error);
+      console.error("[CollectView] Item save failed:", error);
       const errorKey = getMutationErrorKey(error);
       if (errorKey === "validation.tooManyTricks") {
         toast.error(t(errorKey, { count: MAX_TRICKS_PER_ITEM }));
@@ -474,7 +491,7 @@ export function CollectView(): React.ReactElement {
       await deleteItem(deletingItemId);
       toast.success(t("itemDeleted"));
     } catch (error) {
-      console.error("Item delete failed:", error);
+      console.error("[CollectView] Item delete failed:", error);
       const errorKey = getMutationErrorKey(error);
       if (errorKey) {
         toast.error(t(errorKey));
@@ -500,7 +517,7 @@ export function CollectView(): React.ReactElement {
     } catch (error) {
       // TagPicker owns the user-facing toast; we only log and rethrow so the
       // child component can reset its UI state. Avoid duplicate toasts here.
-      console.error("Tag create failed:", error);
+      console.error("[CollectView] Tag create failed:", error);
       throw error;
     }
   }

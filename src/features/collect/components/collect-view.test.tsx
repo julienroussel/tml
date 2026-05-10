@@ -80,7 +80,7 @@ vi.mock("../hooks/use-item-mutations", async (importOriginal) => {
 });
 
 vi.mock("@/features/repertoire/hooks/use-tags", () => ({
-  useTags: vi.fn(() => ({ tags: [], isLoading: false })),
+  useTags: vi.fn(() => ({ tags: [], isLoading: false, error: null })),
 }));
 
 vi.mock("@/features/repertoire/hooks/use-tag-mutations", () => ({
@@ -91,10 +91,16 @@ vi.mock("@/features/repertoire/hooks/use-tag-mutations", () => ({
 
 // Mock child components so we can capture and drive their props
 let capturedFormSheetProps: Partial<ItemFormSheetProps> = {};
+// Records every `open` value the mock has seen. Lets block-on-error tests
+// distinguish "handler-gate prevented open" from "auto-close effect closed
+// after a brief open" — they're indistinguishable from the final `open` prop
+// alone. Reset in afterEach.
+const formSheetOpenHistory: boolean[] = [];
 
 vi.mock("./item-form-sheet", () => ({
   ItemFormSheet: (props: ItemFormSheetProps) => {
     capturedFormSheetProps = props;
+    formSheetOpenHistory.push(props.open);
     return <div data-open={String(props.open)} data-testid="item-form-sheet" />;
   },
 }));
@@ -234,6 +240,7 @@ afterEach(async () => {
   const { useQuery } = await import("@powersync/react");
   const { useItems } = await import("../hooks/use-items");
   const { useItem } = await import("../hooks/use-item");
+  const { useTags } = await import("@/features/repertoire/hooks/use-tags");
 
   vi.mocked(useQuery).mockReturnValue({
     data: [],
@@ -251,12 +258,18 @@ afterEach(async () => {
     error: null,
     isLoading: false,
   });
+  vi.mocked(useTags).mockReturnValue({
+    tags: [],
+    isLoading: false,
+    error: null,
+  });
 
   mockCreateItem.mockResolvedValue("new-item-id");
   mockUpdateItem.mockResolvedValue(undefined);
   mockDeleteItem.mockResolvedValue(undefined);
 
   capturedFormSheetProps = {};
+  formSheetOpenHistory.length = 0;
   capturedDeleteDialogProps = {};
   capturedFiltersProps = {};
 });
@@ -1260,6 +1273,165 @@ describe("CollectView", () => {
         isFetching: false,
         error: undefined,
       };
+    });
+    rerender(<CollectView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #263 — useTags() error swallowing
+  // The picker source for tags. Unlike the item-scoped joins (gate Edit only),
+  // tagError gates BOTH Add and Edit because the picker is rendered in both
+  // flows. Mirrors the availableTricksError contract in #218.
+  // ---------------------------------------------------------------------------
+
+  it("blocks Edit when tags query has errored (issue #263)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useTags } = await import("@/features/repertoire/hooks/use-tags");
+    const itemId = "00000000-0000-4000-8000-000000000263";
+    const item = makeItem(itemId, "Color Change");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+
+    const tagsQueryError = new Error("tags table query failed");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.open).toBe(false);
+    // Discriminates handler-gate from auto-close: if the handler-entry guard
+    // were dropped, the sheet would briefly open before the auto-close effect
+    // slammed it shut, leaving `open === false` final but `true` in history.
+    expect(formSheetOpenHistory).not.toContain(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("blocks Add when tags query has errored (issue #263)", async () => {
+    const { useTags } = await import("@/features/repertoire/hooks/use-tags");
+
+    const tagsQueryError = new Error("tags table query failed");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+
+    // Add path also blocks because the tag picker source is broken.
+    expect(capturedFormSheetProps.open).toBe(false);
+    // Path-discriminates: confirms the handler-entry guard prevented open,
+    // not just that the auto-close effect closed a briefly-open sheet.
+    expect(formSheetOpenHistory).not.toContain(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("auto-closes the Edit sheet when tags errors after open (issue #263)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+    const { useTags } = await import("@/features/repertoire/hooks/use-tags");
+    const itemId = "00000000-0000-4000-8000-000000000263e";
+    const item = makeItem(itemId, "Sponge Balls");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+    });
+
+    // Healthy initial state — Edit sheet opens cleanly.
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: null,
+    });
+
+    const { rerender } = render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background sync surfaces a tags-query error — mode-scoped close should
+    // slam the Edit sheet shut.
+    const tagsQueryError = new Error("background tags drift");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+    rerender(<CollectView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.loadError",
+      expect.objectContaining({ id: "collect-load-relations-error" })
+    );
+  });
+
+  it("auto-closes the Add sheet when tags errors after open (issue #263)", async () => {
+    const { useTags } = await import("@/features/repertoire/hooks/use-tags");
+
+    // Healthy initial state — Add sheet opens cleanly.
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: null,
+    });
+
+    const { rerender } = render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background sync surfaces a tags error — Add sheet must close because
+    // tags is a picker source (gates both modes, unlike item-scoped joins).
+    const tagsQueryError = new Error("background tags failure");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
     });
     rerender(<CollectView />);
 

@@ -61,7 +61,7 @@ vi.mock("../hooks/use-trick", () => ({
 }));
 
 vi.mock("../hooks/use-tags", () => ({
-  useTags: vi.fn(() => ({ tags: [], isLoading: false })),
+  useTags: vi.fn(() => ({ tags: [], isLoading: false, error: null })),
 }));
 
 const mockCreateTrick = vi.fn().mockResolvedValue("new-trick-id");
@@ -86,19 +86,25 @@ vi.mock("../hooks/use-tag-mutations", () => ({
 }));
 
 vi.mock("../hooks/use-trick-categories", () => ({
-  useTrickCategories: vi.fn(() => []),
+  useTrickCategories: vi.fn(() => ({ categories: [], error: null })),
 }));
 
 vi.mock("../hooks/use-trick-effect-types", () => ({
-  useTrickEffectTypes: vi.fn(() => []),
+  useTrickEffectTypes: vi.fn(() => ({ effectTypes: [], error: null })),
 }));
 
 // TrickFormSheet mock — exposes callbacks for testing
 let capturedFormSheetProps: Partial<TrickFormSheetProps> = {};
+// Records every `open` value the mock has seen. Lets block-on-error tests
+// distinguish "handler-gate prevented open" from "auto-close effect closed
+// after a brief open" — they're indistinguishable from the final `open` prop
+// alone. Reset in afterEach.
+const formSheetOpenHistory: boolean[] = [];
 
 vi.mock("./trick-form-sheet", () => ({
   TrickFormSheet: (props: TrickFormSheetProps) => {
     capturedFormSheetProps = props;
+    formSheetOpenHistory.push(props.open);
     return (
       <div data-open={String(props.open)} data-testid="trick-form-sheet" />
     );
@@ -204,6 +210,11 @@ afterEach(async () => {
   const { useQuery } = await import("@powersync/react");
   const { useTricks } = await import("../hooks/use-tricks");
   const { useTrick } = await import("../hooks/use-trick");
+  const { useTags } = await import("../hooks/use-tags");
+  const { useTrickCategories } = await import("../hooks/use-trick-categories");
+  const { useTrickEffectTypes } = await import(
+    "../hooks/use-trick-effect-types"
+  );
 
   vi.mocked(useQuery).mockReturnValue({
     data: [],
@@ -221,6 +232,19 @@ afterEach(async () => {
     isLoading: false,
     error: null,
   });
+  vi.mocked(useTags).mockReturnValue({
+    tags: [],
+    isLoading: false,
+    error: null,
+  });
+  vi.mocked(useTrickCategories).mockReturnValue({
+    categories: [],
+    error: null,
+  });
+  vi.mocked(useTrickEffectTypes).mockReturnValue({
+    effectTypes: [],
+    error: null,
+  });
 
   // Restore mutation mock defaults (clearAllMocks strips implementations)
   mockCreateTrick.mockResolvedValue("new-trick-id");
@@ -228,6 +252,7 @@ afterEach(async () => {
   mockDeleteTrick.mockResolvedValue(undefined);
 
   capturedFormSheetProps = {};
+  formSheetOpenHistory.length = 0;
   capturedDeleteDialogProps = {};
   capturedFiltersProps = {};
   capturedTrickListTricks = [];
@@ -523,6 +548,25 @@ describe("RepertoireView", () => {
       screen.getByRole("button", { name: ADD_TRICK_PATTERN })
     );
     await capturedFormSheetProps.onCreateTag?.("Beginner");
+    expect(mockCreateTag).toHaveBeenCalledWith("Beginner");
+  });
+
+  it("rethrows when createTag rejects so TagPicker can reset its state", async () => {
+    // The wrapper logs and rethrows rather than swallowing — TagPicker owns
+    // the user-facing toast and needs the rejection to reset its UI.
+    const { useTagMutations } = await import("../hooks/use-tag-mutations");
+    const failure = new Error("create failed");
+    const mockCreateTag = vi.fn().mockRejectedValue(failure);
+    vi.mocked(useTagMutations).mockReturnValue({ createTag: mockCreateTag });
+
+    render(<RepertoireView />);
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+
+    await expect(capturedFormSheetProps.onCreateTag?.("Beginner")).rejects.toBe(
+      failure
+    );
     expect(mockCreateTag).toHaveBeenCalledWith("Beginner");
   });
 
@@ -1262,6 +1306,244 @@ describe("RepertoireView", () => {
 
     // Toast fires (page-level effect always toasts), but Add sheet stays open.
     expect(capturedFormSheetProps.open).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #263 sibling — useTricks() list error must surface to the user.
+  // Mirrors collect-view's items-list error toast (LOAD_ITEMS_ERROR_TOAST_ID).
+  // ---------------------------------------------------------------------------
+
+  it("fires a load-error toast with a stable id when tricks query fails", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [],
+      error: new Error("boom"),
+      isLoading: false,
+    });
+
+    render(<RepertoireView />);
+
+    const { toast } = await import("sonner");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "repertoire.loadError",
+        expect.objectContaining({ id: "repertoire-load-tricks-error" })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #263 — useTags() error swallowing
+  // The picker source for tags. Unlike trickTagError (junction, gates Edit
+  // only — Add doesn't seed from existing relations), tagError gates BOTH Add
+  // and Edit because the tag picker is rendered in both flows.
+  // ---------------------------------------------------------------------------
+
+  it("blocks Edit when tags query has errored (issue #263)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTags } = await import("../hooks/use-tags");
+    const trickId = "00000000-0000-4000-8000-000000000263";
+    const trick = makeTrick(trickId, "Card Force");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+
+    const tagsQueryError = new Error("tags table query failed");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    expect(capturedFormSheetProps.open).toBe(false);
+    // Discriminates handler-gate from auto-close: if the handler-entry guard
+    // were dropped, the sheet would briefly open before the auto-close effect
+    // slammed it shut, leaving `open === false` final but `true` in history.
+    expect(formSheetOpenHistory).not.toContain(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  it("blocks Add when tags query has errored (issue #263)", async () => {
+    const { useTags } = await import("../hooks/use-tags");
+
+    const tagsQueryError = new Error("tags table query failed");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+
+    // Contrast with trickTagError: Add path DOES gate on tagError because
+    // the picker source is shared between Add and Edit.
+    expect(capturedFormSheetProps.open).toBe(false);
+    // Path-discriminates: confirms the handler-entry guard prevented open,
+    // not just that the auto-close effect closed a briefly-open sheet.
+    expect(formSheetOpenHistory).not.toContain(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  it("auto-closes the EDIT sheet when tags errors after open (issue #263)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const { useTags } = await import("../hooks/use-tags");
+    const trickId = "00000000-0000-4000-8000-000000000263e";
+    const trick = makeTrick(trickId, "Sponge Balls");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+    });
+
+    // Healthy initial state — Edit sheet opens cleanly.
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: null,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background sync surfaces a tags-query error.
+    const tagsQueryError = new Error("background tags drift");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+    rerender(<RepertoireView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  it("auto-closes the ADD sheet when tags errors after open (issue #263)", async () => {
+    const { useTags } = await import("../hooks/use-tags");
+
+    // Healthy initial state — Add sheet opens cleanly.
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: null,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    // Background tags error fires — Add sheet must close because tags is a
+    // picker source (gates both modes). Contrast with the trickTagError test
+    // immediately above, where Add stays open.
+    const tagsQueryError = new Error("background tags failure");
+    vi.mocked(useTags).mockReturnValue({
+      tags: [],
+      isLoading: false,
+      error: tagsQueryError,
+    });
+    rerender(<RepertoireView />);
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #263 — supplementary autocomplete queries must NOT toast.
+  // categories/effect-types feed combobox suggestions only; the form has
+  // hardcoded SUGGESTED_* fallbacks. Mirrors brandsError/locationsError in
+  // collect-view. Guards against a future "fix" that adds toast.error to the
+  // supplementary effect.
+  // ---------------------------------------------------------------------------
+
+  it("does NOT toast for categoriesError (supplementary autocomplete)", async () => {
+    const { useTrickCategories } = await import(
+      "../hooks/use-trick-categories"
+    );
+    vi.mocked(useTrickCategories).mockReturnValue({
+      categories: [],
+      error: new Error("categories offline"),
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
+  });
+
+  it("does NOT toast for effectTypesError (supplementary autocomplete)", async () => {
+    const { useTrickEffectTypes } = await import(
+      "../hooks/use-trick-effect-types"
+    );
+    vi.mocked(useTrickEffectTypes).mockReturnValue({
+      effectTypes: [],
+      error: new Error("effect types offline"),
+    });
+
+    render(<RepertoireView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_TRICK_PATTERN })
+    );
+    expect(capturedFormSheetProps.open).toBe(true);
+
+    const { toast } = await import("sonner");
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "repertoire.loadError",
+      expect.objectContaining({ id: "repertoire-load-relations-error" })
+    );
   });
 
   it("uses a stable toast id so re-renders dedupe (idempotency)", async () => {
