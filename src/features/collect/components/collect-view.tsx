@@ -25,7 +25,7 @@ import {
 } from "../hooks/use-item-mutations";
 import { useItems } from "../hooks/use-items";
 import type { ItemFormValues } from "../schema";
-import type { ItemWithRelations, LinkedTrick } from "../types";
+import type { ItemWithRelations, LinkedTrick, ParsedItem } from "../types";
 import {
   buildItemTagMap,
   buildItemTrickMap,
@@ -35,7 +35,7 @@ import {
 import { ItemDeleteDialog } from "./item-delete-dialog";
 import { ItemEmptyState } from "./item-empty-state";
 import { ItemFilters } from "./item-filters";
-import { ItemFormSheet } from "./item-form-sheet";
+import { ItemFormSheet, type ItemFormSheetMode } from "./item-form-sheet";
 import { ItemList } from "./item-list";
 
 /** Row shape for available tricks. */
@@ -55,6 +55,8 @@ const UUID_RE =
 const LOAD_ITEMS_ERROR_TOAST_ID = "collect-load-items-error";
 /** Stable toast id for the editing-item load error (separate so it doesn't clobber the items toast). */
 const LOAD_EDIT_ITEM_ERROR_TOAST_ID = "collect-load-edit-item-error";
+/** Stable toast id for the settled-missing case (item was deleted on another device). */
+const ITEM_NO_LONGER_EXISTS_TOAST_ID = "collect-item-no-longer-exists";
 /**
  * Stable toast id for critical relation-query failures (item_tags, item_tricks,
  * or the available-tricks picker source). One id covers all three because they
@@ -82,6 +84,30 @@ export const ITEM_TRICKS_QUERY = `SELECT itr.item_id, tr.id AS trick_id, tr.name
 
 export const AVAILABLE_TRICKS_QUERY =
   "SELECT id, name FROM tricks WHERE deleted_at IS NULL ORDER BY name ASC";
+
+/**
+ * Derive the form sheet's discriminated mode from the edit-target query state.
+ * Identity-based: "edit" requires the loaded row's id to match the requested
+ * `editingItemId` — otherwise the row is stale (an Edit→Edit target switch) or
+ * absent (still in-flight, or settled-missing), so the mode is "loading".
+ *
+ * Keying on row identity rather than the `isLoading` flag is deliberate:
+ * `useItem` folds PowerSync's `isFetching`, which flickers true on unrelated
+ * `items`-table re-emits. Gating on it would flip a steady edit session to
+ * "loading", unmounting `ItemForm` and dropping the user's typed text (#217).
+ */
+function deriveSheetMode(
+  editingItemId: ItemId | null,
+  editingItem: ParsedItem | null
+): ItemFormSheetMode {
+  if (editingItemId === null) {
+    return { mode: "create" };
+  }
+  if (editingItem !== null && editingItem.id === editingItemId) {
+    return { mode: "edit", item: editingItem };
+  }
+  return { mode: "loading" };
+}
 
 /**
  * Main orchestration component for the collection feature.
@@ -189,14 +215,19 @@ export function CollectView(): React.ReactElement {
         : (itemTrickMap.get(editingItemId) ?? []).map((trick) => trick.id),
   });
 
-  // True while an Edit session is open and any of: the item row, the tag join,
-  // or the trick join is still hydrating from local SQLite. Gates Save (so a
-  // keyboard submit can't write empty diffs against a stale [] baseline) and
-  // swaps the pickers for skeletons. Add path is never gated because
-  // handleAddItem seeds the selections to [] up front via seedEmpty().
+  // Identity-gated mode + relations-loading union. See deriveSheetMode + use-item.ts for the isFetching-fold rationale.
+  const sheetMode = deriveSheetMode(editingItemId, editingItem);
+
+  // `editingItemError` is OR'd in as belt-and-suspenders: when the row query
+  // errors while a stale matching-id row is still present, deriveSheetMode
+  // briefly returns "edit" — so without this term Save would flicker enabled
+  // for the one render before the close-on-error effect batches in.
   const relationsLoading =
     editingItemId !== null &&
-    (tagsSel.isHydrating || tricksSel.isHydrating || editingItemLoading);
+    (sheetMode.mode === "loading" ||
+      editingItemError != null ||
+      tagsSel.isHydrating ||
+      tricksSel.isHydrating);
 
   // ---------------------------------------------------------------------------
   // Available tricks for the trick picker (only when form sheet is open)
@@ -221,27 +252,51 @@ export function CollectView(): React.ReactElement {
   });
 
   // ---------------------------------------------------------------------------
-  // Editing item load failure — close the sheet rather than render "add new"
+  // Edit target unavailable — close the sheet rather than render "add new".
+  // Two cases: the row query errored, or it settled with no row (the item was
+  // deleted out from under us between list render and the useItem query). Both
+  // route through the same close + toast (issue #217). editingItemLoading folds
+  // isFetching (see use-item.ts), so `!editingItemLoading` is only true once the
+  // query has genuinely settled — it cannot false-positive mid-load.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (editingItemId && editingItemError) {
-      console.error(
-        "[CollectView] Failed to load item for editing:",
-        editingItemError
-      );
-      // Do NOT pass editingItemError.message as description — PowerSync/SQLite
-      // error messages can contain row context, query fragments, or user-supplied
-      // values. The full error is already in the console.error above for
-      // developer diagnostics. Matches the items-error toast shape (line ~224).
-      toast.error(t("loadError"), {
-        id: LOAD_EDIT_ITEM_ERROR_TOAST_ID,
-      });
-      setSheetOpen(false);
-      setEditingItemId(null);
-      tagsSel.reset();
-      tricksSel.reset();
+    if (editingItemId === null) {
+      return;
     }
-  }, [editingItemId, editingItemError, t, tagsSel.reset, tricksSel.reset]);
+    const settledMissing = editingItem === null && !editingItemLoading;
+    if (!(editingItemError || settledMissing)) {
+      return;
+    }
+    // Do NOT pass editingItemError.message as description — PowerSync/SQLite
+    // error messages can contain row context, query fragments, or user-supplied
+    // values. The full error is already in the log below for developer
+    // diagnostics. Log level branches on cause: load error → console.error
+    // (developer-actionable); settled-missing → console.warn (normal
+    // offline-first outcome). Toast id branches likewise so a retry sequence
+    // (loadError then settled-missing) shows both states rather than dedup.
+    const logUnavailable = editingItemError ? console.error : console.warn;
+    logUnavailable(
+      "[CollectView] Edit target unavailable:",
+      editingItemError ?? "row not found"
+    );
+    toast.error(editingItemError ? t("loadError") : t("itemNoLongerExists"), {
+      id: editingItemError
+        ? LOAD_EDIT_ITEM_ERROR_TOAST_ID
+        : ITEM_NO_LONGER_EXISTS_TOAST_ID,
+    });
+    setSheetOpen(false);
+    setEditingItemId(null);
+    tagsSel.reset();
+    tricksSel.reset();
+  }, [
+    editingItemId,
+    editingItem,
+    editingItemError,
+    editingItemLoading,
+    t,
+    tagsSel.reset,
+    tricksSel.reset,
+  ]);
 
   // ---------------------------------------------------------------------------
   // Items list error — toast on the list page since items are the page's data.
@@ -604,7 +659,7 @@ export function CollectView(): React.ReactElement {
       <ItemFormSheet
         availableTags={tags}
         availableTricks={availableTricks}
-        item={editingItem}
+        mode={sheetMode}
         onCreateTag={handleCreateTag}
         onOpenChange={handleSheetOpenChange}
         onSubmit={handleSubmit}

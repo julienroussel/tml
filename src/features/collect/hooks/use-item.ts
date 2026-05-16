@@ -21,10 +21,19 @@ export function useItem(id: ItemId | null): UseItemResult {
     : "SELECT 1 WHERE 0";
   const params = id ? [id] : [];
 
-  const { data, isLoading, error } = useQuery<ItemRow>(sql, params);
+  const { data, isLoading, isFetching, error } = useQuery<ItemRow>(sql, params);
+
+  if (!id) {
+    return { item: null, isLoading: false, error: null };
+  }
 
   const row = data[0];
   const item = row ? parseItemRow(row) : null;
 
-  return { item, isLoading, error: error ?? null };
+  // Fold isFetching into isLoading to bridge PowerSync's query-param-change race. See use-trick.ts for the full rationale.
+  return {
+    item,
+    isLoading: isLoading || isFetching,
+    error: error ?? null,
+  };
 }

@@ -19,11 +19,11 @@ import {
 } from "../hooks/use-trick-mutations";
 import { useTricks } from "../hooks/use-tricks";
 import type { TrickFormValues } from "../schema";
-import type { ParsedTag, TrickWithTags } from "../types";
+import type { ParsedTag, ParsedTrick, TrickWithTags } from "../types";
 import { TrickDeleteDialog } from "./trick-delete-dialog";
 import { TrickEmptyState } from "./trick-empty-state";
 import { TrickFilters } from "./trick-filters";
-import { TrickFormSheet } from "./trick-form-sheet";
+import { TrickFormSheet, type TrickFormSheetMode } from "./trick-form-sheet";
 import { TrickList } from "./trick-list";
 
 /** Maps kebab-case sort values from TrickFilters to snake_case for useTricks. */
@@ -91,6 +91,8 @@ export const TRICK_ITEMS_QUERY = `SELECT itr.trick_id, i.id AS item_id, i.name A
 
 /** Stable toast id for the editing-trick load error (separate so it doesn't clobber the relations toast). */
 const LOAD_EDIT_TRICK_ERROR_TOAST_ID = "repertoire-load-edit-trick-error";
+/** Stable toast id for the trick-no-longer-exists case (settled-missing row). */
+const TRICK_NO_LONGER_EXISTS_TOAST_ID = "repertoire-trick-no-longer-exists";
 /**
  * Stable toast id for trick_tags / trick_items query failures. One id covers
  * both — same surfaced message, never want to stack. Issue #218.
@@ -98,6 +100,30 @@ const LOAD_EDIT_TRICK_ERROR_TOAST_ID = "repertoire-load-edit-trick-error";
 const LOAD_RELATIONS_ERROR_TOAST_ID = "repertoire-load-relations-error";
 /** Stable toast id for the primary tricks-list query error (mirrors collect-view's items-list pattern). */
 const LOAD_TRICKS_ERROR_TOAST_ID = "repertoire-load-tricks-error";
+
+/**
+ * Derive the form sheet's discriminated mode from the edit-target query state.
+ * Identity-based: "edit" requires the loaded row's id to match the requested
+ * `editingTrickId` — otherwise the row is stale (an Edit→Edit target switch) or
+ * absent (still in-flight, or settled-missing), so the mode is "loading".
+ *
+ * Keying on row identity rather than the `isLoading` flag is deliberate:
+ * `useTrick` folds PowerSync's `isFetching`, which flickers true on unrelated
+ * `tricks`-table re-emits. Gating on it would flip a steady edit session to
+ * "loading", unmounting `TrickForm` and dropping the user's typed text (#217).
+ */
+function deriveSheetMode(
+  editingTrickId: TrickId | null,
+  editingTrick: ParsedTrick | null
+): TrickFormSheetMode {
+  if (editingTrickId === null) {
+    return { mode: "create" };
+  }
+  if (editingTrick !== null && editingTrick.id === editingTrickId) {
+    return { mode: "edit", trick: editingTrick };
+  }
+  return { mode: "loading" };
+}
 
 /**
  * Main orchestration component for the repertoire feature.
@@ -183,12 +209,34 @@ export function RepertoireView(): React.ReactElement {
         : (trickTagMap.get(editingTrickId) ?? []).map((tag) => tag.id),
   });
 
+  // Discriminated mode for the form sheet. "edit" requires the loaded row's id
+  // to match editingTrickId; everything else under a non-null editingTrickId is
+  // "loading" — the in-flight window, or a stale row during an Edit→Edit target
+  // switch. Keeps the sheet from rendering "Add trick" + an empty form while
+  // useTrick hydrates (issue #217). See deriveSheetMode for why identity beats
+  // isLoading.
+  const sheetMode = deriveSheetMode(editingTrickId, editingTrick);
+
   // True while an Edit session is open and the trick row or trick_tags join
   // is still hydrating. Gates Save (so a keyboard submit can't write empty
   // diffs against a stale [] baseline) and swaps the picker for a skeleton.
   // Add path is never gated because handleAddTrick seeds via seedEmpty().
+  //
+  // The row-loading term is `sheetMode.mode === "loading"`, NOT the raw
+  // `editingTrickLoading`: the latter folds PowerSync's `isFetching`, which
+  // flickers true on unrelated `tricks`-table re-emits and would otherwise
+  // disable Save + skeleton the picker mid-edit-session. sheetMode keys on
+  // row identity, so it stays "edit" through the flicker (issue #217).
+  //
+  // `editingTrickError != null` is folded in too: when the row query errored
+  // but a stale matching `editingTrick` is still present, sheetMode reads
+  // "edit" for the frame before the close effect fires — Save must stay
+  // gated through that transient window.
   const relationsLoading =
-    editingTrickId !== null && (tagsSel.isHydrating || editingTrickLoading);
+    editingTrickId !== null &&
+    (sheetMode.mode === "loading" ||
+      tagsSel.isHydrating ||
+      editingTrickError != null);
 
   // ---------------------------------------------------------------------------
   // Trick-items join query (build a Map<trickId, LinkedItem[]>)
@@ -259,24 +307,53 @@ export function RepertoireView(): React.ReactElement {
   }, [categoriesError, effectTypesError]);
 
   // ---------------------------------------------------------------------------
-  // Editing trick load failure — close the sheet rather than render "add new"
-  // (mirrors collect-view's editingItemError handler).
+  // Edit target unavailable — close the sheet rather than render "add new".
+  // Two cases: the row query errored, or it settled with no row (the trick was
+  // deleted out from under us between list render and the useTrick query). Both
+  // route through the same close + toast (issue #217). editingTrickLoading folds
+  // isFetching (see use-trick.ts), so `!editingTrickLoading` is only true once
+  // the query has genuinely settled — it cannot false-positive mid-load.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (editingTrickId && editingTrickError) {
-      console.error(
-        "[RepertoireView] Failed to load trick for editing:",
-        editingTrickError
-      );
-      // Do NOT pass error.message as description — PowerSync/SQLite messages
-      // can carry row context or query fragments. Full error already in
-      // console.error above for developer diagnostics.
-      toast.error(t("loadError"), { id: LOAD_EDIT_TRICK_ERROR_TOAST_ID });
-      setSheetOpen(false);
-      setEditingTrickId(null);
-      tagsSel.reset();
+    if (editingTrickId === null) {
+      return;
     }
-  }, [editingTrickId, editingTrickError, t, tagsSel.reset]);
+    const settledMissing = editingTrick === null && !editingTrickLoading;
+    if (!(editingTrickError || settledMissing)) {
+      return;
+    }
+    // Do NOT pass error.message as description — PowerSync/SQLite messages
+    // can carry row context or query fragments. Full error already in
+    // the log below for developer diagnostics.
+    //
+    // Log level branches on cause: a genuine query error is developer-
+    // actionable (console.error); a settled-missing row is a normal
+    // offline-first outcome (concurrent delete on another device) and
+    // logs at console.warn.
+    const logUnavailable = editingTrickError ? console.error : console.warn;
+    logUnavailable(
+      "[RepertoireView] Edit target unavailable:",
+      editingTrickError ?? "row not found"
+    );
+    // Split toast ids so the two cases don't dedupe into one another — a
+    // settled-missing row is a different surface (the trick was deleted) and
+    // a follow-up load-error shouldn't replace it (and vice versa).
+    const toastKey = editingTrickError ? "loadError" : "trickNoLongerExists";
+    const toastId = editingTrickError
+      ? LOAD_EDIT_TRICK_ERROR_TOAST_ID
+      : TRICK_NO_LONGER_EXISTS_TOAST_ID;
+    toast.error(t(toastKey), { id: toastId });
+    setSheetOpen(false);
+    setEditingTrickId(null);
+    tagsSel.reset();
+  }, [
+    editingTrickId,
+    editingTrick,
+    editingTrickError,
+    editingTrickLoading,
+    t,
+    tagsSel.reset,
+  ]);
 
   // ---------------------------------------------------------------------------
   // If a critical error fires while the sheet is open, close it rather than
@@ -408,6 +485,10 @@ export function RepertoireView(): React.ReactElement {
       } else {
         toast.error(t("saveFailed"));
       }
+      // Re-throw so the child TrickFormSheet's handleFormSubmit catches it and
+      // skips its post-await setFormDirty(false) — keeps RHF isDirty and the
+      // local formDirty mirror in sync when save fails. Mirrors collect-view.
+      throw error;
     }
   }
 
@@ -537,6 +618,7 @@ export function RepertoireView(): React.ReactElement {
         availableTags={tags}
         categories={categories}
         effectTypes={effectTypes}
+        mode={sheetMode}
         onCreateTag={handleCreateTag}
         onOpenChange={handleSheetOpenChange}
         onSubmit={handleSubmit}
@@ -545,7 +627,6 @@ export function RepertoireView(): React.ReactElement {
         relationsLoading={relationsLoading}
         selectedTagIds={tagsSel.selected}
         tagsDirty={tagsDirty}
-        trick={editingTrick}
       />
 
       {/* Delete Dialog */}
