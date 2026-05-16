@@ -22,6 +22,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { TagId, TrickId } from "@/db/types";
 import type { ParsedTag } from "@/features/repertoire/types";
 import type { ItemFormValues } from "../schema";
@@ -30,10 +31,22 @@ import { ItemForm } from "./item-form";
 
 const FORM_ID = "item-form";
 
+/**
+ * Discriminated edit-target state for the sheet. The parent derives it from
+ * `editingItemId` and the `useItem` query so the sheet never infers intent from
+ * a nullable `item` — that conflated "creating" / "loading" / "load-failed"
+ * into one `null` (issue #217). No `error` variant: the parent closes the sheet
+ * on load failure, so the sheet only ever renders create / loading / edit.
+ */
+type ItemFormSheetMode =
+  | { mode: "create" }
+  | { mode: "loading" }
+  | { mode: "edit"; item: ParsedItem };
+
 interface ItemFormSheetProps {
   availableTags: ParsedTag[];
   availableTricks: LinkedTrick[];
-  item: ParsedItem | null;
+  mode: ItemFormSheetMode;
   onCreateTag: (name: string) => Promise<TagId>;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ItemFormValues) => void | Promise<void>;
@@ -76,7 +89,7 @@ function toFormDefaults(item: ParsedItem): Partial<ItemFormValues> {
 function ItemFormSheet({
   open,
   onOpenChange,
-  item,
+  mode,
   selectedTagIds,
   availableTags,
   onToggleTag,
@@ -92,20 +105,23 @@ function ItemFormSheet({
   tricksDirty = false,
 }: ItemFormSheetProps): React.ReactElement {
   const t = useTranslations("collect");
-  const isEditing = item !== null;
+  const isEditing = mode.mode !== "create";
   const [formDirty, setFormDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
-  // Reset form dirty state when the sheet opens (new item or different edit target).
-  // The key prop on ItemForm already handles React-level remounting, but the
-  // local formDirty state must also be reset.
+  // Reset form dirty state when the sheet opens or when the edit target id
+  // changes while the sheet stays open (Edit→Edit switch). The key prop on
+  // ItemForm already handles React-level remounting, but the local formDirty
+  // state must also be reset.
+  const editTargetId = mode.mode === "edit" ? mode.item.id : null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: editTargetId is the trigger for the Edit→Edit reset; the body only reads `open` but re-running on id change is the whole point of this effect.
   useEffect(() => {
     if (open) {
       setFormDirty(false);
       setIsSubmitting(false);
     }
-  }, [open]);
+  }, [open, editTargetId]);
 
   const isDirty = formDirty || tagsDirty || tricksDirty;
 
@@ -155,23 +171,39 @@ function ItemFormSheet({
 
           <ScrollArea className="flex-1 overflow-y-auto">
             <div className="p-4">
-              <ItemForm
-                availableTags={availableTags}
-                availableTricks={availableTricks}
-                defaultValues={item ? toFormDefaults(item) : undefined}
-                formId={FORM_ID}
-                key={item?.id ?? "new"}
-                onCreateTag={onCreateTag}
-                onDirtyChange={setFormDirty}
-                onSubmit={handleFormSubmit}
-                onToggleTag={onToggleTag}
-                onToggleTrick={onToggleTrick}
-                relationsLoading={relationsLoading}
-                selectedTagIds={selectedTagIds}
-                selectedTrickIds={selectedTrickIds}
-                userBrands={userBrands}
-                userLocations={userLocations}
-              />
+              {mode.mode === "loading" ? (
+                <div
+                  aria-busy={true}
+                  aria-label={t("loadingItem")}
+                  className="flex flex-col gap-4"
+                  role="status"
+                >
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-2/3" />
+                </div>
+              ) : (
+                <ItemForm
+                  availableTags={availableTags}
+                  availableTricks={availableTricks}
+                  defaultValues={
+                    mode.mode === "edit" ? toFormDefaults(mode.item) : undefined
+                  }
+                  formId={FORM_ID}
+                  key={mode.mode === "edit" ? mode.item.id : "new"}
+                  onCreateTag={onCreateTag}
+                  onDirtyChange={setFormDirty}
+                  onSubmit={handleFormSubmit}
+                  onToggleTag={onToggleTag}
+                  onToggleTrick={onToggleTrick}
+                  relationsLoading={relationsLoading}
+                  selectedTagIds={selectedTagIds}
+                  selectedTrickIds={selectedTrickIds}
+                  userBrands={userBrands}
+                  userLocations={userLocations}
+                />
+              )}
             </div>
           </ScrollArea>
 
@@ -190,8 +222,12 @@ function ItemFormSheet({
               {t("cancel")}
             </Button>
             <Button
-              aria-busy={isSubmitting || relationsLoading}
-              disabled={isSubmitting || relationsLoading}
+              aria-busy={
+                isSubmitting || relationsLoading || mode.mode === "loading"
+              }
+              disabled={
+                isSubmitting || relationsLoading || mode.mode === "loading"
+              }
               form={FORM_ID}
               type="submit"
             >
@@ -206,11 +242,11 @@ function ItemFormSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>{t("discardChangesTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("unsavedChanges")}
+              {t("discardDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{t("keepEditing")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDiscard} variant="destructive">
               {t("discardAction")}
             </AlertDialogAction>
@@ -221,5 +257,5 @@ function ItemFormSheet({
   );
 }
 
-export type { ItemFormSheetProps };
+export type { ItemFormSheetMode, ItemFormSheetProps };
 export { ItemFormSheet };

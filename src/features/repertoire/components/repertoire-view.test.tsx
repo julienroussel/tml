@@ -338,7 +338,7 @@ describe("RepertoireView", () => {
       screen.getByRole("button", { name: ADD_TRICK_PATTERN })
     );
     expect(capturedFormSheetProps.open).toBe(true);
-    expect(capturedFormSheetProps.trick).toBeNull();
+    expect(capturedFormSheetProps.mode).toEqual({ mode: "create" });
   });
 
   it("opens sheet when empty state CTA is clicked", async () => {
@@ -406,16 +406,23 @@ describe("RepertoireView", () => {
 
   it("opens edit sheet when edit button is clicked on a trick", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const trick = makeTrick("trick-edit-1", "Silk Production");
     vi.mocked(useTricks).mockReturnValue({
-      tricks: [makeTrick("trick-edit-1", "Silk Production")],
+      tricks: [trick],
       error: null,
       isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
     });
 
     render(<RepertoireView />);
     await userEvent.click(screen.getByTestId("edit-trick-edit-1"));
     expect(capturedFormSheetProps.open).toBe(true);
-    expect(capturedFormSheetProps.trick).toBeDefined();
+    expect(capturedFormSheetProps.mode).toEqual({ mode: "edit", trick });
   });
 
   it("opens delete dialog when delete button is clicked", async () => {
@@ -777,25 +784,29 @@ describe("RepertoireView", () => {
       screen.getByRole("button", { name: ADD_TRICK_PATTERN })
     );
 
-    await capturedFormSheetProps.onSubmit?.({
-      name: "Failing Trick",
-      status: "new",
-      description: "",
-      category: "",
-      effectType: "",
-      difficulty: null,
-      duration: null,
-      performanceType: null,
-      angleSensitivity: null,
-      props: "",
-      music: "",
-      languages: [],
-      isCameraFriendly: null,
-      isSilent: null,
-      source: "",
-      videoUrl: "",
-      notes: "",
-    });
+    // The parent rethrows after toasting so the child TrickFormSheet sees the
+    // failure and skips its post-await dirty reset (mirrors collect-view).
+    await expect(
+      capturedFormSheetProps.onSubmit?.({
+        name: "Failing Trick",
+        status: "new",
+        description: "",
+        category: "",
+        effectType: "",
+        difficulty: null,
+        duration: null,
+        performanceType: null,
+        angleSensitivity: null,
+        props: "",
+        music: "",
+        languages: [],
+        isCameraFriendly: null,
+        isSilent: null,
+        source: "",
+        videoUrl: "",
+        notes: "",
+      })
+    ).rejects.toThrow("fail");
 
     const { toast } = await import("sonner");
     await waitFor(() => {
@@ -823,25 +834,27 @@ describe("RepertoireView", () => {
 
     await userEvent.click(screen.getByTestId("edit-trick-fail-upd"));
 
-    await capturedFormSheetProps.onSubmit?.({
-      name: "Coin Warp",
-      status: "learning",
-      description: "",
-      category: "",
-      effectType: "",
-      difficulty: null,
-      duration: null,
-      performanceType: null,
-      angleSensitivity: null,
-      props: "",
-      music: "",
-      languages: [],
-      isCameraFriendly: null,
-      isSilent: null,
-      source: "",
-      videoUrl: "",
-      notes: "",
-    });
+    await expect(
+      capturedFormSheetProps.onSubmit?.({
+        name: "Coin Warp",
+        status: "learning",
+        description: "",
+        category: "",
+        effectType: "",
+        difficulty: null,
+        duration: null,
+        performanceType: null,
+        angleSensitivity: null,
+        props: "",
+        music: "",
+        languages: [],
+        isCameraFriendly: null,
+        isSilent: null,
+        source: "",
+        videoUrl: "",
+        notes: "",
+      })
+    ).rejects.toThrow("update failed");
 
     const { toast } = await import("sonner");
     await waitFor(() => {
@@ -874,9 +887,11 @@ describe("RepertoireView", () => {
     render(<RepertoireView />);
     await userEvent.click(screen.getByTestId("edit-trick-typed-err"));
 
-    await capturedFormSheetProps.onSubmit?.(
-      makeTrickFormValues({ name: "Vanishing Coin" })
-    );
+    await expect(
+      capturedFormSheetProps.onSubmit?.(
+        makeTrickFormValues({ name: "Vanishing Coin" })
+      )
+    ).rejects.toBe(typedError);
 
     expect(getMutationErrorKey).toHaveBeenCalledWith(typedError);
 
@@ -1043,6 +1058,161 @@ describe("RepertoireView", () => {
       expect.any(Object),
       [],
       []
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #217 — discriminated edit-target mode (create / loading / edit)
+  // ---------------------------------------------------------------------------
+
+  it("passes mode 'loading' to the sheet while the edit target is in flight", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const trickId = "00000000-0000-4000-8000-0000000ed217";
+    const trick = makeTrick(trickId, "Miser's Dream");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    // Row query in flight — no row yet, isLoading true.
+    vi.mocked(useTrick).mockReturnValue({
+      trick: null,
+      error: null,
+      isLoading: true,
+    });
+
+    const { rerender } = render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    // Intent is "edit", but the row hasn't hydrated — sheet shows loading mode,
+    // never "Add" (issue #217).
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.mode).toEqual({ mode: "loading" });
+    // Production safety invariant: mode:"loading" always coincides with
+    // relationsLoading:true (the same in-flight row drives both), so Save
+    // stays disabled while the edit target hydrates.
+    expect(capturedFormSheetProps.relationsLoading).toBe(true);
+    // A genuinely in-flight row (null + isLoading) must NOT trip the
+    // settledMissing close path — lock the negative branch so a regression
+    // that mis-fires the close+toast while the query is still loading fails.
+    const { toast } = await import("sonner");
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "repertoire.trickNoLongerExists",
+      expect.anything()
+    );
+
+    // Row settles — mode flips to "edit" with the resolved trick.
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      error: null,
+      isLoading: false,
+    });
+    rerender(<RepertoireView />);
+    await waitFor(() => {
+      expect(capturedFormSheetProps.mode).toEqual({ mode: "edit", trick });
+    });
+  });
+
+  it("keeps mode 'edit' through an isFetching flicker mid-edit-session (issue #217)", async () => {
+    // Steady edit session: useTrick returns the matching trick but isLoading
+    // is true — PowerSync's isFetching flickered on an unrelated tricks-table
+    // re-emit. deriveSheetMode keys on row identity, not isLoading, so mode
+    // stays "edit" — TrickForm is NOT unmounted and typed text is preserved.
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const trickId = "00000000-0000-4000-8000-0000000ed21f";
+    const trick = makeTrick(trickId, "Ambitious Card");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    // Trick present AND id matches editingTrickId, but isLoading true.
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: true,
+      error: null,
+    });
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    // Mode must NOT drop to { mode: "loading" } — that would remount the form.
+    expect(capturedFormSheetProps.mode).toEqual({ mode: "edit", trick });
+    // trick_tags join (default useQuery mock) returns [] and settles, so the
+    // hydrated-selection hook is not hydrating — Save is not gated.
+    expect(capturedFormSheetProps.relationsLoading).toBe(false);
+  });
+
+  it("keeps mode 'loading' when useTrick still holds the previous edit target's row", async () => {
+    // Edit→Edit target switch: editingTrickId is B, but useWatchedQuery can
+    // still report the prior query's row (A) for one frame. deriveSheetMode
+    // keys on row id, not isLoading — a stale row reads as "loading", never
+    // "edit" with the wrong trick (issue #217 identity gate).
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const idA = "00000000-0000-4000-8000-0000000ed21a";
+    const idB = "00000000-0000-4000-8000-0000000ed21b";
+    const trickA = makeTrick(idA, "Miser's Dream");
+    const trickB = makeTrick(idB, "Card to Pocket");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trickA, trickB],
+      error: null,
+      isLoading: false,
+    });
+    // Stale: the query param is now B, but the resolved row is still A.
+    vi.mocked(useTrick).mockReturnValue({
+      trick: trickA,
+      error: null,
+      isLoading: false,
+    });
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId(`edit-${idB}`));
+
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.mode).toEqual({ mode: "loading" });
+    // A stale non-null row must still gate Save — the loaded selections are
+    // for the previous trick, not the one being edited.
+    expect(capturedFormSheetProps.relationsLoading).toBe(true);
+    // The whole point of the identity gate: a stale (non-null) row must NOT
+    // trip the settledMissing close path. Lock the negative branch so a
+    // regression that mis-fires settledMissing on a stale row fails here.
+    const { toast } = await import("sonner");
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "repertoire.trickNoLongerExists",
+      expect.anything()
+    );
+  });
+
+  it("closes the edit sheet when the trick row settles with no match", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const trickId = "00000000-0000-4000-8000-0000000ed218";
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick(trickId, "Vanished")],
+      error: null,
+      isLoading: false,
+    });
+    // Query settled (isLoading false) but no row — the trick was deleted out
+    // from under the user. The sheet must close, not hang on a skeleton.
+    vi.mocked(useTrick).mockReturnValue({
+      trick: null,
+      error: null,
+      isLoading: false,
+    });
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.trickNoLongerExists",
+      expect.objectContaining({ id: "repertoire-trick-no-longer-exists" })
     );
   });
 
@@ -1282,7 +1452,7 @@ describe("RepertoireView", () => {
       screen.getByRole("button", { name: ADD_TRICK_PATTERN })
     );
     expect(capturedFormSheetProps.open).toBe(true);
-    expect(capturedFormSheetProps.trick).toBeNull();
+    expect(capturedFormSheetProps.mode).toEqual({ mode: "create" });
 
     // Background trick_tags error fires — Add mode must remain open.
     const tagJoinError = new Error("background sync drift");
@@ -1577,17 +1747,33 @@ describe("RepertoireView", () => {
       );
     });
 
-    rerender(<RepertoireView />);
-    rerender(<RepertoireView />);
+    // Capture the call count after the initial effect has settled, then
+    // assert linear-bounded growth across rerenders. Each rerender refires
+    // the effect once (the `t` translator identity changes per render in
+    // the next-intl test mock, which is on the effect's dep list), so the
+    // count must grow by at most 1 per rerender — never more. A regression
+    // that, say, drops the stable error reference inside the effect would
+    // compound (every state-change triggers another render which fires the
+    // effect again, which sets a fresh ref…), breaching this bound.
+    const relationsErrorCount = () =>
+      vi.mocked(toast.error).mock.calls.filter(([, opts]) => {
+        if (!opts || typeof opts !== "object") {
+          return false;
+        }
+        return (
+          (opts as { id?: string }).id === "repertoire-load-relations-error"
+        );
+      }).length;
 
-    // Every relations-toast call must carry the stable id, AND the call
-    // count must stay within an upper bound so an unbounded effect-storm
-    // regression (e.g. dropping the stable error reference) fails this
-    // test instead of silently doubling toast volume on every rerender.
-    // The bound mirrors collect-view's idempotency test for parity:
-    // strict-mode double-invoke and any auto-reseed can legitimately
-    // re-fire the effect, but anything growing with rerender count
-    // signals a regression.
+    const initialCount = relationsErrorCount();
+
+    rerender(<RepertoireView />);
+    expect(relationsErrorCount()).toBeLessThanOrEqual(initialCount + 1);
+
+    rerender(<RepertoireView />);
+    expect(relationsErrorCount()).toBeLessThanOrEqual(initialCount + 2);
+
+    // Every relations-toast call must carry the stable message + id.
     const relationsCalls = vi
       .mocked(toast.error)
       .mock.calls.filter(([, opts]) => {
@@ -1598,12 +1784,6 @@ describe("RepertoireView", () => {
           (opts as { id?: string }).id === "repertoire-load-relations-error"
         );
       });
-
-    // Upper-bound assertion: 1 render + 2 rerenders = 3 cycles, with
-    // headroom for strict-mode double-invoke gives a conservative ceiling
-    // of 4. Anything growing linearly with rerender count breaches this
-    // and surfaces an unbounded toast-storm regression.
-    expect(relationsCalls.length).toBeLessThanOrEqual(4);
     expect(
       relationsCalls.every(([msg]) => msg === "repertoire.loadError")
     ).toBe(true);

@@ -133,6 +133,7 @@ vi.mock("@/components/ui/button", () => ({
     children,
     onClick,
     type,
+    disabled,
     ...rest
   }: {
     children: ReactNode;
@@ -140,9 +141,11 @@ vi.mock("@/components/ui/button", () => ({
     type?: string;
     form?: string;
     variant?: string;
+    disabled?: boolean;
   }) => (
     <button
       data-variant={rest.variant}
+      disabled={disabled}
       onClick={onClick}
       type={type as "button" | "submit"}
     >
@@ -157,7 +160,7 @@ function defaultProps(
   return {
     availableTags: [],
     availableTricks: [],
-    item: null,
+    mode: { mode: "create" },
     onCreateTag: vi.fn().mockResolvedValue("tag-1" as TagId),
     onOpenChange: vi.fn(),
     onSubmit: vi.fn(),
@@ -204,7 +207,9 @@ describe("toFormDefaults (via ItemFormSheet)", () => {
       updatedAt: "2025-01-15T12:00:00.000Z",
     };
 
-    render(<ItemFormSheet {...defaultProps({ item })} />);
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
 
     expect(capturedItemFormProps).toHaveBeenCalled();
     const defaultValues = getFormDefaults();
@@ -243,7 +248,9 @@ describe("toFormDefaults (via ItemFormSheet)", () => {
       updatedAt: "2025-01-01T00:00:00.000Z",
     };
 
-    render(<ItemFormSheet {...defaultProps({ item })} />);
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
 
     const defaultValues = getFormDefaults();
     expect(defaultValues).toEqual({
@@ -281,14 +288,16 @@ describe("toFormDefaults (via ItemFormSheet)", () => {
       updatedAt: "2025-01-01T00:00:00.000Z",
     };
 
-    render(<ItemFormSheet {...defaultProps({ item })} />);
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
 
     const defaultValues = getFormDefaults();
     expect(defaultValues?.purchasePrice).toBe("0");
   });
 
   it("passes undefined defaultValues when item is null (create mode)", () => {
-    render(<ItemFormSheet {...defaultProps({ item: null })} />);
+    render(<ItemFormSheet {...defaultProps({ mode: { mode: "create" } })} />);
 
     const defaultValues = getFormDefaults();
     expect(defaultValues).toBeUndefined();
@@ -313,7 +322,9 @@ describe("toFormDefaults (via ItemFormSheet)", () => {
       updatedAt: "2025-02-01T00:00:00.000Z",
     };
 
-    render(<ItemFormSheet {...defaultProps({ item })} />);
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
 
     const defaultValues = getFormDefaults();
     expect(defaultValues?.description).toBe("");
@@ -338,7 +349,7 @@ describe("ItemFormSheet rendering", () => {
   });
 
   it("shows 'add' title when item is null", () => {
-    render(<ItemFormSheet {...defaultProps({ item: null })} />);
+    render(<ItemFormSheet {...defaultProps({ mode: { mode: "create" } })} />);
 
     expect(screen.getByText("collect.addItem")).toBeInTheDocument();
   });
@@ -362,9 +373,33 @@ describe("ItemFormSheet rendering", () => {
       updatedAt: "2025-01-01T00:00:00.000Z",
     };
 
-    render(<ItemFormSheet {...defaultProps({ item })} />);
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
 
     expect(screen.getByText("collect.editItem")).toBeInTheDocument();
+  });
+
+  it("shows the edit title and a skeleton body while the edit target loads", () => {
+    // In production, mode:"loading" always coincides with relationsLoading:true
+    // (the same editingItemLoading drives both), so render that realistic combo.
+    render(
+      <ItemFormSheet
+        {...defaultProps({ mode: { mode: "loading" }, relationsLoading: true })}
+      />
+    );
+
+    // Title reflects edit *intent*, not loaded data — must not flip to "add".
+    expect(screen.getByText("collect.editItem")).toBeInTheDocument();
+    expect(screen.queryByText("collect.addItem")).not.toBeInTheDocument();
+    // The form is not mounted while loading; a labelled status region stands in.
+    expect(screen.queryByTestId("item-form")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "collect.loadingItem" })
+    ).toBeInTheDocument();
+    // Save stays disabled while the edit target loads — no submit against an
+    // unmounted form.
+    expect(screen.getByRole("button", { name: "collect.save" })).toBeDisabled();
   });
 });
 

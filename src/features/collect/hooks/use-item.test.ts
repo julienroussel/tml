@@ -21,7 +21,12 @@ describe("useItem", () => {
   });
 
   it("returns null item when id is null", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
     const { result } = renderHook(() => useItem(null));
 
     expect(result.current.item).toBeNull();
@@ -29,8 +34,29 @@ describe("useItem", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("forces isLoading false on the null-id early return even when the query reports loading", () => {
+    // The `!id` branch returns before the isFetching fold — a stray
+    // isLoading/isFetching:true from the no-op query must not leak through.
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isFetching: true,
+      error: null,
+    });
+    const { result } = renderHook(() => useItem(null));
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.item).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
+
   it("uses a no-op SQL query when id is null", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
     renderHook(() => useItem(null));
 
     const calledSql: string = mockUseQuery.mock.calls[0]?.[0];
@@ -39,7 +65,12 @@ describe("useItem", () => {
   });
 
   it("queries by id when id is provided", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
     renderHook(() => useItem(itemId("00000000-0000-4000-8000-000000000100")));
 
     const calledSql: string = mockUseQuery.mock.calls[0]?.[0];
@@ -72,6 +103,7 @@ describe("useItem", () => {
         },
       ],
       isLoading: false,
+      isFetching: false,
       error: null,
     });
 
@@ -88,7 +120,12 @@ describe("useItem", () => {
   });
 
   it("returns null item when data is empty", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
     const { result } = renderHook(() =>
       useItem(itemId("00000000-0000-4000-8000-000000000100"))
     );
@@ -97,7 +134,12 @@ describe("useItem", () => {
   });
 
   it("passes through isLoading state", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: true, error: null });
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isFetching: false,
+      error: null,
+    });
     const { result } = renderHook(() =>
       useItem(itemId("00000000-0000-4000-8000-000000000100"))
     );
@@ -105,9 +147,64 @@ describe("useItem", () => {
     expect(result.current.isLoading).toBe(true);
   });
 
+  it("folds isFetching into isLoading so a query-param change still reports loading", () => {
+    // PowerSync's useWatchedQuery reports the previous query's isLoading
+    // (false) on the first render after the id changes; isFetching covers it.
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: true,
+      error: null,
+    });
+    const { result } = renderHook(() =>
+      useItem(itemId("00000000-0000-4000-8000-000000000100"))
+    );
+
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it("reports not-loading once the query is fully settled (isFetching false)", () => {
+    // The non-loading branch of the isFetching fold: a fully-settled query
+    // (isLoading:false AND isFetching:false) must surface isLoading:false.
+    mockUseQuery.mockReturnValue({
+      data: [
+        {
+          id: "00000000-0000-4000-8000-000000000100",
+          name: "Test Item",
+          type: "prop",
+          brand: null,
+          condition: null,
+          created_at: "2025-01-15T12:00:00.000Z",
+          creator: null,
+          description: null,
+          location: null,
+          notes: null,
+          purchase_date: null,
+          purchase_price: null,
+          quantity: 1,
+          updated_at: "2025-01-15T12:00:00.000Z",
+          url: null,
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
+    const { result } = renderHook(() =>
+      useItem(itemId("00000000-0000-4000-8000-000000000100"))
+    );
+
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it("returns error when useQuery fails", () => {
     const err = new Error("db error");
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: err });
+    mockUseQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: err,
+    });
     const { result } = renderHook(() =>
       useItem(itemId("00000000-0000-4000-8000-000000000100"))
     );
@@ -119,6 +216,7 @@ describe("useItem", () => {
     mockUseQuery.mockReturnValue({
       data: [],
       isLoading: false,
+      isFetching: false,
       error: undefined,
     });
     const { result } = renderHook(() =>
