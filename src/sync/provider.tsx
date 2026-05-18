@@ -54,6 +54,33 @@ async function getToken(): Promise<string | null> {
       "data-diag-token-ok",
       tokenOk ? "true" : "false-bad-shape"
     );
+    if (tokenOk) {
+      try {
+        const payloadB64 = data.token.split(".")[1] ?? "";
+        const padded = payloadB64
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+          .padEnd(payloadB64.length + ((4 - (payloadB64.length % 4)) % 4), "=");
+        const payload = JSON.parse(atob(padded)) as Record<string, unknown>;
+        const issStr = typeof payload.iss === "string" ? payload.iss : "n/a";
+        const audVal = payload.aud;
+        let audStr = "n/a";
+        if (Array.isArray(audVal)) {
+          audStr = audVal.join(",");
+        } else if (typeof audVal === "string") {
+          audStr = audVal;
+        }
+        document.documentElement.setAttribute("data-diag-token-iss", issStr);
+        document.documentElement.setAttribute("data-diag-token-aud", audStr);
+        console.info("[DIAG #300] JWT claims", { iss: issStr, aud: audStr });
+      } catch (err) {
+        document.documentElement.setAttribute(
+          "data-diag-token-iss",
+          "decode-error"
+        );
+        console.error("[DIAG #300] JWT decode failed", err);
+      }
+    }
     console.info("[DIAG #300] token body shape", {
       tokenOk,
       keys: data && typeof data === "object" ? Object.keys(data) : null,

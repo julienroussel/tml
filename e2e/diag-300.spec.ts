@@ -37,6 +37,16 @@ test.describe("DIAG #300 — PowerSync token diagnostics", () => {
       () =>
         document.documentElement.getAttribute("data-diag-token-ok") ?? "not-set"
     );
+    const tokenIss = await page.evaluate(
+      () =>
+        document.documentElement.getAttribute("data-diag-token-iss") ??
+        "not-set"
+    );
+    const tokenAud = await page.evaluate(
+      () =>
+        document.documentElement.getAttribute("data-diag-token-aud") ??
+        "not-set"
+    );
     const hasSynced = await page.evaluate(
       () =>
         document.querySelector("[role='status'][data-has-synced='true']") !==
@@ -52,6 +62,7 @@ test.describe("DIAG #300 — PowerSync token diagnostics", () => {
     // Log everything so the CI output tells us which branch (B1/B2/B3) applies.
     console.log(
       `[DIAG #300] token-status=${tokenStatus} token-ok=${tokenOk} ` +
+        `iss=${tokenIss} aud=${tokenAud} ` +
         `has-synced=${hasSynced} sync-state=${syncState}`
     );
 
