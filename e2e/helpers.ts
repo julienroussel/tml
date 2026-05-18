@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, type Page } from "@playwright/test";
+import type {
+  FALLBACK_SYNC_STATE,
+  SyncKey,
+} from "../src/components/sync-status";
 
 export const AUTH_STATE_PATH = resolve(
   import.meta.dirname,
@@ -11,6 +15,45 @@ export const AUTH_STATE_PATH = resolve(
 export const ADD_TRICK_RE = /add trick/i;
 export const ADD_ITEM_RE = /add item/i;
 export const NAME_RE = /^name$/i;
+
+/**
+ * Union of all `data-sync-state` values the `<SyncStatus>` pill can emit:
+ * the canonical `SyncKey` set plus the `FALLBACK_SYNC_STATE` sentinel from
+ * `SyncStatusFallback`. Both sides are imported (not duplicated) so the
+ * union and the rendered attribute can't drift.
+ */
+export type SyncState = SyncKey | typeof FALLBACK_SYNC_STATE;
+
+/**
+ * Wait for the `<SyncStatus>` pill (rendered in the app shell) to reach a
+ * specific transport state. Reads the `data-sync-state` attribute set by
+ * `SyncStatusInner` — see `src/components/sync-status.tsx`.
+ */
+export async function waitForSync(
+  page: Page,
+  expectedState: SyncState = "online",
+  timeout = 30_000
+): Promise<void> {
+  await expect(
+    page.locator(`[role="status"][data-sync-state="${expectedState}"]`).first()
+  ).toBeVisible({ timeout });
+}
+
+/**
+ * Wait for PowerSync to have completed at least one full initial sync
+ * (`status.lastSyncedAt != null`). E2E writes that race ahead of this can hang
+ * `db.writeTransaction`, leaving the form sheet stuck open (issue #297). The
+ * underlying primitive is `lastSyncedAt` (sticky across disconnects), not
+ * `hasSynced` (reset on every disconnect by PowerSync's status merge).
+ */
+export async function waitForSynced(
+  page: Page,
+  timeout = 30_000
+): Promise<void> {
+  await expect(
+    page.locator('[role="status"][data-has-synced="true"]').first()
+  ).toBeVisible({ timeout });
+}
 
 /** Check if a real authenticated session exists (written by auth.setup.ts). */
 export function hasAuthSession(): boolean {
@@ -73,6 +116,12 @@ async function createEntity(
   page: Page,
   args: { addButtonRe: RegExp; formId: string; name: string }
 ): Promise<void> {
+  // Defensive gate against PowerSync's initial-sync race: `waitForAddButton`
+  // only checks visibility, so the click can land before WASM + workers + the
+  // first server-to-client sync are all ready, leaving `db.writeTransaction`
+  // hanging and the sheet stuck open (issue #297). In offline mode this is a
+  // fast no-op — `lastSyncedAt` is a sticky latch from the initial connect.
+  await waitForSynced(page);
   await page.getByRole("button", { name: args.addButtonRe }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 

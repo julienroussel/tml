@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { expect, test as setup } from "@playwright/test";
-import { AUTH_STATE_PATH } from "./helpers";
+import { AUTH_STATE_PATH, waitForSynced } from "./helpers";
 
 /**
  * Playwright auth setup — creates an authenticated session via Better Auth's
@@ -95,6 +95,24 @@ setup("authenticate", async ({ page }) => {
   // Navigate to the app to ensure cookies are properly set in the browser context
   await page.goto("/dashboard");
   await page.waitForURL("**/dashboard**");
+
+  // Smoke gate: PowerSync's initial sync must complete on /dashboard once per
+  // session before saving state. If a preview deployment has a broken sync
+  // boot, this fails fast here with a clear, domain-meaningful error rather
+  // than as a downstream click timeout 20 minutes into the run (issue #297).
+  try {
+    await waitForSynced(page, 60_000);
+  } catch (err) {
+    // `cause` preserves the original Playwright locator-timeout stack so
+    // triage points to the actual assertion site, not this rethrow.
+    throw new Error(
+      "auth.setup smoke gate failed: PowerSync did not complete its initial " +
+        "sync on /dashboard within 60s. Likely causes: broken worker bundle " +
+        "fetch (see global-setup.ts pre-warm logs), blocked WebSocket to the " +
+        "PowerSync service, or Vercel Deployment Protection misconfig.",
+      { cause: err }
+    );
+  }
 
   // Save the authenticated browser state
   await page.context().storageState({ path: AUTH_STATE_PATH });
