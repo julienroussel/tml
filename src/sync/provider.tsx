@@ -20,18 +20,36 @@ function hasStringToken(value: unknown): value is { token: string } {
   );
 }
 
+// DIAG #300 — REVERT BEFORE MERGE. Widened logging to surface why
+// /api/auth/token doesn't yield a usable token on Vercel previews.
 async function getToken(): Promise<string | null> {
   try {
     const response = await fetch("/api/auth/token");
+    console.info("[DIAG #300] /api/auth/token response", {
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+      url: response.url,
+      cookieSent: document.cookie.length > 0,
+    });
     if (!response.ok) {
       if (response.status !== 401) {
         console.warn(`[PowerSync] Token fetch failed: ${response.status}`);
       }
+      console.warn(
+        "[DIAG #300] returning null — non-OK status",
+        response.status
+      );
       return null;
     }
     const data: unknown = await response.json();
-    return hasStringToken(data) ? data.token : null;
-  } catch {
+    const tokenOk = hasStringToken(data);
+    console.info("[DIAG #300] token body shape", {
+      tokenOk,
+      keys: data && typeof data === "object" ? Object.keys(data) : null,
+    });
+    return tokenOk ? data.token : null;
+  } catch (err) {
+    console.error("[DIAG #300] getToken threw", err);
     return null;
   }
 }
@@ -59,15 +77,28 @@ export function PowerSyncProvider({
 
     const connectAsync = async (): Promise<void> => {
       try {
-        const connector = createNeonConnector(getToken);
+        // DIAG #300 — wrap getToken so we can see whether fetchCredentials
+        // is even being invoked on previews.
+        const wrappedGetToken = async (): Promise<string | null> => {
+          console.info("[DIAG #300] fetchCredentials -> getToken invoked");
+          const t = await getToken();
+          console.info("[DIAG #300] getToken resolved", {
+            hasToken: t !== null,
+          });
+          return t;
+        };
+        const connector = createNeonConnector(wrappedGetToken);
         if (cancelled) {
           return;
         }
+        console.info("[DIAG #300] powerSyncDb.connect() starting");
         await powerSyncDb.connect(connector);
+        console.info("[DIAG #300] powerSyncDb.connect() resolved");
       } catch (error: unknown) {
         if (!cancelled) {
           connecting = false;
           console.error("PowerSync connection failed:", error);
+          console.error("[DIAG #300] connect threw", error);
         }
       }
     };
