@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, type Page } from "@playwright/test";
+import type {
+  FALLBACK_SYNC_STATE,
+  SyncKey,
+} from "../src/components/sync-status";
 
 export const AUTH_STATE_PATH = resolve(
   import.meta.dirname,
@@ -11,6 +15,66 @@ export const AUTH_STATE_PATH = resolve(
 export const ADD_TRICK_RE = /add trick/i;
 export const ADD_ITEM_RE = /add item/i;
 export const NAME_RE = /^name$/i;
+
+/**
+ * Union of all `data-sync-state` values the `<SyncStatus>` pill can emit:
+ * the canonical `SyncKey` set plus the `FALLBACK_SYNC_STATE` sentinel from
+ * `SyncStatusFallback`. Both sides are imported (not duplicated) so the
+ * union and the rendered attribute can't drift.
+ */
+export type SyncState = SyncKey | typeof FALLBACK_SYNC_STATE;
+
+/**
+ * Wait for the `<SyncStatus>` pill (rendered in the app shell) to reach a
+ * specific transport state. Reads the `data-sync-state` attribute set by
+ * `SyncStatusInner` — see `src/components/sync-status.tsx`.
+ */
+export async function waitForSync(
+  page: Page,
+  expectedState: SyncState = "online",
+  timeout = 30_000
+): Promise<void> {
+  await expect(
+    page.locator(`[role="status"][data-sync-state="${expectedState}"]`).first()
+  ).toBeVisible({ timeout });
+}
+
+/**
+ * Wait for PowerSync context to be fully initialized — WASM loaded, workers
+ * up, and the status hook mounted — without requiring a server-to-client sync.
+ * Once `data-sync-state` is anything other than "uninitialized", `db` is ready
+ * to accept `writeTransaction` calls (schema is set up from the JS definition,
+ * not the first sync). Use this before going offline in E2E tests; prefer
+ * `waitForSynced` only when you actually need a completed server sync.
+ */
+export async function waitForSyncReady(
+  page: Page,
+  timeout = 30_000
+): Promise<void> {
+  await expect(
+    page
+      .locator(`[role="status"]:not([data-sync-state="uninitialized"])`)
+      .first()
+  ).toBeVisible({ timeout });
+}
+
+/**
+ * Wait for PowerSync to have completed at least one full initial sync
+ * (`status.lastSyncedAt != null`). The underlying primitive is `lastSyncedAt`
+ * (sticky across disconnects), not `hasSynced` (reset on every disconnect by
+ * PowerSync's status merge). Only use this when server data must be present
+ * before proceeding — on environments where PowerSync can't reach its sync
+ * service, this will hang indefinitely. For most write-path tests, prefer
+ * `waitForSyncReady`.
+ */
+export async function waitForSynced(
+  page: Page,
+  timeout = 30_000
+): Promise<void> {
+  await expect(
+    page.locator('[role="status"][data-has-synced="true"]').first()
+  ).toBeVisible({ timeout });
+}
 
 /** Check if a real authenticated session exists (written by auth.setup.ts). */
 export function hasAuthSession(): boolean {

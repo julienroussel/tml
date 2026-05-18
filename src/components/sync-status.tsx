@@ -5,7 +5,23 @@ import { useTranslations } from "next-intl";
 import { Component, type ReactElement, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type SyncKey = "offline" | "syncing" | "pendingChanges" | "online" | "error";
+/**
+ * Public contract for `data-sync-state` values. Consumed by E2E helpers in
+ * `e2e/helpers.ts` (composed with `FALLBACK_SYNC_STATE` into `SyncState`) —
+ * keep this union and the rendered attribute in sync.
+ */
+export type SyncKey =
+  | "offline"
+  | "syncing"
+  | "pendingChanges"
+  | "online"
+  | "error";
+
+/**
+ * Sentinel value emitted on the fallback span. Intentionally not a member of
+ * `SyncKey` so locator queries for it never collide with a real state.
+ */
+export const FALLBACK_SYNC_STATE = "uninitialized";
 
 /** Maps every SyncKey to its dot color — adding a new key without a color is a type error. */
 const syncColors: Record<SyncKey, string> = {
@@ -40,7 +56,14 @@ function deriveSyncKey(status: ReturnType<typeof useStatus>): SyncKey {
 
 /** Renders an empty placeholder matching the SyncStatus layout dimensions. */
 function SyncStatusFallback(): ReactElement {
-  return <span className="flex items-center gap-1.5" role="status" />;
+  return (
+    <span
+      className="flex items-center gap-1.5"
+      data-has-synced="false"
+      data-sync-state={FALLBACK_SYNC_STATE}
+      role="status"
+    />
+  );
 }
 
 // Error boundary is required here because useStatus() throws if rendered
@@ -75,8 +98,15 @@ function SyncStatusInner(): ReactElement {
   const key = deriveSyncKey(status);
   const color = syncColors[key];
 
+  // `lastSyncedAt` (sticky), not `hasSynced` (cleared on every disconnect by
+  // @powersync/common's `updateSyncStatus` merge — see issue #297).
   return (
-    <span className="flex items-center gap-1.5" role="status">
+    <span
+      className="flex items-center gap-1.5"
+      data-has-synced={status.lastSyncedAt === undefined ? "false" : "true"}
+      data-sync-state={key}
+      role="status"
+    >
       <span className={cn("inline-flex size-2 rounded-full", color)} />
       <span className="text-muted-foreground text-xs">{t(key)}</span>
     </span>

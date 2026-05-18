@@ -6,6 +6,8 @@ import {
   createTrick,
   hasAuthSession,
   waitForAddButton,
+  waitForSync,
+  waitForSyncReady,
 } from "./helpers";
 
 /**
@@ -97,16 +99,28 @@ test.describe("Activity feed", () => {
     context,
     page,
   }) => {
+    // Offline ↔ online transitions add real wall-clock time on top of every
+    // already-30s wait; without test.slow() the suite hits Playwright's default
+    // 30s per-test budget mid-reconnect (issue #297).
+    test.slow();
     const name = `E2E Activity Offline ${Date.now().toString()}`;
 
     // Boot the app + PowerSync online so the local SQLite is initialised.
     await page.goto("/repertoire");
     await waitForAddButton(page, ADD_TRICK_RE);
+    // Initial sync must complete BEFORE going offline — otherwise the
+    // offline-write asserts what PowerSync never had a chance to bootstrap.
+    await waitForSyncReady(page);
 
     // Drop the network — the trick + event_log row should still write to
     // local SQLite via PowerSync's writeTransaction. The form should close
     // and the card appear without any network round-trip.
     await context.setOffline(true);
+    // The offline transition itself destabilizes the page (WebSocket drop +
+    // SyncStatus re-render). Wait for the pill to settle into "offline" before
+    // clicking — otherwise the Add-trick click can't pin a stable target
+    // within the 10s actionTimeout (issue #297 confirmed failure mode).
+    await waitForSync(page, "offline");
     try {
       await createTrick(page, name);
 
