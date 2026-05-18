@@ -382,7 +382,7 @@ describe("ItemFormSheet rendering", () => {
 
   it("shows the edit title and a skeleton body while the edit target loads", () => {
     // In production, mode:"loading" always coincides with relationsLoading:true
-    // (the same editingItemLoading drives both), so render that realistic combo.
+    // (the same useItem result drives both), so render that realistic combo.
     render(
       <ItemFormSheet
         {...defaultProps({ mode: { mode: "loading" }, relationsLoading: true })}
@@ -392,14 +392,246 @@ describe("ItemFormSheet rendering", () => {
     // Title reflects edit *intent*, not loaded data — must not flip to "add".
     expect(screen.getByText("collect.editItem")).toBeInTheDocument();
     expect(screen.queryByText("collect.addItem")).not.toBeInTheDocument();
-    // The form is not mounted while loading; a labelled status region stands in.
+    // The form is not mounted while loading; the persistent live region
+    // announces the loading state via text content (issue #288 F3).
     expect(screen.queryByTestId("item-form")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("status", { name: "collect.loadingItem" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("collect.loadingItem");
     // Save stays disabled while the edit target loads — no submit against an
     // unmounted form.
     expect(screen.getByRole("button", { name: "collect.save" })).toBeDisabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Persistent aria-live region (issue #288 F3) — owns the loading→ready
+// announcement so screen readers don't fall silent when the skeleton unmounts
+// on transition to the edit form. WCAG 2.2 SC 4.1.3 (Status Messages).
+// ---------------------------------------------------------------------------
+describe("ItemFormSheet live region (issue #288 F3)", () => {
+  function getLiveRegion(): HTMLElement {
+    return screen.getByRole("status");
+  }
+
+  it("renders the persistent live region with correct attributes in loading mode", () => {
+    render(<ItemFormSheet {...defaultProps({ mode: { mode: "loading" } })} />);
+
+    const region = getLiveRegion();
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveAttribute("aria-atomic", "true");
+    expect(region).toHaveClass("sr-only");
+    expect(region).toHaveTextContent("collect.loadingItem");
+  });
+
+  it("renders the live region with the ready message in edit mode", () => {
+    const item: ParsedItem = {
+      id: "item-ready" as ItemId,
+      name: "Loaded",
+      type: "prop",
+      description: null,
+      brand: null,
+      condition: null,
+      location: null,
+      notes: null,
+      purchaseDate: null,
+      purchasePrice: null,
+      quantity: 1,
+      creator: null,
+      url: null,
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
+
+    const region = getLiveRegion();
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveAttribute("aria-atomic", "true");
+    expect(region).toHaveClass("sr-only");
+    expect(region).toHaveTextContent("collect.itemReady");
+  });
+
+  it("renders the live region empty in create mode (no spurious announcement)", () => {
+    render(<ItemFormSheet {...defaultProps({ mode: { mode: "create" } })} />);
+
+    // The region exists but has no text content — screen readers won't
+    // announce anything when the Add sheet opens.
+    const region = getLiveRegion();
+    expect(region).toBeInTheDocument();
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveAttribute("aria-atomic", "true");
+    expect(region).toHaveClass("sr-only");
+    expect(region).toHaveTextContent("");
+  });
+
+  it("does not duplicate role=status on the skeleton wrapper (single source of truth)", () => {
+    render(<ItemFormSheet {...defaultProps({ mode: { mode: "loading" } })} />);
+
+    // Only one status element — the persistent live region. The skeleton
+    // wrapper does NOT carry a competing role=status (would cause
+    // double-announcement); the persistent live region owns the
+    // loading-state announcement on its own.
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+  });
+
+  it("marks the skeleton container aria-busy=true so AT treats it as in-progress (not the live region's parent)", () => {
+    render(<ItemFormSheet {...defaultProps({ mode: { mode: "loading" } })} />);
+
+    // The skeleton container — NOT its parent — owns aria-busy. The live
+    // region span is a sibling so its polite announcement isn't deferred by
+    // an aria-busy ancestor (ARIA 1.2 lets AT skip mutations inside busy
+    // regions). Anchoring on the live region's nextElementSibling
+    // disambiguates from the Save button, which also declares aria-busy.
+    const liveRegion = screen.getByRole("status");
+    const skeletonContainer = liveRegion.nextElementSibling;
+    expect(skeletonContainer).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("does not put aria-busy on the form region's wrapper in edit mode (avoids suppressing live region)", () => {
+    const item: ParsedItem = {
+      id: "item-busy-edit" as ItemId,
+      name: "Loaded",
+      type: "prop",
+      description: null,
+      brand: null,
+      condition: null,
+      location: null,
+      notes: null,
+      purchaseDate: null,
+      purchasePrice: null,
+      quantity: 1,
+      creator: null,
+      url: null,
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
+
+    // In edit mode the next sibling is the form (no aria-busy). The wrapper
+    // <div> that contains the live region must NOT carry aria-busy=true
+    // either — that would suppress the live region's polite announcement
+    // per ARIA 1.2.
+    const liveRegion = screen.getByRole("status");
+    const sibling = liveRegion.nextElementSibling;
+    expect(sibling).not.toHaveAttribute("aria-busy", "true");
+    expect(liveRegion.parentElement).not.toHaveAttribute("aria-busy", "true");
+  });
+
+  it("preserves the live region node across the loading → edit transition", () => {
+    const { rerender } = render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "loading" } })} />
+    );
+    const loadingRegion = getLiveRegion();
+    expect(loadingRegion).toHaveTextContent("collect.loadingItem");
+
+    const item: ParsedItem = {
+      id: "item-trans" as ItemId,
+      name: "Settled",
+      type: "prop",
+      description: null,
+      brand: null,
+      condition: null,
+      location: null,
+      notes: null,
+      purchaseDate: null,
+      purchasePrice: null,
+      quantity: 1,
+      creator: null,
+      url: null,
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    rerender(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
+    const readyRegion = getLiveRegion();
+
+    // Same DOM node — aria-live announces the content change without the
+    // region unmounting + remounting (which would risk re-announcing the
+    // initial loading text or being skipped entirely on some screen readers).
+    expect(readyRegion).toBe(loadingRegion);
+    expect(readyRegion).toHaveTextContent("collect.itemReady");
+  });
+
+  it("preserves the live region node across edit(A) → loading → edit(B) (target switch mid-edit)", () => {
+    const makeItem = (id: string, name: string): ParsedItem => ({
+      id: id as ItemId,
+      name,
+      type: "prop",
+      description: null,
+      brand: null,
+      condition: null,
+      location: null,
+      notes: null,
+      purchaseDate: null,
+      purchasePrice: null,
+      quantity: 1,
+      creator: null,
+      url: null,
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+    });
+    const itemA = makeItem("item-a", "First");
+    const itemB = makeItem("item-b", "Second");
+    const { rerender } = render(
+      <ItemFormSheet
+        {...defaultProps({ mode: { mode: "edit", item: itemA } })}
+      />
+    );
+    const initialRegion = getLiveRegion();
+
+    rerender(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "loading" } })} />
+    );
+    expect(getLiveRegion()).toBe(initialRegion);
+
+    rerender(
+      <ItemFormSheet
+        {...defaultProps({ mode: { mode: "edit", item: itemB } })}
+      />
+    );
+    const finalRegion = getLiveRegion();
+
+    // Same DOM node across all three modes — the persistent span is structurally
+    // a sibling of the loading/form conditional in the parent, so target swaps
+    // (and the form-key remount that accompanies them in production) cannot
+    // unmount it. (The mocked ItemForm here doesn't honor `key`; this test
+    // locks the parent's render structure, not the key-remount mechanism.)
+    expect(finalRegion).toBe(initialRegion);
+    expect(finalRegion).toHaveTextContent("collect.itemReady");
+  });
+
+  it("preserves the live region node across edit → create (reset path)", () => {
+    const item: ParsedItem = {
+      id: "item-reset" as ItemId,
+      name: "Existing",
+      type: "prop",
+      description: null,
+      brand: null,
+      condition: null,
+      location: null,
+      notes: null,
+      purchaseDate: null,
+      purchasePrice: null,
+      quantity: 1,
+      creator: null,
+      url: null,
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    const { rerender } = render(
+      <ItemFormSheet {...defaultProps({ mode: { mode: "edit", item } })} />
+    );
+    const editRegion = getLiveRegion();
+
+    rerender(<ItemFormSheet {...defaultProps({ mode: { mode: "create" } })} />);
+    const createRegion = getLiveRegion();
+
+    expect(createRegion).toBe(editRegion);
+    // Create mode renders empty — no spurious announcement on transition.
+    expect(createRegion).toHaveTextContent("");
   });
 });
 
@@ -526,6 +758,34 @@ describe("unsaved changes guard", () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
     // The sheet (and its discard dialog) should still be open / not closed via parent
     expect(screen.getByTestId("sheet")).toBeInTheDocument();
+  });
+
+  it("closes an orphaned discard dialog when the sheet is force-closed via prop", async () => {
+    // External force-close paths (settledMissing toast, load-error toast,
+    // programmatic close) drive `open=false` as a prop rather than routing
+    // through the Sheet's onOpenChange interceptor. Without the cleanup
+    // effect in ItemFormSheet, the AlertDialog (a Fragment sibling of the
+    // Sheet) would remain mounted over a torn-down sheet.
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+
+    const { rerender } = render(
+      <ItemFormSheet {...defaultProps({ onOpenChange, tagsDirty: true })} />
+    );
+
+    // Pop the discard dialog open by clicking Cancel with a dirty form.
+    await user.click(screen.getByText("collect.cancel"));
+    expect(screen.getByTestId("discard-dialog")).toBeInTheDocument();
+
+    // Parent flips `open` to false directly (bypassing the Sheet's
+    // onOpenChange interceptor). The cleanup effect must close the dialog.
+    rerender(
+      <ItemFormSheet
+        {...defaultProps({ onOpenChange, tagsDirty: true, open: false })}
+      />
+    );
+
+    expect(screen.queryByTestId("discard-dialog")).not.toBeInTheDocument();
   });
 });
 

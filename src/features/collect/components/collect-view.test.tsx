@@ -47,7 +47,12 @@ vi.mock("../hooks/use-items", () => ({
 }));
 
 vi.mock("../hooks/use-item", () => ({
-  useItem: vi.fn(() => ({ item: null, error: null, isLoading: false })),
+  useItem: vi.fn(() => ({
+    item: null,
+    error: null,
+    isLoading: false,
+    hasSettled: false,
+  })),
 }));
 
 vi.mock("../hooks/use-item-brands", () => ({
@@ -257,6 +262,7 @@ afterEach(async () => {
     item: null,
     error: null,
     isLoading: false,
+    hasSettled: false,
   });
   vi.mocked(useTags).mockReturnValue({
     tags: [],
@@ -350,6 +356,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
 
     // The first useQuery call is the item_tags join — seed it with two existing tags
@@ -436,6 +443,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     vi.mocked(useQuery).mockImplementation((sql) => {
       if (sql === ITEM_TAGS_QUERY) {
@@ -565,6 +573,7 @@ describe("CollectView", () => {
       item: null,
       error: new Error("load failed"),
       isLoading: false,
+      hasSettled: false,
     });
 
     render(<CollectView />);
@@ -596,6 +605,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     mockUpdateItem.mockRejectedValueOnce(new Error("update failed"));
 
@@ -636,6 +646,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     mockUpdateItem.mockRejectedValueOnce(new MaxTagsError());
 
@@ -672,6 +683,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     mockUpdateItem.mockRejectedValueOnce(new MaxTricksError());
 
@@ -781,6 +793,7 @@ describe("CollectView", () => {
       item: null,
       error: null,
       isLoading: true,
+      hasSettled: false,
     });
 
     const { rerender } = render(<CollectView />);
@@ -804,6 +817,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     rerender(<CollectView />);
 
@@ -844,6 +858,7 @@ describe("CollectView", () => {
       item: null,
       error: null,
       isLoading: true,
+      hasSettled: false,
     });
 
     const { rerender } = render(<CollectView />);
@@ -870,6 +885,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     rerender(<CollectView />);
     await waitFor(() => {
@@ -898,6 +914,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: true,
+      hasSettled: false,
     });
 
     render(<CollectView />);
@@ -927,10 +944,15 @@ describe("CollectView", () => {
       isLoading: false,
     });
     // Stale: the query param is now B, but the resolved row is still A.
+    // hasSettled is TRUE on purpose — this exercises the identity gate:
+    // settledMissing requires editingItem === null AND hasSettled. Setting
+    // hasSettled: false would gate it independently and the test would
+    // pass even if the identity check (editingItem === null) regressed.
     vi.mocked(useItem).mockReturnValue({
       item: itemA,
       error: null,
       isLoading: false,
+      hasSettled: true,
     });
 
     render(<CollectView />);
@@ -960,12 +982,14 @@ describe("CollectView", () => {
       error: null,
       isLoading: false,
     });
-    // Query settled (isLoading false) but no row — the item was deleted out
-    // from under the user. The sheet must close, not hang on a skeleton.
+    // Query settled (isLoading false, hasSettled true) but no row — the item
+    // was deleted out from under the user. The sheet must close, not hang on
+    // a skeleton.
     vi.mocked(useItem).mockReturnValue({
       item: null,
       error: null,
       isLoading: false,
+      hasSettled: true,
     });
 
     render(<CollectView />);
@@ -979,6 +1003,45 @@ describe("CollectView", () => {
     // "no longer exists" key, not the generic load-error key — nothing
     // failed to load. Distinct stable id from loadError so a retry sequence
     // shows both states.
+    expect(toast.error).toHaveBeenCalledWith(
+      "collect.itemNoLongerExists",
+      expect.objectContaining({ id: "collect-item-no-longer-exists" })
+    );
+  });
+
+  // Issue #287 regression — settledMissing must fire on the sync-churn
+  // scenario even when the folded isLoading flickers true on unrelated
+  // `items`-table re-emits. The old gate (`!editingItemLoading`) would
+  // delay the close+toast unreliably; the new gate (`editingItemSettled`)
+  // is sticky once the query has settled at least once for the current id.
+  it("closes the edit sheet on settled-missing even during an isFetching flicker (issue #287)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+    const itemId = "00000000-0000-4000-8000-0000000ed218";
+    vi.mocked(useItems).mockReturnValue({
+      items: [makeItem(itemId, "Vanished")],
+      error: null,
+      isLoading: false,
+    });
+    // Sync churn: an unrelated `items` row updated → useWatchedQuery
+    // re-runs → isFetching:true flickers → folded isLoading is true.
+    // hasSettled is true because the query previously settled at least
+    // once for this id. The settledMissing close+toast MUST fire here;
+    // the pre-#287 code would block on `!editingItemLoading`.
+    vi.mocked(useItem).mockReturnValue({
+      item: null,
+      error: null,
+      isLoading: true,
+      hasSettled: true,
+    });
+
+    render(<CollectView />);
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+    const { toast } = await import("sonner");
     expect(toast.error).toHaveBeenCalledWith(
       "collect.itemNoLongerExists",
       expect.objectContaining({ id: "collect-item-no-longer-exists" })
@@ -1326,6 +1389,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     vi.mocked(useItemLocations).mockReturnValue({
       locations: [],
@@ -1360,6 +1424,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
 
     // Healthy initial state — sheet opens cleanly.
@@ -1544,6 +1609,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
 
     // Healthy initial state — Edit sheet opens cleanly.
@@ -1701,6 +1767,7 @@ describe("CollectView", () => {
       item,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
 
     // All relation queries healthy — Edit must succeed in opening the sheet.

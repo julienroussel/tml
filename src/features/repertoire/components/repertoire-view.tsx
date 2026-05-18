@@ -179,7 +179,7 @@ export function RepertoireView(): React.ReactElement {
   const {
     trick: editingTrick,
     error: editingTrickError,
-    isLoading: editingTrickLoading,
+    hasSettled: editingTrickSettled,
   } = useTrick(editingTrickId);
   const { tags, error: tagError } = useTags();
   const { createTrick, updateTrick, deleteTrick } = useTrickMutations();
@@ -222,11 +222,11 @@ export function RepertoireView(): React.ReactElement {
   // diffs against a stale [] baseline) and swaps the picker for a skeleton.
   // Add path is never gated because handleAddTrick seeds via seedEmpty().
   //
-  // The row-loading term is `sheetMode.mode === "loading"`, NOT the raw
-  // `editingTrickLoading`: the latter folds PowerSync's `isFetching`, which
-  // flickers true on unrelated `tricks`-table re-emits and would otherwise
-  // disable Save + skeleton the picker mid-edit-session. sheetMode keys on
-  // row identity, so it stays "edit" through the flicker (issue #217).
+  // The row-loading term is `sheetMode.mode === "loading"`, NOT the folded
+  // `isLoading` from useTrick: the latter folds PowerSync's `isFetching`,
+  // which flickers true on unrelated `tricks`-table re-emits and would
+  // otherwise disable Save + skeleton the picker mid-edit-session. sheetMode
+  // keys on row identity, so it stays "edit" through the flicker (issue #217).
   //
   // `editingTrickError != null` is folded in too: when the row query errored
   // but a stale matching `editingTrick` is still present, sheetMode reads
@@ -310,15 +310,23 @@ export function RepertoireView(): React.ReactElement {
   // Edit target unavailable — close the sheet rather than render "add new".
   // Two cases: the row query errored, or it settled with no row (the trick was
   // deleted out from under us between list render and the useTrick query). Both
-  // route through the same close + toast (issue #217). editingTrickLoading folds
-  // isFetching (see use-trick.ts), so `!editingTrickLoading` is only true once
-  // the query has genuinely settled — it cannot false-positive mid-load.
+  // route through the same close + toast (issue #217). Gates on `hasSettled`
+  // (a per-id sticky settle latch exposed by useTrick) instead of the folded
+  // `!isLoading`: the fold flickers true on unrelated `tricks`-table re-emits
+  // during sync churn, which would unreliably delay the close+toast
+  // (issue #287). hasSettled latches on the first quiet render for the
+  // current id and stays sticky through subsequent isFetching flickers.
   // ---------------------------------------------------------------------------
+  // Derived boolean for the effect dep — depending on `editingTrick` directly
+  // would re-fire the effect on every PowerSync re-emit of the row (fresh
+  // object identity), which dilutes the per-id sticky settle work in
+  // `useTrick`. Only the nullness is load-bearing for the close+toast gate.
+  const editingTrickMissing = editingTrick === null;
   useEffect(() => {
     if (editingTrickId === null) {
       return;
     }
-    const settledMissing = editingTrick === null && !editingTrickLoading;
+    const settledMissing = editingTrickMissing && editingTrickSettled;
     if (!(editingTrickError || settledMissing)) {
       return;
     }
@@ -348,9 +356,9 @@ export function RepertoireView(): React.ReactElement {
     tagsSel.reset();
   }, [
     editingTrickId,
-    editingTrick,
+    editingTrickMissing,
     editingTrickError,
-    editingTrickLoading,
+    editingTrickSettled,
     t,
     tagsSel.reset,
   ]);
