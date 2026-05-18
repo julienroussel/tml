@@ -116,12 +116,6 @@ async function createEntity(
   page: Page,
   args: { addButtonRe: RegExp; formId: string; name: string }
 ): Promise<void> {
-  // Defensive gate against PowerSync's initial-sync race: `waitForAddButton`
-  // only checks visibility, so the click can land before WASM + workers + the
-  // first server-to-client sync are all ready, leaving `db.writeTransaction`
-  // hanging and the sheet stuck open (issue #297). In offline mode this is a
-  // fast no-op — `lastSyncedAt` is a sticky latch from the initial connect.
-  await waitForSynced(page);
   await page.getByRole("button", { name: args.addButtonRe }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 
