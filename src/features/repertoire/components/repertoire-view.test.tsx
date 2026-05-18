@@ -57,7 +57,12 @@ vi.mock("../hooks/use-tricks", () => ({
 }));
 
 vi.mock("../hooks/use-trick", () => ({
-  useTrick: vi.fn(() => ({ trick: null, isLoading: false, error: null })),
+  useTrick: vi.fn(() => ({
+    trick: null,
+    isLoading: false,
+    error: null,
+    hasSettled: false,
+  })),
 }));
 
 vi.mock("../hooks/use-tags", () => ({
@@ -231,6 +236,7 @@ afterEach(async () => {
     trick: null,
     isLoading: false,
     error: null,
+    hasSettled: false,
   });
   vi.mocked(useTags).mockReturnValue({
     tags: [],
@@ -417,6 +423,7 @@ describe("RepertoireView", () => {
       trick,
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     render(<RepertoireView />);
@@ -508,6 +515,7 @@ describe("RepertoireView", () => {
       trick: makeTrick("trick-upd-1", "Silk Vanish"),
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     render(<RepertoireView />);
@@ -616,6 +624,7 @@ describe("RepertoireView", () => {
       trick: makeTrick("trick-tags-1", "Tagged Trick"),
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     render(<RepertoireView />);
@@ -827,6 +836,7 @@ describe("RepertoireView", () => {
       trick: makeTrick("trick-fail-upd", "Coin Warp"),
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
     mockUpdateTrick.mockRejectedValueOnce(new Error("update failed"));
 
@@ -878,6 +888,7 @@ describe("RepertoireView", () => {
       trick: makeTrick("trick-typed-err", "Vanishing Coin"),
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     const typedError = new Error("trick missing — typed");
@@ -953,6 +964,7 @@ describe("RepertoireView", () => {
       trick: null,
       error: new Error("load failed"),
       isLoading: false,
+      hasSettled: false,
     });
 
     render(<RepertoireView />);
@@ -1016,6 +1028,7 @@ describe("RepertoireView", () => {
       trick: null,
       error: null,
       isLoading: true,
+      hasSettled: false,
     });
 
     const { rerender } = render(<RepertoireView />);
@@ -1042,6 +1055,7 @@ describe("RepertoireView", () => {
       trick,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     rerender(<RepertoireView />);
 
@@ -1080,6 +1094,7 @@ describe("RepertoireView", () => {
       trick: null,
       error: null,
       isLoading: true,
+      hasSettled: false,
     });
 
     const { rerender } = render(<RepertoireView />);
@@ -1107,6 +1122,7 @@ describe("RepertoireView", () => {
       trick,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
     rerender(<RepertoireView />);
     await waitFor(() => {
@@ -1133,6 +1149,7 @@ describe("RepertoireView", () => {
       trick,
       isLoading: true,
       error: null,
+      hasSettled: false,
     });
 
     render(<RepertoireView />);
@@ -1162,10 +1179,15 @@ describe("RepertoireView", () => {
       isLoading: false,
     });
     // Stale: the query param is now B, but the resolved row is still A.
+    // hasSettled is TRUE on purpose — this exercises the identity gate:
+    // settledMissing requires editingTrick === null AND hasSettled. Setting
+    // hasSettled: false would gate it independently and the test would
+    // pass even if the identity check (editingTrick === null) regressed.
     vi.mocked(useTrick).mockReturnValue({
       trick: trickA,
       error: null,
       isLoading: false,
+      hasSettled: true,
     });
 
     render(<RepertoireView />);
@@ -1195,12 +1217,53 @@ describe("RepertoireView", () => {
       error: null,
       isLoading: false,
     });
-    // Query settled (isLoading false) but no row — the trick was deleted out
-    // from under the user. The sheet must close, not hang on a skeleton.
+    // Query settled (isLoading false, hasSettled true) but no row — the trick
+    // was deleted out from under the user. The sheet must close, not hang on
+    // a skeleton.
     vi.mocked(useTrick).mockReturnValue({
       trick: null,
       error: null,
       isLoading: false,
+      hasSettled: true,
+    });
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId(`edit-${trickId}`));
+
+    await waitFor(() => {
+      expect(capturedFormSheetProps.open).toBe(false);
+    });
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith(
+      "repertoire.trickNoLongerExists",
+      expect.objectContaining({ id: "repertoire-trick-no-longer-exists" })
+    );
+  });
+
+  // Issue #287 regression — settledMissing must fire on the sync-churn
+  // scenario even when the folded isLoading flickers true on unrelated
+  // `tricks`-table re-emits. The old gate (`!editingTrickLoading`) would
+  // delay the close+toast unreliably; the new gate (`editingTrickSettled`)
+  // is sticky once the query has settled at least once for the current id.
+  it("closes the edit sheet on settled-missing even during an isFetching flicker (issue #287)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+    const trickId = "00000000-0000-4000-8000-0000000ed218";
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [makeTrick(trickId, "Vanished")],
+      error: null,
+      isLoading: false,
+    });
+    // Sync churn: an unrelated `tricks` row updated → useWatchedQuery
+    // re-runs → isFetching:true flickers → folded isLoading is true.
+    // hasSettled is true because the query previously settled at least
+    // once for this id. The settledMissing close+toast MUST fire here;
+    // the pre-#287 code would block on `!editingTrickLoading`.
+    vi.mocked(useTrick).mockReturnValue({
+      trick: null,
+      error: null,
+      isLoading: true,
+      hasSettled: true,
     });
 
     render(<RepertoireView />);
@@ -1311,6 +1374,7 @@ describe("RepertoireView", () => {
       trick,
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     const itemJoinError = new Error("item_tricks parse error");
@@ -1394,6 +1458,7 @@ describe("RepertoireView", () => {
       trick,
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     // Healthy initial state.
@@ -1589,6 +1654,7 @@ describe("RepertoireView", () => {
       trick,
       isLoading: false,
       error: null,
+      hasSettled: false,
     });
 
     // Healthy initial state — Edit sheet opens cleanly.
@@ -1804,6 +1870,7 @@ describe("RepertoireView", () => {
       trick,
       error: null,
       isLoading: false,
+      hasSettled: false,
     });
 
     // All relation queries healthy — Edit must succeed in opening the sheet.

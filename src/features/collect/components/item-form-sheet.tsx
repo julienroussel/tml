@@ -123,6 +123,18 @@ function ItemFormSheet({
     }
   }, [open, editTargetId]);
 
+  // Close an orphaned discard dialog when the sheet is force-closed via an
+  // external path (settledMissing toast, load-error toast, programmatic close)
+  // while the dialog is open. The AlertDialog is a Fragment sibling of the
+  // Sheet, so its visibility is owned by local state that the parent can't
+  // observe — without this effect, the dialog would render over a torn-down
+  // sheet.
+  useEffect(() => {
+    if (!open) {
+      setShowDiscardDialog(false);
+    }
+  }, [open]);
+
   const isDirty = formDirty || tagsDirty || tricksDirty;
 
   function handleDiscard(): void {
@@ -171,13 +183,41 @@ function ItemFormSheet({
 
           <ScrollArea className="flex-1 overflow-y-auto">
             <div className="p-4">
+              {/* Persistent aria-live region — owns the loading→ready
+                  announcement so screen readers don't fall silent when the
+                  skeleton unmounts (WCAG 2.2 SC 4.1.3, issue #288 F3).
+                  Sibling of the conditional so the form's `key` remount
+                  cannot disturb it.
+
+                  Known platform caveats (not blockers):
+                  - VoiceOver iOS may swallow the initial "Loading…" content
+                    announced at mount; the loading→ready transition (a
+                    mutation, not initial content) is reliable across SR/browser
+                    combos and is what the SC requires.
+                  - On fast hydration, the polite queue may collapse the
+                    loading announcement behind Radix Dialog's SheetTitle
+                    read. Acceptable for the common case (hydration is
+                    typically perceptible).
+                  - The edit→create transition empties the region; most SRs
+                    treat empty atomic content as silence, but a few will
+                    announce blank. Acceptable — no meaningful content to
+                    convey on a sheet that's about to close anyway. */}
+              <span
+                aria-atomic="true"
+                aria-live="polite"
+                className="sr-only"
+                role="status"
+              >
+                {mode.mode === "loading" && t("loadingItem")}
+                {mode.mode === "edit" && t("itemReady")}
+              </span>
               {mode.mode === "loading" ? (
-                <div
-                  aria-busy={true}
-                  aria-label={t("loadingItem")}
-                  className="flex flex-col gap-4"
-                  role="status"
-                >
+                // aria-busy directly on the skeleton container — NOT on its
+                // parent — so AT walking the tree treats the skeletons as
+                // in-progress without deferring the sibling live-region span's
+                // polite announcement (ARIA 1.2: aria-busy on a live region's
+                // ancestor can suppress its content mutations).
+                <div aria-busy={true} className="flex flex-col gap-4">
                   <Skeleton className="h-9 w-full" />
                   <Skeleton className="h-24 w-full" />
                   <Skeleton className="h-9 w-full" />
@@ -238,7 +278,21 @@ function ItemFormSheet({
       </Sheet>
 
       <AlertDialog onOpenChange={setShowDiscardDialog} open={showDiscardDialog}>
-        <AlertDialogContent size="sm">
+        <AlertDialogContent
+          onCloseAutoFocus={(event) => {
+            // When the parent has force-closed the sheet (external path:
+            // settledMissing toast, load-error toast), the cleanup effect above
+            // flips the dialog closed too. Radix would then try to restore
+            // focus to the Cancel trigger inside the unmounting SheetContent
+            // and focus would fall to document.body — SR users lose their
+            // place. Skip auto-focus in that case so the Sheet's own focus
+            // restoration (to its parent-side trigger) wins.
+            if (!open) {
+              event.preventDefault();
+            }
+          }}
+          size="sm"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>{t("discardChangesTitle")}</AlertDialogTitle>
             <AlertDialogDescription>

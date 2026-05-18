@@ -165,7 +165,7 @@ export function CollectView(): React.ReactElement {
   const {
     item: editingItem,
     error: editingItemError,
-    isLoading: editingItemLoading,
+    hasSettled: editingItemSettled,
   } = useItem(editingItemId);
   const { tags, error: tagError } = useTags();
   const { createItem, updateItem, deleteItem } = useItemMutations();
@@ -255,15 +255,23 @@ export function CollectView(): React.ReactElement {
   // Edit target unavailable — close the sheet rather than render "add new".
   // Two cases: the row query errored, or it settled with no row (the item was
   // deleted out from under us between list render and the useItem query). Both
-  // route through the same close + toast (issue #217). editingItemLoading folds
-  // isFetching (see use-item.ts), so `!editingItemLoading` is only true once the
-  // query has genuinely settled — it cannot false-positive mid-load.
+  // route through the same close + toast (issue #217). Gates on `hasSettled`
+  // (a per-id sticky settle latch exposed by useItem) instead of the folded
+  // `!isLoading`: the fold flickers true on unrelated `items`-table re-emits
+  // during sync churn, which would unreliably delay the close+toast
+  // (issue #287). hasSettled latches on the first quiet render for the
+  // current id and stays sticky through subsequent isFetching flickers.
   // ---------------------------------------------------------------------------
+  // Derived boolean for the effect dep — depending on `editingItem` directly
+  // would re-fire the effect on every PowerSync re-emit of the row (fresh
+  // object identity), which dilutes the per-id sticky settle work in
+  // `useItem`. Only the nullness is load-bearing for the close+toast gate.
+  const editingItemMissing = editingItem === null;
   useEffect(() => {
     if (editingItemId === null) {
       return;
     }
-    const settledMissing = editingItem === null && !editingItemLoading;
+    const settledMissing = editingItemMissing && editingItemSettled;
     if (!(editingItemError || settledMissing)) {
       return;
     }
@@ -290,9 +298,9 @@ export function CollectView(): React.ReactElement {
     tricksSel.reset();
   }, [
     editingItemId,
-    editingItem,
+    editingItemMissing,
     editingItemError,
-    editingItemLoading,
+    editingItemSettled,
     t,
     tagsSel.reset,
     tricksSel.reset,
