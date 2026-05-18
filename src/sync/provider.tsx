@@ -34,11 +34,11 @@ async function getToken(): Promise<string | null> {
     if (!response.ok) {
       if (response.status !== 401) {
         console.warn(`[PowerSync] Token fetch failed: ${response.status}`);
+        console.warn(
+          "[DIAG #300] returning null — non-OK status",
+          response.status
+        );
       }
-      console.warn(
-        "[DIAG #300] returning null — non-OK status",
-        response.status
-      );
       return null;
     }
     const data: unknown = await response.json();
