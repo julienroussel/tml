@@ -23,6 +23,9 @@ const BASE_URL =
   (process.env.CI ? "http://localhost:3000" : "https://localhost:3000");
 
 setup("authenticate", async ({ page }) => {
+  // Extend timeout: auth + navigation + 60s sync gate exceeds the 30s default.
+  setup.setTimeout(120_000);
+
   if (!(TEST_EMAIL && TEST_PASSWORD)) {
     if (process.env.CI) {
       throw new Error("E2E_TEST_EMAIL and E2E_TEST_PASSWORD must be set in CI");
