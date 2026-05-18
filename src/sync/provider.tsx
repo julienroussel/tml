@@ -25,6 +25,12 @@ function hasStringToken(value: unknown): value is { token: string } {
 async function getToken(): Promise<string | null> {
   try {
     const response = await fetch("/api/auth/token");
+    // DIAG #300: stamp the token response status onto <html> so Playwright
+    // can read it without needing Vercel log access.
+    document.documentElement.setAttribute(
+      "data-diag-token-status",
+      String(response.status)
+    );
     console.info("[DIAG #300] /api/auth/token response", {
       status: response.status,
       contentType: response.headers.get("content-type"),
@@ -39,10 +45,15 @@ async function getToken(): Promise<string | null> {
           response.status
         );
       }
+      document.documentElement.setAttribute("data-diag-token-ok", "false");
       return null;
     }
     const data: unknown = await response.json();
     const tokenOk = hasStringToken(data);
+    document.documentElement.setAttribute(
+      "data-diag-token-ok",
+      tokenOk ? "true" : "false-bad-shape"
+    );
     console.info("[DIAG #300] token body shape", {
       tokenOk,
       keys: data && typeof data === "object" ? Object.keys(data) : null,

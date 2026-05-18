@@ -71,7 +71,7 @@ export default defineConfig({
         storageState: AUTH_STATE_PATH,
       },
       testMatch:
-        /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts/,
+        /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts|diag-300\.spec\.ts/,
       dependencies: ["setup"],
     },
     // PWA tests — SW registration, activation, cache verification.
