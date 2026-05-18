@@ -7,7 +7,7 @@ import {
   hasAuthSession,
   waitForAddButton,
   waitForSync,
-  waitForSynced,
+  waitForSyncReady,
 } from "./helpers";
 
 /**
@@ -110,7 +110,7 @@ test.describe("Activity feed", () => {
     await waitForAddButton(page, ADD_TRICK_RE);
     // Initial sync must complete BEFORE going offline — otherwise the
     // offline-write asserts what PowerSync never had a chance to bootstrap.
-    await waitForSynced(page);
+    await waitForSyncReady(page);
 
     // Drop the network — the trick + event_log row should still write to
     // local SQLite via PowerSync's writeTransaction. The form should close

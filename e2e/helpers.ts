@@ -40,11 +40,32 @@ export async function waitForSync(
 }
 
 /**
+ * Wait for PowerSync context to be fully initialized — WASM loaded, workers
+ * up, and the status hook mounted — without requiring a server-to-client sync.
+ * Once `data-sync-state` is anything other than "uninitialized", `db` is ready
+ * to accept `writeTransaction` calls (schema is set up from the JS definition,
+ * not the first sync). Use this before going offline in E2E tests; prefer
+ * `waitForSynced` only when you actually need a completed server sync.
+ */
+export async function waitForSyncReady(
+  page: Page,
+  timeout = 30_000
+): Promise<void> {
+  await expect(
+    page
+      .locator(`[role="status"]:not([data-sync-state="uninitialized"])`)
+      .first()
+  ).toBeVisible({ timeout });
+}
+
+/**
  * Wait for PowerSync to have completed at least one full initial sync
- * (`status.lastSyncedAt != null`). E2E writes that race ahead of this can hang
- * `db.writeTransaction`, leaving the form sheet stuck open (issue #297). The
- * underlying primitive is `lastSyncedAt` (sticky across disconnects), not
- * `hasSynced` (reset on every disconnect by PowerSync's status merge).
+ * (`status.lastSyncedAt != null`). The underlying primitive is `lastSyncedAt`
+ * (sticky across disconnects), not `hasSynced` (reset on every disconnect by
+ * PowerSync's status merge). Only use this when server data must be present
+ * before proceeding — on environments where PowerSync can't reach its sync
+ * service, this will hang indefinitely. For most write-path tests, prefer
+ * `waitForSyncReady`.
  */
 export async function waitForSynced(
   page: Page,
