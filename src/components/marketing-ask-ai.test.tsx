@@ -143,4 +143,15 @@ describe("MarketingAskAi", () => {
 
     expect(screen.getByText("footer.askAi.disclosure")).toBeInTheDocument();
   });
+
+  it("renders a decorative icon inside each provider link", () => {
+    render(<MarketingAskAi />);
+
+    for (const key of ["chatGpt", "claude", "perplexity"]) {
+      const link = screen.getByRole("link", { name: labelPattern(key) });
+      const svg = link.querySelector("svg");
+      expect(svg, `icon for ${key}`).not.toBeNull();
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+    }
+  });
 });
