@@ -162,6 +162,13 @@
       "when": 1777823096312,
       "tag": "0022_revoke_public_function_execute",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1779225760983,
+      "tag": "0023_tags_deleted_at_partial_indexes",
+      "breakpoints": true
     }
   ]
 }
