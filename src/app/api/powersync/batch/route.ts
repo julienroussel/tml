@@ -197,6 +197,18 @@ function getPool(): Pool {
   return globalThis.__batchPool;
 }
 
+/**
+ * Test-only helper: clear the module's pool singleton. The pool is attached to
+ * `globalThis` to survive HMR in dev (see getPool above), so `vi.resetModules()`
+ * does not clear it — and the MockPool used in tests has no `.end()`, so leaving
+ * a stale reference would TypeError on the next cache-miss path. Decouples tests
+ * from the `__batchPool` variable name.
+ */
+export function __resetPoolForTest(): void {
+  globalThis.__batchPool = undefined;
+  __poolUrl = undefined;
+}
+
 /** Try to rollback a savepoint; return false if the connection itself is broken. */
 async function rollbackSavepoint(
   client: QueryClient,
