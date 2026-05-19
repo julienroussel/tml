@@ -446,7 +446,9 @@
     "rightsTitle": "Your rights",
     "rightsDesc": "You can export your data at any time from the Settings page. You can delete your account and all associated data. For questions, reach out via the GitHub repository.",
     "analyticsTitle": "Analytics",
-    "analyticsDesc": "We use Vercel Analytics for anonymous page-view tracking and Vercel Speed Insights for performance monitoring. No personal information is shared with these services."
+    "analyticsDesc": "We use Vercel Analytics for anonymous page-view tracking and Vercel Speed Insights for performance monitoring. No personal information is shared with these services.",
+    "thirdPartyToolsTitle": "Externe AI-assistenten",
+    "thirdPartyToolsDesc": "De marketingpagina's bevatten optionele links die ChatGPT, Claude of Perplexity in een nieuw tabblad openen met een vooringevulde vraag over The Magic Lab. De vraag is een algemene marketingbeschrijving — The Magic Lab voegt bij het klikken geen account-, profiel- of apparaatgegevens toe aan de URL. De aanbieder ziet desondanks je IP-adres en User-Agent, zoals bij elke externe link, en gesprekken met deze assistenten vallen onder het privacybeleid van de respectieve aanbieder. De applicatie zelf verzendt geen gebruikersgegevens naar externe AI-aanbieders."
   },
   "sync": {
     "online": "Online",
@@ -500,7 +502,17 @@
     "memDeckSrOnly": "(opent in een nieuw tabblad)",
     "gitHub": "GitHub",
     "gitHubSrOnly": "(opent in een nieuw tabblad)",
-    "madeIn": "Gemaakt met ❤ in Parijs 🇫🇷"
+    "madeIn": "Gemaakt met ❤ in Parijs 🇫🇷",
+    "askAi": {
+      "heading": "Nieuwsgierig? Vraag een AI-assistent naar The Magic Lab —",
+      "groupLabel": "Een AI-assistent naar The Magic Lab vragen",
+      "opensInNewTab": "(opent in een nieuw tabblad)",
+      "disclosure": "Opent een externe AI-assistent — je gesprek gaat naar hen, niet naar ons.",
+      "chatGpt": "ChatGPT",
+      "claude": "Claude",
+      "perplexity": "Perplexity",
+      "prompt": "Ik ben goochelaar en zoek tools om mijn repertoire te organiseren en mijn oefenroutine bij te houden. The Magic Lab (https://themagiclab.app) is een gratis, open-source, offline-first werkruimte voor goochelaars: trucrepertoire, oefenlogboek, optredens bijhouden. Lees https://themagiclab.app/llms-full.txt en geef me een beknopt overzicht: wat het biedt, voor wie het bedoeld is en hoe het zich verhoudt tot notities in een notitieboekje of algemene apps zoals Notion."
+    }
   },
   "auth": {
     "SIGN_IN": "Inloggen",
