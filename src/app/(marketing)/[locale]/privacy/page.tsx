@@ -70,6 +70,12 @@ export default async function PrivacyPage({
           </h2>
           <p>{t("analyticsDesc")}</p>
         </div>
+        <div>
+          <h2 className="mb-2 font-semibold text-foreground text-lg">
+            {t("thirdPartyToolsTitle")}
+          </h2>
+          <p>{t("thirdPartyToolsDesc")}</p>
+        </div>
       </div>
     </section>
   );

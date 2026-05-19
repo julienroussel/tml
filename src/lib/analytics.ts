@@ -2,6 +2,8 @@ import { track } from "@vercel/analytics";
 import type { ItemType } from "@/features/collect/constants";
 import type { Locale } from "@/i18n/config";
 
+export type MarketingAiProviderId = "chatgpt" | "claude" | "perplexity";
+
 /**
  * All tracked event names and their expected properties.
  * Centralised here so every call site is type-checked.
@@ -11,6 +13,7 @@ interface AnalyticsEventMap {
   item_deleted: Record<string, never>;
   item_updated: Record<string, never>;
   locale_changed: { locale: Locale };
+  marketing_ask_ai_clicked: { provider: MarketingAiProviderId };
   push_notifications_disabled: Record<string, never>;
   push_notifications_enabled: Record<string, never>;
   tag_created: Record<string, never>;

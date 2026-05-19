@@ -7,14 +7,34 @@ describe("generateLlmsTxt", () => {
     expect(output.startsWith("# The Magic Lab\n")).toBe(true);
   });
 
-  it("includes a blockquote description", () => {
+  it("includes the tagline as a blockquote", () => {
     const output = generateLlmsTxt();
-    expect(output).toContain("> A free, open-source workspace for magicians");
+    expect(output).toContain("> Train. Plan. Perform. Elevate your magic.");
   });
 
-  it("includes a ## Docs section", () => {
+  it("includes product-summary section headings", () => {
     const output = generateLlmsTxt();
-    expect(output).toContain("## Docs");
+    expect(output).toContain("## Who it is for");
+    expect(output).toContain("## What it does today");
+    expect(output).toContain("## Why it is different");
+    expect(output).toContain("## Links");
+  });
+
+  it("mentions the enabled modules so AI summaries describe the real surface", () => {
+    const output = generateLlmsTxt();
+    expect(output).toContain("Repertoire");
+    expect(output).toContain("Collection");
+    expect(output).toContain("Activity");
+  });
+
+  it("marks upcoming modules as in development so AI summaries do not overstate the product", () => {
+    const output = generateLlmsTxt();
+    expect(output).toContain("Improve");
+    expect(output).toContain("Train");
+    expect(output).toContain("Plan");
+    expect(output).toContain("Perform");
+    expect(output).toContain("Enhance");
+    expect(output).toContain("in development");
   });
 
   it("includes links with the production URL", () => {
@@ -89,6 +109,7 @@ describe("generateLlmsFullTxt", () => {
       "i18n.md",
       "local-development.md",
       "migrations.md",
+      "product-overview.md",
       "pwa-notifications.md",
       "route-structure.md",
       "sync-engine.md",
@@ -99,5 +120,13 @@ describe("generateLlmsFullTxt", () => {
     for (const doc of expectedDocs) {
       expect(output).toContain(`Source: docs/${doc}`);
     }
+  });
+
+  it("places product-overview.md as the first source section", () => {
+    const output = generateLlmsFullTxt();
+    const sources = [...output.matchAll(/^Source: docs\/(.+)$/gm)].map(
+      (m) => m[1]
+    );
+    expect(sources[0]).toBe("product-overview.md");
   });
 });

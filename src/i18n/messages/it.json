@@ -446,7 +446,9 @@
     "rightsTitle": "Your rights",
     "rightsDesc": "You can export your data at any time from the Settings page. You can delete your account and all associated data. For questions, reach out via the GitHub repository.",
     "analyticsTitle": "Analytics",
-    "analyticsDesc": "We use Vercel Analytics for anonymous page-view tracking and Vercel Speed Insights for performance monitoring. No personal information is shared with these services."
+    "analyticsDesc": "We use Vercel Analytics for anonymous page-view tracking and Vercel Speed Insights for performance monitoring. No personal information is shared with these services.",
+    "thirdPartyToolsTitle": "Assistenti IA di terze parti",
+    "thirdPartyToolsDesc": "Le pagine marketing includono link opzionali che aprono ChatGPT, Claude o Perplexity in una nuova scheda con una domanda precompilata su The Magic Lab. La domanda è un riassunto generico di marketing — The Magic Lab non aggiunge all'URL alcun dato di account, profilo o dispositivo quando clicchi. Il fornitore riceve comunque il tuo indirizzo IP e User-Agent, come con qualsiasi link esterno, e le conversazioni con questi assistenti sono disciplinate dall'informativa sulla privacy di ciascun fornitore. L'applicazione vera e propria non trasmette dati degli utenti ad alcun fornitore IA di terze parti."
   },
   "sync": {
     "online": "Online",
@@ -500,7 +502,17 @@
     "memDeckSrOnly": "(si apre in una nuova scheda)",
     "gitHub": "GitHub",
     "gitHubSrOnly": "(si apre in una nuova scheda)",
-    "madeIn": "Fatto con ❤ a Parigi 🇫🇷"
+    "madeIn": "Fatto con ❤ a Parigi 🇫🇷",
+    "askAi": {
+      "heading": "Curioso? Chiedi a un'IA cos'è The Magic Lab —",
+      "groupLabel": "Chiedi a un assistente IA cos'è The Magic Lab",
+      "opensInNewTab": "(si apre in una nuova scheda)",
+      "disclosure": "Apre un assistente IA di terze parti — la conversazione va a loro, non a The Magic Lab.",
+      "chatGpt": "ChatGPT",
+      "claude": "Claude",
+      "perplexity": "Perplexity",
+      "prompt": "Sono un mago e sto valutando strumenti per organizzare il mio repertorio e le mie sessioni di pratica. The Magic Lab (https://themagiclab.app) è uno spazio di lavoro gratuito, open source e pensato per funzionare offline, dedicato ai maghi: repertorio di trucchi, registro della pratica, monitoraggio delle esibizioni. Per favore consulta https://themagiclab.app/llms-full.txt e dammi un riassunto conciso di cosa offre, a chi è rivolto e in cosa si differenzia dal prendere appunti su un quaderno o dall'usare app generiche come Notion."
+    }
   },
   "auth": {
     "SIGN_IN": "Accedi",

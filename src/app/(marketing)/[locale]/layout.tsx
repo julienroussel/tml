@@ -7,6 +7,7 @@ import {
 import type { ReactElement, ReactNode } from "react";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { Logo } from "@/components/logo";
+import { MarketingAskAi } from "@/components/marketing-ask-ai";
 import { MarketingAuthButtons } from "@/components/marketing-auth-buttons";
 import { Providers } from "@/components/providers";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -75,43 +76,48 @@ export default async function MarketingLayout({
           {children}
         </main>
         <footer className="border-t px-6 py-8">
-          <div className="mx-auto flex max-w-5xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted-foreground text-sm">
-              {tFooter("copyright", { year: new Date().getFullYear() })}
-            </p>
-            <p className="text-muted-foreground text-sm">{tFooter("madeIn")}</p>
-            <nav aria-label={tCommon("footerLinks")} className="flex gap-4">
-              <Link
-                className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                href={`/${locale}/privacy`}
-              >
-                {tFooter("privacy")}
-              </Link>
-              <Link
-                className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                href={`/${locale}/faq`}
-              >
-                {tFooter("faq")}
-              </Link>
-              <a
-                className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                href="https://memdeck.org"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {tFooter("memDeck")}
-                <span className="sr-only"> {tFooter("memDeckSrOnly")}</span>
-              </a>
-              <a
-                className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                href="https://github.com/julienroussel/tml"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {tFooter("gitHub")}
-                <span className="sr-only"> {tFooter("gitHubSrOnly")}</span>
-              </a>
-            </nav>
+          <div className="mx-auto flex max-w-5xl flex-col gap-6">
+            <MarketingAskAi />
+            <div className="flex flex-col gap-6 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-muted-foreground text-sm">
+                {tFooter("copyright", { year: new Date().getFullYear() })}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                {tFooter("madeIn")}
+              </p>
+              <nav aria-label={tCommon("footerLinks")} className="flex gap-4">
+                <Link
+                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  href={`/${locale}/privacy`}
+                >
+                  {tFooter("privacy")}
+                </Link>
+                <Link
+                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  href={`/${locale}/faq`}
+                >
+                  {tFooter("faq")}
+                </Link>
+                <a
+                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  href="https://memdeck.org"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {tFooter("memDeck")}
+                  <span className="sr-only"> {tFooter("memDeckSrOnly")}</span>
+                </a>
+                <a
+                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  href="https://github.com/julienroussel/tml"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {tFooter("gitHub")}
+                  <span className="sr-only"> {tFooter("gitHubSrOnly")}</span>
+                </a>
+              </nav>
+            </div>
           </div>
         </footer>
       </div>
