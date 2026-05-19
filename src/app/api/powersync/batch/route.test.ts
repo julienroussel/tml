@@ -36,13 +36,14 @@ beforeEach(() => {
   mockIsUserBanned.mockResolvedValue(false);
 });
 
-afterEach(() => {
+afterEach(async () => {
   vi.clearAllMocks();
   vi.unstubAllEnvs();
-  // Reset the module-level pool singleton between tests
+  // Reset the module's pool singleton before clearing the module cache so the
+  // helper operates on the same module copy the test just used.
+  const { __resetPoolForTest } = await import("./route");
+  __resetPoolForTest();
   vi.resetModules();
-  // Coupled to the production pool singleton name — if renamed, this cleanup silently breaks.
-  globalThis.__batchPool = undefined;
 });
 
 function createRequest(body: unknown): NextRequest {
@@ -349,6 +350,12 @@ describe("POST /api/powersync/batch", () => {
       ["payload", { payload: { x: 1 } }],
       ["event_type", { event_type: "trick.created" }],
       ["entity_type", { entity_type: "trick" }],
+      // entity_id is the most direct audit-trail attack — it would silently
+      // rewrite which entity an event references. Pin its rejection.
+      ["entity_id", { entity_id: "different-trick-id" }],
+      ["created_at", { created_at: "1970-01-01T00:00:00.000Z" }],
+      ["user_id", { user_id: "another-user-id" }],
+      ["id", { id: "different-event-id" }],
     ])("rejects PATCH on event_log mutating disallowed column %s", async (_label, opData) => {
       authenticatedSession();
       vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
