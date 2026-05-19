@@ -17,7 +17,7 @@ describe("PrivacyPage", () => {
     render(await PrivacyPage(defaultParams));
 
     const sectionHeadings = screen.getAllByRole("heading", { level: 2 });
-    expect(sectionHeadings).toHaveLength(5);
+    expect(sectionHeadings).toHaveLength(6);
   });
 
   it("renders section titles with correct translation keys", async () => {
@@ -28,6 +28,9 @@ describe("PrivacyPage", () => {
     expect(screen.getByText("privacy.dataStorageTitle")).toBeInTheDocument();
     expect(screen.getByText("privacy.rightsTitle")).toBeInTheDocument();
     expect(screen.getByText("privacy.analyticsTitle")).toBeInTheDocument();
+    expect(
+      screen.getByText("privacy.thirdPartyToolsTitle")
+    ).toBeInTheDocument();
   });
 
   it("renders the intro paragraph", async () => {
