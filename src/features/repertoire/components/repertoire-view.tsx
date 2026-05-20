@@ -351,6 +351,10 @@ export function RepertoireView(): React.ReactElement {
       ? LOAD_EDIT_TRICK_ERROR_TOAST_ID
       : TRICK_NO_LONGER_EXISTS_TOAST_ID;
     toast.error(t(toastKey), { id: toastId });
+    // Force-close discards any unsaved input in the sheet — this path has no
+    // discard-dialog interception (unlike a user-driven close). Accepted
+    // trade-off: the target row no longer exists, so there's nothing to keep
+    // editing against. Draft recovery is intentionally out of scope (#288 F2).
     setSheetOpen(false);
     setEditingTrickId(null);
     tagsSel.reset();

@@ -292,6 +292,10 @@ export function CollectView(): React.ReactElement {
         ? LOAD_EDIT_ITEM_ERROR_TOAST_ID
         : ITEM_NO_LONGER_EXISTS_TOAST_ID,
     });
+    // Force-close discards any unsaved input in the sheet — this path has no
+    // discard-dialog interception (unlike a user-driven close). Accepted
+    // trade-off: the target row no longer exists, so there's nothing to keep
+    // editing against. Draft recovery is intentionally out of scope (#288 F2).
     setSheetOpen(false);
     setEditingItemId(null);
     tagsSel.reset();
