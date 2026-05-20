@@ -24,7 +24,7 @@ The manifest is generated dynamically by `src/app/manifest.ts`:
 
 The service worker (`public/sw.js`) handles:
 
-1. **Static asset caching**: Cache-first for `/_next/static/` and `/@powersync/` (WASM, web workers)
+1. **Static asset caching**: Cache-first for `/_next/static/` and `/powersync/` (WASM, web workers)
 2. **Navigation caching**: Stale-while-revalidate for HTML pages (offline fallback)
 3. **Bypass rules**: Never caches API routes, PowerSync sync traffic, Neon Auth, or analytics
 4. **Push notifications**: Receiving and displaying push messages

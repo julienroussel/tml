@@ -6,6 +6,10 @@ vi.stubEnv("NEXT_PUBLIC_POWERSYNC_URL", "https://ps.example.com");
 
 const mockConnect = vi.fn(() => Promise.resolve());
 const mockDisconnect = vi.fn();
+// Defaults to a promise that never resolves: tests that do not exercise the
+// readiness signal then never trigger a post-render setState (no act() noise).
+// The readiness test installs a resolving variant via mockImplementationOnce.
+const mockWaitForReady = vi.fn(() => new Promise<void>(() => undefined));
 
 vi.mock("@powersync/react", () => ({
   PowerSyncContext: {
@@ -19,6 +23,7 @@ vi.mock("./system", () => ({
   powerSyncDb: {
     connect: () => mockConnect(),
     disconnect: () => mockDisconnect(),
+    waitForReady: () => mockWaitForReady(),
   },
 }));
 
@@ -47,6 +52,7 @@ describe("PowerSyncProvider", () => {
     mockConnect.mockClear();
     mockDisconnect.mockClear();
     mockCreateNeonConnector.mockClear();
+    mockWaitForReady.mockClear();
   });
 
   it("renders children", () => {
@@ -65,6 +71,30 @@ describe("PowerSyncProvider", () => {
       </PowerSyncProvider>
     );
     expect(screen.getByTestId("powersync-context")).toBeInTheDocument();
+  });
+
+  it("exposes data-powersync-db-ready once the database initializes", async () => {
+    mockWaitForReady.mockImplementationOnce(() => Promise.resolve());
+
+    const { container } = render(
+      <PowerSyncProvider>
+        <span>test</span>
+      </PowerSyncProvider>
+    );
+
+    // The gate starts "false": waitForReady()'s resolution is a microtask that
+    // has not run yet at this synchronous point right after render().
+    expect(
+      container.querySelector('[data-powersync-db-ready="false"]')
+    ).not.toBeNull();
+
+    // Once waitForReady() resolves it flips to "true" — the form the E2E
+    // helper `waitForSyncReady` selects on. See src/sync/provider.tsx.
+    await vi.waitFor(() => {
+      expect(
+        container.querySelector('[data-powersync-db-ready="true"]')
+      ).not.toBeNull();
+    });
   });
 
   it("disconnects on unmount after successful connection", async () => {

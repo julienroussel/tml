@@ -9,7 +9,7 @@ paths:
 
 # Sync Engine Reference
 
-**CRITICAL — Offline-first is a load-bearing requirement.** App must boot and operate with no network after first load. PowerSync's local SQLite is the primary read source. The service worker (`public/sw.js`) must cache PowerSync WASM + workers under `/@powersync/`; `shouldBypass()` skips only live API traffic (sync/auth/analytics), never static assets.
+**CRITICAL — Offline-first is a load-bearing requirement.** App must boot and operate with no network after first load. PowerSync's local SQLite is the primary read source. The service worker (`public/sw.js`) must cache PowerSync WASM + workers under `/powersync/`; `shouldBypass()` skips only live API traffic (sync/auth/analytics), never static assets.
 
 | Layer | Path | Status |
 |---|---|---|

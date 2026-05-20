@@ -105,16 +105,19 @@ test.describe("Activity feed", () => {
     test.slow();
     const name = `E2E Activity Offline ${Date.now().toString()}`;
 
-    // Boot the app + PowerSync online so the local SQLite is initialised.
+    // Boot the app online and wait for the local WASQLite database to finish
+    // opening — worker spawned, WASM compiled — BEFORE dropping the network.
+    // `waitForSyncReady` gates on `data-powersync-db-ready` (a real
+    // `powerSyncDb.waitForReady()` signal); the offline write has no database
+    // to land in until it resolves.
     await page.goto("/repertoire");
     await waitForAddButton(page, ADD_TRICK_RE);
-    // Initial sync must complete BEFORE going offline — otherwise the
-    // offline-write asserts what PowerSync never had a chance to bootstrap.
     await waitForSyncReady(page);
 
-    // Drop the network — the trick + event_log row should still write to
-    // local SQLite via PowerSync's writeTransaction. The form should close
-    // and the card appear without any network round-trip.
+    // Drop the network, then create a trick. The trick + event_log rows still
+    // write to local SQLite via PowerSync's writeTransaction; `createTrick`
+    // asserts the form closes and the new card appears, confirming the offline
+    // write landed and `useQuery` re-read it — with no network round-trip.
     await context.setOffline(true);
     // The offline transition itself destabilizes the page (WebSocket drop +
     // SyncStatus re-render). Wait for the pill to settle into "offline" before
@@ -123,25 +126,27 @@ test.describe("Activity feed", () => {
     await waitForSync(page, "offline");
     try {
       await createTrick(page, name);
-
-      // /activity reads from local SQLite, so the offline-written event row
-      // must appear without leaving offline mode.
-      await page.goto("/activity");
-      const timeline = page.getByRole("list", { name: TIMELINE_LABEL_RE });
-      await expect(timeline).toBeVisible({ timeout: 30_000 });
-      await expect(timeline.locator("li", { hasText: name })).toBeVisible({
-        timeout: 30_000,
-      });
     } finally {
       await context.setOffline(false);
     }
 
-    // Reconnect should not erase the row; it stays visible while the
-    // upload queue drains in the background.
-    await page.reload();
-    const timelineAfter = page.getByRole("list", { name: TIMELINE_LABEL_RE });
-    await expect(timelineAfter).toBeVisible({ timeout: 30_000 });
-    await expect(timelineAfter.locator("li", { hasText: name })).toBeVisible({
+    // After reconnect, the event_log row written while offline must surface
+    // on /activity. This assertion runs online on purpose: a full `page.goto`
+    // while offline cannot be served by the service worker under Playwright's
+    // offline emulation (see the note at the top of e2e/pwa-offline.spec.ts).
+    // /activity still reads from local SQLite, so a passing assertion confirms
+    // the offline-written row survived the reconnect — not a server round-trip.
+    //
+    // `setOffline(false)` restores the network, but the transition is not
+    // instantaneous — a navigation fired in the same tick can still hit
+    // net::ERR_INTERNET_DISCONNECTED (issue #297 timing territory). Retry the
+    // navigation with `toPass` so a too-early first attempt is absorbed.
+    await expect(async () => {
+      await page.goto("/activity");
+    }).toPass({ timeout: 30_000 });
+    const timeline = page.getByRole("list", { name: TIMELINE_LABEL_RE });
+    await expect(timeline).toBeVisible({ timeout: 30_000 });
+    await expect(timeline.locator("li", { hasText: name })).toBeVisible({
       timeout: 30_000,
     });
   });
