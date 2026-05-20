@@ -200,10 +200,13 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 // NOTE: Do NOT use `as const` here — Turbopack cannot statically parse it.
 // Match all page routes, excluding static assets and the service worker
 // (sw.js has its own strict static CSP in next.config.ts).
+// PowerSync's worker + WASM bundles (powersync/) are static files in public/.
+// The WASQLite worker inherits its owner document's CSP, so a per-asset CSP
+// header adds nothing; excluding the prefix keeps middleware off every chunk.
 // API routes (api/) are intentionally excluded — they return JSON, not HTML,
 // so CSP headers are unnecessary and auth is handled per-route.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|api/|favicon\\.ico|sitemap\\.xml|robots\\.txt|manifest\\.webmanifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)).*)",
+    "/((?!_next/static|_next/image|api/|favicon\\.ico|sitemap\\.xml|robots\\.txt|manifest\\.webmanifest|sw\\.js|powersync/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)).*)",
   ],
 } satisfies { matcher: string[] };

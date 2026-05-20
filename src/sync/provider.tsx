@@ -1,7 +1,13 @@
 "use client";
 
 import { PowerSyncContext } from "@powersync/react";
-import { type ReactElement, type ReactNode, Suspense, useEffect } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useState,
+} from "react";
 import { createNeonConnector } from "./connector";
 import { powerSyncDb } from "./system";
 
@@ -49,6 +55,8 @@ let connecting = false;
 export function PowerSyncProvider({
   children,
 }: PowerSyncProviderProps): ReactElement {
+  const [dbReady, setDbReady] = useState(false);
+
   useEffect(() => {
     if (connecting || !POWERSYNC_URL) {
       return;
@@ -81,11 +89,44 @@ export function PowerSyncProvider({
     };
   }, []);
 
+  // Track WASQLite readiness. The PowerSyncDatabase constructor auto-runs
+  // initialize() — spawn the worker, importScripts the wa-sqlite chunk, load
+  // and compile the WASM, apply the schema — and waitForReady() resolves once
+  // that completes. Surfaced as `data-powersync-db-ready` so E2E tests can gate
+  // on a genuine "local SQLite is open" signal before dropping the network
+  // (see `waitForSyncReady` in e2e/helpers.ts). A real user never observes the
+  // loading window — this span is invisible, purely a test-observability hook.
+  useEffect(() => {
+    let cancelled = false;
+    powerSyncDb
+      .waitForReady()
+      .then(() => {
+        if (!cancelled) {
+          setDbReady(true);
+        }
+      })
+      .catch((error: unknown) => {
+        // Initialization failed (worker/WASM unreachable, schema error).
+        // Leave the signal false so a readiness gate fails loudly instead of
+        // a test silently proceeding against an unopened database.
+        console.error("PowerSync database initialization failed:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
-    <Suspense fallback={null}>
-      <PowerSyncContext.Provider value={powerSyncDb}>
-        {children}
-      </PowerSyncContext.Provider>
-    </Suspense>
+    <>
+      {/* Rendered outside <Suspense> so the readiness signal can never detach
+          if a descendant suspends — it depends only on `dbReady`, not on
+          PowerSyncContext. Keeps the E2E gate decoupled from UI suspension. */}
+      <span data-powersync-db-ready={dbReady ? "true" : "false"} hidden />
+      <Suspense fallback={null}>
+        <PowerSyncContext.Provider value={powerSyncDb}>
+          {children}
+        </PowerSyncContext.Provider>
+      </Suspense>
+    </>
   );
 }

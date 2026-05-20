@@ -40,22 +40,30 @@ export async function waitForSync(
 }
 
 /**
- * Wait for PowerSync context to be fully initialized — WASM loaded, workers
- * up, and the status hook mounted — without requiring a server-to-client sync.
- * Once `data-sync-state` is anything other than "uninitialized", `db` is ready
- * to accept `writeTransaction` calls (schema is set up from the JS definition,
- * not the first sync). Use this before going offline in E2E tests; prefer
- * `waitForSynced` only when you actually need a completed server sync.
+ * Wait until PowerSync's local WASQLite database is genuinely open — worker
+ * spawned, wa-sqlite chunk + WASM downloaded and compiled, schema applied — so
+ * `db` can accept `writeTransaction` / `getAll` calls. Backed by
+ * `powerSyncDb.waitForReady()`, surfaced as `data-powersync-db-ready="true"`
+ * by `PowerSyncProvider` (`src/sync/provider.tsx`).
+ *
+ * This is the gate to use before `context.setOffline(true)`: the worker and
+ * WASM load lazily over the network, and dropping the connection before they
+ * finish aborts the load (`net::ERR_INTERNET_DISCONNECTED`), leaving the
+ * database permanently unopened. It does NOT wait for a server-to-client sync
+ * — prefer `waitForSynced` only when server data must be present.
+ *
+ * Note: `data-sync-state` leaving "uninitialized" only means the PowerSync
+ * React context mounted (see `deriveSyncKey` in `src/components/sync-status.tsx`)
+ * — it does not imply the WASM has loaded. Do not gate the offline transition
+ * on it.
  */
 export async function waitForSyncReady(
   page: Page,
   timeout = 30_000
 ): Promise<void> {
   await expect(
-    page
-      .locator(`[data-sync-state]:not([data-sync-state="uninitialized"])`)
-      .first()
-  ).toBeVisible({ timeout });
+    page.locator('[data-powersync-db-ready="true"]').first()
+  ).toBeAttached({ timeout });
 }
 
 /**

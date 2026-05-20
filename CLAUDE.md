@@ -263,7 +263,7 @@ Detailed reference material lives in `.claude/rules/` and auto-loads when matchi
 - **CSP** (`.claude/rules/csp.md`) — builder + test-against-real-build rule. Loads on `src/lib/csp.ts`, `public/sw.js`. Or invoke `/real-build-check`.
 - **New feature** (`.claude/rules/new-feature.md`) — always loaded; concise checklist. Or invoke `/new-feature`.
 
-**Always-applicable: offline-first is load-bearing.** App must boot with no network after first load; PowerSync's SQLite is the primary read source. `public/sw.js` must cache PowerSync WASM + workers under `/@powersync/`. Memory: `project_offline_first.md`.
+**Always-applicable: offline-first is load-bearing.** App must boot with no network after first load; PowerSync's SQLite is the primary read source. `public/sw.js` must cache PowerSync WASM + workers under `/powersync/`. Memory: `project_offline_first.md`.
 
 ## UI/Design Conventions
 
