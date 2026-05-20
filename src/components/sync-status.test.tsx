@@ -49,6 +49,20 @@ function resetStatus(): void {
   useStatusShouldThrow = false;
 }
 
+/**
+ * Locate the SyncStatus pill by its `data-sync-state` public-contract
+ * attribute. The pill is intentionally not a live region (no `role="status"`,
+ * see #298), so there is no semantic role to query — `data-sync-state` is the
+ * same handle the E2E helpers select on.
+ */
+function getPill(): HTMLElement {
+  const pill = document.body.querySelector<HTMLElement>("[data-sync-state]");
+  if (!pill) {
+    throw new Error("SyncStatus pill not found");
+  }
+  return pill;
+}
+
 describe("SyncStatus", () => {
   beforeEach(() => {
     resetStatus();
@@ -57,12 +71,9 @@ describe("SyncStatus", () => {
   it("renders offline status when disconnected", () => {
     render(<SyncStatus />);
 
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(getPill()).toBeInTheDocument();
     expect(screen.getByText("sync.offline")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "offline"
-    );
+    expect(getPill()).toHaveAttribute("data-sync-state", "offline");
   });
 
   it("renders online status when connected with no activity", () => {
@@ -70,10 +81,7 @@ describe("SyncStatus", () => {
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.online")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "online"
-    );
+    expect(getPill()).toHaveAttribute("data-sync-state", "online");
   });
 
   it("renders syncing status when connected and downloading", () => {
@@ -82,10 +90,7 @@ describe("SyncStatus", () => {
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.syncing")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "syncing"
-    );
+    expect(getPill()).toHaveAttribute("data-sync-state", "syncing");
   });
 
   it("renders pendingChanges status when connected and uploading", () => {
@@ -94,10 +99,7 @@ describe("SyncStatus", () => {
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.pendingChanges")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "pendingChanges"
-    );
+    expect(getPill()).toHaveAttribute("data-sync-state", "pendingChanges");
   });
 
   it("renders error status when there is a download error", () => {
@@ -106,10 +108,7 @@ describe("SyncStatus", () => {
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.error")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "error"
-    );
+    expect(getPill()).toHaveAttribute("data-sync-state", "error");
   });
 
   it("renders error status when there is an upload error", () => {
@@ -117,10 +116,7 @@ describe("SyncStatus", () => {
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.error")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "error"
-    );
+    expect(getPill()).toHaveAttribute("data-sync-state", "error");
   });
 
   it("prioritizes error over syncing status", () => {
@@ -137,10 +133,7 @@ describe("SyncStatus", () => {
     mockStatus.lastSyncedAt = new Date();
     render(<SyncStatus />);
 
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-has-synced",
-      "true"
-    );
+    expect(getPill()).toHaveAttribute("data-has-synced", "true");
   });
 
   it("emits data-has-synced='false' when lastSyncedAt is undefined", () => {
@@ -148,10 +141,7 @@ describe("SyncStatus", () => {
     mockStatus.lastSyncedAt = undefined;
     render(<SyncStatus />);
 
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-has-synced",
-      "false"
-    );
+    expect(getPill()).toHaveAttribute("data-has-synced", "false");
   });
 
   it("keeps data-has-synced='true' after disconnect (lastSyncedAt sticky)", () => {
@@ -162,14 +152,8 @@ describe("SyncStatus", () => {
     mockStatus.lastSyncedAt = new Date();
     render(<SyncStatus />);
 
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-has-synced",
-      "true"
-    );
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-sync-state",
-      "offline"
-    );
+    expect(getPill()).toHaveAttribute("data-has-synced", "true");
+    expect(getPill()).toHaveAttribute("data-sync-state", "offline");
   });
 
   it("renders fallback with uninitialized state when useStatus throws", () => {
@@ -182,17 +166,24 @@ describe("SyncStatus", () => {
 
       render(<SyncStatus />);
 
-      expect(screen.getByRole("status")).toBeInTheDocument();
-      expect(screen.getByRole("status")).toHaveAttribute(
-        "data-sync-state",
-        "uninitialized"
-      );
-      expect(screen.getByRole("status")).toHaveAttribute(
-        "data-has-synced",
-        "false"
-      );
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(getPill()).toBeInTheDocument();
+      expect(getPill()).toHaveAttribute("data-sync-state", "uninitialized");
+      expect(getPill()).toHaveAttribute("data-has-synced", "false");
     } finally {
       errorSpy.mockRestore();
     }
+  });
+
+  it("renders the pill as a presentational badge, not a live region", () => {
+    // PowerSync flaps online/syncing/pendingChanges constantly; a live region
+    // would announce every transition to AT users. Regression guard for #298.
+    mockStatus.connected = true;
+    render(<SyncStatus />);
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const pill = getPill();
+    expect(pill).not.toHaveAttribute("role");
+    expect(pill).not.toHaveAttribute("aria-live");
   });
 });
