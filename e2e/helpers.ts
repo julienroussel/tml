@@ -66,6 +66,13 @@ export async function waitForSyncReady(
  * before proceeding — on environments where PowerSync can't reach its sync
  * service, this will hang indefinitely. For most write-path tests, prefer
  * `waitForSyncReady`.
+ *
+ * Vercel preview deployments are currently exactly such an environment:
+ * preview-issued JWTs are rejected by the production PowerSync instance, so
+ * the sync stream never connects. This helper therefore has no caller and is
+ * effectively production-only. See the "Preview Deployment Sync Coverage"
+ * section in `.claude/rules/sync-engine.md` (issue #302); a dedicated preview
+ * PowerSync instance is tracked in #312.
  */
 export async function waitForSynced(
   page: Page,

@@ -257,7 +257,7 @@ These complement Biome — they cover what the linter cannot enforce.
 
 Detailed reference material lives in `.claude/rules/` and auto-loads when matching files are read:
 
-- **Sync engine** (`.claude/rules/sync-engine.md`) — generated artifacts, write/read paths, codegen + deployment. Loads on edits to `src/sync/**`, `powersync/**`, `src/db/schema/**`. Or invoke `/sync-engine`.
+- **Sync engine** (`.claude/rules/sync-engine.md`) — generated artifacts, write/read paths, codegen + deployment, preview-deployment sync coverage. Loads on edits to `src/sync/**`, `powersync/**`, `src/db/schema/**`. Or invoke `/sync-engine`.
 - **Migrations** (`.claude/rules/migrations.md`) — single-file + monotonic-timestamp safety rules. Loads on `src/db/schema/**`, `src/db/migrations/**`. Or invoke `/migrations`.
 - **i18n** (`.claude/rules/i18n.md`) — locale list, namespace conventions, completeness check. Loads on `src/i18n/**` and components. Or invoke `/i18n`.
 - **CSP** (`.claude/rules/csp.md`) — builder + test-against-real-build rule. Loads on `src/lib/csp.ts`, `public/sw.js`. Or invoke `/real-build-check`.

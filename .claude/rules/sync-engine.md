@@ -46,3 +46,13 @@ Deployed via the PowerSync CLI from GitHub Actions.
   - `POWERSYNC_ORG_ID` — only if the PAT spans multiple orgs.
 - **Rollback**: revert the commit and re-run. No native CLI rollback.
 - **Dashboard is view-only** — never edit sync rules there. Changes must flow through PR.
+
+## Preview Deployment Sync Coverage
+
+Vercel preview deployments (`tml-*-jaro-labs.vercel.app` — `e2e.yml` selects them by the `jaro-labs` team slug in the deployment URL) **cannot** validate server-side sync. Preview Vercel environments point `NEON_AUTH_BASE_URL` at a different Neon Auth instance than production; the production PowerSync Cloud instance trusts only production's JWKS + audience, so preview-issued JWTs are rejected at the WebSocket handshake (`PSYNC_S2105`). The sync stream never connects — and because PowerSync only calls `uploadData()` while the sync stream is connected, the upload queue never drains either.
+
+- **Preview E2E (`e2e.yml`) validates**: local-first SQLite reads/writes, offline behavior, auth, and that the PowerSync client boots. (PWA / service-worker specs are localhost-only — `playwright.config.ts` excludes the `pwa` project whenever `BASE_URL` is set.)
+- **It does NOT validate**: server→client sync or the client→server write round-trip — those are verified only against production (`themagiclab.app`).
+- **E2E gate**: use `waitForSyncReady` (WASM/workers up — survives the rejected sync stream). `waitForSynced` (full server sync) hangs on previews; see `e2e/helpers.ts`.
+
+Resolved as a documented limitation in #302 (Option D). Real preview sync coverage — a dedicated preview PowerSync instance — is tracked in #312.
