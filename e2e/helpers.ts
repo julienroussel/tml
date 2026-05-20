@@ -35,7 +35,7 @@ export async function waitForSync(
   timeout = 30_000
 ): Promise<void> {
   await expect(
-    page.locator(`[role="status"][data-sync-state="${expectedState}"]`).first()
+    page.locator(`[data-sync-state="${expectedState}"]`).first()
   ).toBeVisible({ timeout });
 }
 
@@ -53,7 +53,7 @@ export async function waitForSyncReady(
 ): Promise<void> {
   await expect(
     page
-      .locator(`[role="status"]:not([data-sync-state="uninitialized"])`)
+      .locator(`[data-sync-state]:not([data-sync-state="uninitialized"])`)
       .first()
   ).toBeVisible({ timeout });
 }
@@ -78,9 +78,9 @@ export async function waitForSynced(
   page: Page,
   timeout = 30_000
 ): Promise<void> {
-  await expect(
-    page.locator('[role="status"][data-has-synced="true"]').first()
-  ).toBeVisible({ timeout });
+  await expect(page.locator('[data-has-synced="true"]').first()).toBeVisible({
+    timeout,
+  });
 }
 
 /** Check if a real authenticated session exists (written by auth.setup.ts). */

@@ -61,7 +61,6 @@ function SyncStatusFallback(): ReactElement {
       className="flex items-center gap-1.5"
       data-has-synced="false"
       data-sync-state={FALLBACK_SYNC_STATE}
-      role="status"
     />
   );
 }
@@ -100,12 +99,16 @@ function SyncStatusInner(): ReactElement {
 
   // `lastSyncedAt` (sticky), not `hasSynced` (cleared on every disconnect by
   // @powersync/common's `updateSyncStatus` merge — see issue #297).
+  //
+  // Intentionally no `role="status"`: PowerSync flaps online/syncing/
+  // pendingChanges on every round trip and local write, so a live region
+  // would announce each transition to AT users. The pill is an ambient
+  // indicator, read on demand like a sighted user glancing at it (#298).
   return (
     <span
       className="flex items-center gap-1.5"
       data-has-synced={status.lastSyncedAt === undefined ? "false" : "true"}
       data-sync-state={key}
-      role="status"
     >
       <span className={cn("inline-flex size-2 rounded-full", color)} />
       <span className="text-muted-foreground text-xs">{t(key)}</span>
