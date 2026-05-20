@@ -80,8 +80,8 @@ Join table linking tags to tricks (many-to-many).
 |---|---|---|
 | id | UUID (PK) | |
 | user_id | UUID (FK -> users) | NOT NULL, cascade delete |
-| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
-| tag_id | UUID (FK -> tags) | NOT NULL, cascade delete |
+| trick_id | UUID (FK -> tricks) | NOT NULL, no action |
+| tag_id | UUID (FK -> tags) | NOT NULL, no action |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
@@ -130,8 +130,9 @@ Join table linking tricks to setlists with ordering.
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID (PK) | |
-| setlist_id | UUID (FK -> setlists) | NOT NULL, cascade delete |
-| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| setlist_id | UUID (FK -> setlists) | NOT NULL, no action |
+| trick_id | UUID (FK -> tricks) | NOT NULL, no action |
 | position | integer | NOT NULL, display order (unique per setlist) |
 | transition_notes | text | Notes on transitioning into this trick |
 | created_at | timestamptz | NOT NULL, default now() |
@@ -161,8 +162,9 @@ Tricks practiced within a session, with per-trick feedback.
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID (PK) | |
-| practice_session_id | UUID (FK -> practice_sessions) | NOT NULL, cascade delete |
-| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| practice_session_id | UUID (FK -> practice_sessions) | NOT NULL, no action |
+| trick_id | UUID (FK -> tricks) | NOT NULL, no action |
 | repetitions | integer | Number of reps |
 | rating | integer | 1-5 self-assessment |
 | notes | text | |
@@ -238,13 +240,14 @@ Join table linking items (props) to tricks that use them.
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID (PK) | |
-| item_id | UUID (FK -> items) | NOT NULL, cascade delete |
-| trick_id | UUID (FK -> tricks) | NOT NULL, cascade delete |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| item_id | UUID (FK -> items) | NOT NULL, no action |
+| trick_id | UUID (FK -> tricks) | NOT NULL, no action |
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
 
-Unique constraint on `(item_id, trick_id)`.
+Unique constraint on `(item_id, trick_id)` where `deleted_at IS NULL`.
 
 ### goals
 
@@ -265,6 +268,25 @@ Practice goals and training objectives.
 | created_at | timestamptz | NOT NULL, default now() |
 | updated_at | timestamptz | NOT NULL, default now() |
 | deleted_at | timestamptz | Soft-delete |
+
+### event_log
+
+Append-only activity history — the canonical per-user record powering the Activity timeline (`/activity`) and the dashboard recent-activity card. One row per domain mutation.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID (PK) | |
+| user_id | UUID (FK -> users) | NOT NULL, cascade delete |
+| event_type | text | NOT NULL, dotted event identifier (e.g. `notifications.subscribed`); taxonomy in `src/lib/events/types.ts` |
+| entity_type | text | Entity kind the event refers to — nullable (see paired-NULL check below) |
+| entity_id | UUID | Referenced entity — nullable (see paired-NULL check below) |
+| payload | jsonb | NOT NULL, default `{}` |
+| source | text | `"client"` or `"server"`, NOT NULL, default `"client"` |
+| created_at | timestamptz | NOT NULL, default now() |
+| updated_at | timestamptz | NOT NULL, default now() |
+| deleted_at | timestamptz | Soft-delete |
+
+CHECK constraints: `event_log_source_check` (`source` must be `'client'` or `'server'`) and `event_log_entity_pair_check` (`entity_type` and `entity_id` must both be NULL or both NOT NULL). See [features/activity.md](./features/activity.md) for the full event-log reference.
 
 ### push_subscriptions
 
@@ -306,13 +328,15 @@ Not all tables are synced to the client via PowerSync:
 | tags | Yes | Filtered by `user_id` |
 | trick_tags | Yes | Filtered by `user_id` |
 | setlists | Yes | Filtered by `user_id` |
-| setlist_tricks | Yes | Global bucket (no `user_id`) |
+| setlist_tricks | Yes | Filtered by `user_id` |
 | practice_sessions | Yes | Filtered by `user_id` |
-| practice_session_tricks | Yes | Global bucket (no `user_id`) |
+| practice_session_tricks | Yes | Filtered by `user_id` |
 | performances | Yes | Filtered by `user_id` |
 | items | Yes | Filtered by `user_id` |
-| item_tricks | Yes | Global bucket (no `user_id`) |
+| item_tags | Yes | Filtered by `user_id` |
+| item_tricks | Yes | Filtered by `user_id` |
 | goals | Yes | Filtered by `user_id` |
+| event_log | Yes | Filtered by `user_id` |
 | users | No | Server-only, managed by Neon Auth |
 | user_preferences | No | Server-only |
 | push_subscriptions | No | Server-only |

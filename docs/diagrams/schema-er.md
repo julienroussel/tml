@@ -78,6 +78,7 @@ erDiagram
 
     setlist_tricks {
         uuid id PK "default random"
+        uuid user_id FK
         uuid setlist_id FK
         uuid trick_id FK
         integer position
@@ -101,6 +102,7 @@ erDiagram
 
     practice_session_tricks {
         uuid id PK "default random"
+        uuid user_id FK
         uuid practice_session_id FK
         uuid trick_id FK
         integer repetitions
@@ -184,6 +186,19 @@ erDiagram
         timestamptz deleted_at
     }
 
+    event_log {
+        uuid id PK "default random"
+        uuid user_id FK
+        text event_type
+        text entity_type "nullable"
+        uuid entity_id "nullable"
+        jsonb payload
+        text source "client, server"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
     push_subscriptions {
         uuid id PK "default random"
         uuid user_id FK
@@ -213,6 +228,7 @@ erDiagram
     users ||--o{ performances : "owns"
     users ||--o{ items : "owns"
     users ||--o{ goals : "owns"
+    users ||--o{ event_log : "owns"
     users ||--o{ push_subscriptions : "has"
     users ||--o| user_preferences : "has"
 

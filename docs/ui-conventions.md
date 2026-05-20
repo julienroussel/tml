@@ -35,10 +35,10 @@ Design principles and component conventions for The Magic Lab.
 
 ### Mobile Navigation
 
-- **Bottom tab bar** for primary module navigation (Dashboard, Repertoire, Plan, Perform, More)
-- Fixed to bottom of viewport
-- 44px minimum touch targets
-- Active state indicated by violet accent
+- The shadcn `Sidebar` (`app-sidebar.tsx`) renders as an **off-canvas `Sheet` drawer** below the `md` breakpoint
+- Opened via the `SidebarTrigger` button in the header
+- Same navigation content as desktop — Dashboard, the module groups, and Settings
+- 44px minimum touch targets; active state indicated by violet accent
 
 ### Desktop Navigation
 
@@ -57,8 +57,6 @@ Design principles and component conventions for The Magic Lab.
 |          Page Content                    |  <- Scrollable content area
 |          (p-4)                           |
 |                                          |
-+------------------------------------------+
-| [Dashboard] [Repertoire] [Plan] [Perform] [More] |  <- Bottom tabs (mobile only)
 +------------------------------------------+
 ```
 

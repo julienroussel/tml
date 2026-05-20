@@ -28,13 +28,21 @@
 
 ## Features
 
+### Available today
+
+- **Repertoire** -- Catalog your tricks with categories, effect types, difficulty, status, props, and tags — your whole library in one searchable place.
+- **Collection** -- Register and organize your props, books, gimmicks, and other items, and link them to the tricks that use them.
+- **Activity** -- Browse a timeline of every change you've made (offline-friendly).
+
+### In development
+
+Visible in the app as "coming soon" — these modules activate as they ship:
+
 - **Improve** -- Log practice sessions and track your progress on individual sleights, moves, and techniques.
 - **Train** -- Set goals, build drills, and stay consistent with structured practice.
 - **Plan** -- Assemble and fine-tune your setlists, from a quick close-up set to a full stage show.
 - **Perform** -- Keep notes on your performances, track audience reactions, and learn from every show.
 - **Enhance** -- Discover insights, revisit what works, and continuously raise the bar.
-- **Collect** -- Register and organize your props, books, gimmicks, and other items.
-- **Activity** -- Browse a timeline of every change you've made (offline-friendly).
 
 ## Tech Stack
 
@@ -103,7 +111,7 @@ pnpm sync:deploy      # Deploy sync-config.yaml to PowerSync Cloud (requires POW
 
 # i18n & docs
 pnpm i18n:check       # Validate all locales have matching keys
-pnpm docs:generate    # Regenerate llms.txt files from docs/
+pnpm docs:generate    # Regenerate llms.txt files and the route-map diagram
 
 # Other
 pnpm email:dev        # Start email template dev server
