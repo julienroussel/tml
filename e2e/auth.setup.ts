@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { expect, test as setup } from "@playwright/test";
-import { AUTH_STATE_PATH } from "./helpers";
+import { AUTH_STATE_PATH, waitForSyncReady } from "./helpers";
 
 /**
  * Playwright auth setup — creates an authenticated session via Better Auth's
@@ -95,6 +95,15 @@ setup("authenticate", async ({ page }) => {
   // Navigate to the app to ensure cookies are properly set in the browser context
   await page.goto("/dashboard");
   await page.waitForURL("**/dashboard**");
+
+  // Smoke gate: confirm PowerSync's client boots on the authenticated shell
+  // before saving auth state, so a broken PowerSync provider surfaces as one
+  // clear `setup` failure rather than ambiguous failures across the
+  // authenticated suite. WASM/workers only (waitForSyncReady), NOT a full
+  // server sync: preview deployments can't complete a server sync at all —
+  // see `waitForSynced` in helpers.ts and the "Preview Deployment Sync
+  // Coverage" section in .claude/rules/sync-engine.md.
+  await waitForSyncReady(page, 60_000);
 
   // Save the authenticated browser state
   await page.context().storageState({ path: AUTH_STATE_PATH });
