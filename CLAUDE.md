@@ -71,7 +71,7 @@ Full script list: `pnpm run`. Project-specific gotchas:
 pnpm sync:generate    # REQUIRED after any src/db/schema/** change — regenerates PowerSync artifacts
 pnpm sync:check       # Fail if sync artifacts drift (pre-commit + CI gate)
 pnpm i18n:check       # Validate all 7 locales share the same keys
-pnpm docs:generate    # Regenerate public/llms{,-full}.txt + docs/diagrams/
+pnpm docs:generate    # Regenerate public/llms{,-full}.txt + docs/diagrams/route-map.md
 ```
 
 Requires Node 24.x and pnpm ≥ 10.
@@ -121,7 +121,7 @@ Client mutations always wrap the event-log write in `safeLogEvent()` (`src/lib/e
 
 ### DB grants & roles
 
-Two Postgres roles exist on Neon. Today, **all server-side code paths use `neondb_owner`** — Drizzle (`src/db/index.ts`), server actions, route handlers including the PowerSync upload route (`Pool({ databaseUrl })` at `src/app/api/powersync/batch/route.ts:180`), `logEventServer()`, and `auth/ensure-user.ts`. `neondb_owner` has full DB access and bypasses RLS, so **anything sensitive must be guarded at the application layer**.
+Two Postgres roles exist on Neon. Today, **all server-side code paths use `neondb_owner`** — Drizzle (`src/db/index.ts`), server actions, route handlers including the PowerSync upload route (`Pool({ databaseUrl })` at `src/app/api/powersync/batch/route.ts:190`), `logEventServer()`, and `auth/ensure-user.ts`. `neondb_owner` has full DB access and bypasses RLS, so **anything sensitive must be guarded at the application layer**.
 
 The `authenticated` role is currently exercised only by the JWT-aware client paths the codebase does not yet use directly (Neon Data API, JWT-forwarded PowerSync sync — both anticipated, not active). Migration `0020_lockdown_authenticated_grants.sql` (issue #245) hardens what `authenticated` CAN see/do **before** any code path actually authenticates as that role:
 
@@ -273,7 +273,7 @@ Detailed reference material lives in `.claude/rules/` and auto-loads when matchi
 - **Empty states**: Icon + title + description + primary CTA. Use `ModuleComingSoon` pattern.
 - **Loading states**: skeleton for cold start only — offline-first means data is usually instant.
 - **Error states**: Error boundary with retry.
-- **Mobile nav**: bottom tab bar (<768px) — Dashboard, Repertoire, Plan, Perform, More.
+- **Mobile nav**: the shadcn `Sidebar` (`app-sidebar.tsx`) renders as an off-canvas `Sheet` drawer below the `md` breakpoint, opened via `SidebarTrigger` in the header.
 - **Desktop nav**: sidebar.
 - **Accent color**: Violet (oklch hue 280). **Always use theme tokens** from `globals.css`, never arbitrary colors.
 

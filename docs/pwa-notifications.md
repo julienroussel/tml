@@ -64,7 +64,7 @@ Push notifications use VAPID (Voluntary Application Server Identification):
 1. User grants notification permission (browser prompt)
 2. Client calls `pushManager.subscribe()` with the VAPID public key
 3. Subscription data (endpoint, p256dh, auth) sent to the server via a server action
-4. Server currently stores subscriptions in an **in-memory map** (per-instance, lost on cold start). A persistent storage migration to the `push_subscriptions` table is planned for production use.
+4. Server persists the subscription to the `push_subscriptions` table — an upsert keyed on the `endpoint` URL (`subscribeUser` in `src/app/actions.ts`). Subscriptions the push service later reports as gone (HTTP 410) are pruned automatically on the next send.
 
 ### push_subscriptions Table
 

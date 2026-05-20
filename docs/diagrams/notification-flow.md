@@ -10,7 +10,7 @@ sequenceDiagram
     participant App as React App
     participant SW as Service Worker
     participant Action as Server Action
-    participant Memory as In-Memory Store
+    participant DB as Neon Postgres<br/>(push_subscriptions)
     participant WebPush as web-push lib
     participant PushSvc as Push Service<br/>(FCM/APNs/Mozilla)
 
@@ -19,14 +19,13 @@ sequenceDiagram
     User->>App: Grant notification permission
     App->>SW: pushManager.subscribe()
     SW-->>App: PushSubscription
-    App->>Action: subscribeToPush()
-    Action->>Memory: Store subscription (per-user map)
-    Note over Memory: WARNING: In-memory only,<br/>lost on cold start.<br/>TODO: migrate to push_subscriptions table
+    App->>Action: subscribeUser()
+    Action->>DB: Upsert subscription (keyed on endpoint)
 
     Note over Action,PushSvc: Sending
 
-    Action->>Memory: Fetch user subscription
-    Memory-->>Action: Subscription data
+    Action->>DB: Fetch user subscriptions
+    DB-->>Action: Subscription rows
     Action->>WebPush: sendNotification()
     WebPush->>PushSvc: Encrypted push message
     PushSvc->>SW: push event

@@ -41,10 +41,13 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 | `/train` | Train | Train (Lab) | Goal setting, drills, streaks |
 | `/plan` | Plan | Plan (Lab) | Setlist builder |
 | `/perform` | Perform | Perform (Lab) | Performance logging and review |
+| `/activity` | Activity | Activity (Insights) | Timeline of every change you've made |
 | `/enhance` | Enhance | Enhance (Insights) | Insights, suggestions, analytics |
 | `/settings` | Settings | -- | User preferences, account |
 | `/admin` | Admin | Admin (Admin) | Application administration |
 | `/account/[path]` | Account | -- | Neon Auth account management (sign-in, sign-up, etc.) |
+
+> **Module gating:** `/repertoire`, `/collect`, and `/activity` are live. The Lab routes (`/improve`, `/train`, `/plan`, `/perform`), `/enhance`, and `/admin` exist as route directories but their modules are `enabled: false` in `src/lib/modules.ts` — they render a "coming soon" placeholder until launch.
 
 ### Auth Routes
 
@@ -57,7 +60,9 @@ Marketing pages use URL-based locale routing for SEO. Each page is statically ge
 | Path | Method | Description |
 |---|---|---|
 | `/api/auth/[...path]` | Various | Neon Auth (Better Auth) endpoints |
-| `/api/email/unsubscribe` | GET | Email unsubscribe handler |
+| `/api/powersync/batch` | POST | PowerSync upload — applies the client write queue to Neon |
+| `/api/email/unsubscribe` | GET, POST | Email unsubscribe handler |
+| `/api/cron/cleanup` | GET | Scheduled cleanup — hard-deletes soft-deleted rows past retention |
 
 ## Proxy Behavior
 
