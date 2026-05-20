@@ -238,6 +238,54 @@ function makeFormValues(
   } as Parameters<NonNullable<ItemFormSheetProps["onSubmit"]>>[0];
 }
 
+/**
+ * Seeds the item_tags + item_tricks join queries for the item under edit,
+ * returning empty data for every other SQL string (available-tricks, etc.).
+ * Centralises the useQuery.mockImplementation boilerplate for the issue #202
+ * edit-mode diff tests. All ids must be UUID-shaped — buildItemTagMap and
+ * buildItemTrickMap skip non-UUID rows at the sync trust boundary.
+ */
+async function mockItemRelations(opts: {
+  itemId: string;
+  tagIds?: TagId[];
+  trickIds?: TrickId[];
+}): Promise<void> {
+  const { useQuery } = await import("@powersync/react");
+  vi.mocked(useQuery).mockImplementation((sql) => {
+    if (sql === ITEM_TAGS_QUERY) {
+      return {
+        data: (opts.tagIds ?? []).map((tagId) => ({
+          item_id: opts.itemId,
+          tag_id: tagId,
+          tag_name: `name-${tagId}`,
+          color: null,
+        })),
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    }
+    if (sql === ITEM_TRICKS_QUERY) {
+      return {
+        data: (opts.trickIds ?? []).map((trickId) => ({
+          item_id: opts.itemId,
+          trick_id: trickId,
+          trick_name: `name-${trickId}`,
+        })),
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    }
+    return {
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: undefined,
+    };
+  });
+}
+
 afterEach(async () => {
   vi.useRealTimers();
   vi.clearAllMocks();
@@ -1819,5 +1867,486 @@ describe("CollectView", () => {
       "collect.loadError",
       expect.objectContaining({ id: "collect-load-relations-error" })
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #202 — handleSubmit junction diff + dirty-state prop wiring.
+  //
+  // Already covered elsewhere (NOT duplicated here): tag swap ("computes
+  // set-diff…"), tag no-change ("produces an empty diff when tags are
+  // reordered…"), create-with-tags+tricks ("creates an item with selected
+  // tags and tricks…"), the relationsLoading submit guard (issue #216), and
+  // the useHydratedSelection.isDirty core (use-hydrated-selection.test.ts).
+  // The cases below close the remaining gaps: edit-mode TRICK diffs
+  // (previously zero coverage — onToggleTrick was exercised only on the
+  // create path), isolated tag add/remove, and the tagsDirty/tricksDirty
+  // props that gate the child sheet's discard dialog.
+  // ---------------------------------------------------------------------------
+
+  it("computes addTrickIds when a trick is added in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202a01";
+    const existingTrick = "00000000-0000-4000-8000-0000000cc201" as TrickId;
+    const addedTrick = "00000000-0000-4000-8000-0000000cc202" as TrickId;
+    const item = makeItem(itemId, "Card to Box");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    // Seed the item_tricks join with one existing linked trick.
+    await mockItemRelations({ itemId, trickIds: [existingTrick] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    // Seed lock-in must be confirmed before toggling: useHydratedSelection's
+    // isDirty is false both DURING hydration and post-seed when selection
+    // equals original — asserting the seed rules out a hydration-stuck pass.
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([existingTrick]);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(addedTrick);
+    });
+
+    // Toggling a trick dirties tricks only — tags stay clean. Locks the
+    // edit-mode tricksDirty/tagsDirty ternary wiring (collect-view.tsx ~L424).
+    expect(capturedFormSheetProps.tricksDirty).toBe(true);
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeFormValues({ name: "Card to Box" })
+    );
+
+    // addTrickIds = [addedTrick]; the other three diff arrays empty. Asserting
+    // the full 6-arg shape catches a tagsSel/tricksSel cross-wiring bug.
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      itemId,
+      expect.any(Object),
+      [],
+      [],
+      [addedTrick],
+      []
+    );
+  });
+
+  it("computes removeTrickIds when a trick is removed in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202a02";
+    const trickA = "00000000-0000-4000-8000-0000000cc210" as TrickId;
+    const trickB = "00000000-0000-4000-8000-0000000cc211" as TrickId;
+    const item = makeItem(itemId, "Linking Rings");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, trickIds: [trickA, trickB] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([trickA, trickB]);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(trickB);
+    });
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeFormValues({ name: "Linking Rings" })
+    );
+
+    // removeTrickIds = [trickB]; addTrickIds and both tag arrays empty.
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      itemId,
+      expect.any(Object),
+      [],
+      [],
+      [],
+      [trickB]
+    );
+  });
+
+  it("computes both trick diffs when a trick is swapped in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202a03";
+    const oldTrick = "00000000-0000-4000-8000-0000000cc220" as TrickId;
+    const newTrick = "00000000-0000-4000-8000-0000000cc221" as TrickId;
+    const item = makeItem(itemId, "Cups and Balls");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, trickIds: [oldTrick] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([oldTrick]);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(oldTrick);
+    });
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(newTrick);
+    });
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeFormValues({ name: "Cups and Balls" })
+    );
+
+    // addTrickIds = [newTrick], removeTrickIds = [oldTrick]; tag arrays empty.
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      itemId,
+      expect.any(Object),
+      [],
+      [],
+      [newTrick],
+      [oldTrick]
+    );
+  });
+
+  it("computes addTagIds with an empty removeTagIds when a tag is added in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202b01";
+    const existingTag = "00000000-0000-4000-8000-0000000bb301" as TagId;
+    const addedTag = "00000000-0000-4000-8000-0000000bb302" as TagId;
+    const item = makeItem(itemId, "Svengali Deck");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, tagIds: [existingTag] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([existingTag]);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(addedTag);
+    });
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeFormValues({ name: "Svengali Deck" })
+    );
+
+    // addTagIds = [addedTag], removeTagIds empty; trick arrays empty.
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      itemId,
+      expect.any(Object),
+      [addedTag],
+      [],
+      [],
+      []
+    );
+  });
+
+  it("computes removeTagIds with an empty addTagIds when a tag is removed in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202b02";
+    const tagA = "00000000-0000-4000-8000-0000000bb310" as TagId;
+    const tagB = "00000000-0000-4000-8000-0000000bb311" as TagId;
+    const item = makeItem(itemId, "Stripper Deck");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, tagIds: [tagA, tagB] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([tagA, tagB]);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(tagB);
+    });
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeFormValues({ name: "Stripper Deck" })
+    );
+
+    // removeTagIds = [tagB], addTagIds empty; trick arrays empty.
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      itemId,
+      expect.any(Object),
+      [],
+      [tagB],
+      [],
+      []
+    );
+  });
+
+  it("computes tag and trick diffs independently when both change in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202c01";
+    const oldTag = "00000000-0000-4000-8000-0000000bb401" as TagId;
+    const newTag = "00000000-0000-4000-8000-0000000bb402" as TagId;
+    const oldTrick = "00000000-0000-4000-8000-0000000cc401" as TrickId;
+    const newTrick = "00000000-0000-4000-8000-0000000cc402" as TrickId;
+    const item = makeItem(itemId, "Zombie Ball");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, tagIds: [oldTag], trickIds: [oldTrick] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([oldTag]);
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([oldTrick]);
+
+    // Swap the tag and swap the trick — each junction diff must stay isolated.
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(oldTag);
+    });
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(newTag);
+    });
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(oldTrick);
+    });
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(newTrick);
+    });
+
+    expect(capturedFormSheetProps.tagsDirty).toBe(true);
+    expect(capturedFormSheetProps.tricksDirty).toBe(true);
+
+    await capturedFormSheetProps.onSubmit?.(
+      makeFormValues({ name: "Zombie Ball" })
+    );
+
+    // Each diff array carries only its own junction's delta — a tagsSel /
+    // tricksSel mix-up in handleSubmit would cross-contaminate these four.
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      itemId,
+      expect.any(Object),
+      [newTag],
+      [oldTag],
+      [newTrick],
+      [oldTrick]
+    );
+  });
+
+  it("reports tagsDirty and tricksDirty false when an edited selection matches the seed (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202d01";
+    const seedTag = "00000000-0000-4000-8000-0000000bb501" as TagId;
+    const seedTrick = "00000000-0000-4000-8000-0000000cc501" as TrickId;
+    const item = makeItem(itemId, "Invisible Deck");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({
+      itemId,
+      tagIds: [seedTag],
+      trickIds: [seedTrick],
+    });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    // Seed asserted → hydration completed → a false isDirty is meaningful
+    // (it is not the indistinguishable during-hydration false).
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([seedTag]);
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([seedTrick]);
+
+    // No toggles — selection still equals the seeded original.
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+    expect(capturedFormSheetProps.tricksDirty).toBe(false);
+  });
+
+  it("flips tagsDirty true after a tag is added in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202d02";
+    const seedTag = "00000000-0000-4000-8000-0000000bb510" as TagId;
+    const addedTag = "00000000-0000-4000-8000-0000000bb511" as TagId;
+    const item = makeItem(itemId, "Card Fountain");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, tagIds: [seedTag] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([seedTag]);
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(addedTag);
+    });
+
+    expect(capturedFormSheetProps.tagsDirty).toBe(true);
+  });
+
+  it("flips tagsDirty true after a tag is removed in edit mode (issue #202)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useItem } = await import("../hooks/use-item");
+
+    const itemId = "00000000-0000-4000-8000-000000202d03";
+    const seedTag = "00000000-0000-4000-8000-0000000bb520" as TagId;
+    const item = makeItem(itemId, "Rising Cards");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useItem).mockReturnValue({
+      item,
+      error: null,
+      isLoading: false,
+      hasSettled: false,
+    });
+
+    await mockItemRelations({ itemId, tagIds: [seedTag] });
+
+    render(<CollectView />);
+
+    await userEvent.click(screen.getByTestId(`edit-${itemId}`));
+
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([seedTag]);
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(seedTag);
+    });
+
+    expect(capturedFormSheetProps.tagsDirty).toBe(true);
+  });
+
+  it("reports tagsDirty and tricksDirty false in add mode with no selection (issue #202)", async () => {
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+
+    expect(capturedFormSheetProps.open).toBe(true);
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+    expect(capturedFormSheetProps.selectedTrickIds).toEqual([]);
+    // Add mode: dirty is selection-non-empty (no seeded baseline to diff).
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+    expect(capturedFormSheetProps.tricksDirty).toBe(false);
+  });
+
+  it("flips tagsDirty then tricksDirty as selections are made in add mode (issue #202)", async () => {
+    render(<CollectView />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: ADD_ITEM_PATTERN })
+    );
+
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+    expect(capturedFormSheetProps.tricksDirty).toBe(false);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.(
+        "00000000-0000-4000-8000-0000000bb601" as TagId
+      );
+    });
+
+    // Selecting a tag dirties tags; tricks stay clean (independent state).
+    expect(capturedFormSheetProps.tagsDirty).toBe(true);
+    expect(capturedFormSheetProps.tricksDirty).toBe(false);
+
+    act(() => {
+      capturedFormSheetProps.onToggleTrick?.(
+        "00000000-0000-4000-8000-0000000cc601" as TrickId
+      );
+    });
+
+    expect(capturedFormSheetProps.tricksDirty).toBe(true);
   });
 });
