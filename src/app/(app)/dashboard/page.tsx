@@ -51,9 +51,13 @@ export default async function DashboardPage(): Promise<ReactElement> {
             : t("welcome")}
         </p>
       </div>
-      <RepertoireCard trickCount={trickCount} />
-      <CollectionCard itemCount={itemCount} />
-      <RecentActivityCard />
+      <div className="grid items-start gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <RepertoireCard trickCount={trickCount} />
+          <CollectionCard itemCount={itemCount} />
+        </div>
+        <RecentActivityCard />
+      </div>
       <DashboardGrid />
     </div>
   );
