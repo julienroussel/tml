@@ -206,7 +206,7 @@ export function TrickCard({
             announcements; the page-level toast already announces the failure
             once. aria-label reuses the existing `loadError` translation. */}
         {linkedItemsError ? (
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm opacity-50">
+          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
             <CircleAlert
               aria-label={t("loadError")}
               className="size-3.5 shrink-0"

@@ -266,6 +266,8 @@
     "saveFailed": "Objekt konnte nicht gespeichert werden",
     "deleteFailed": "Objekt konnte nicht gelöscht werden",
     "loadError": "Daten konnten nicht geladen werden",
+    "tagsLoadError": "Tags konnten nicht geladen werden",
+    "tricksLoadError": "Verknüpfte Tricks konnten nicht geladen werden",
     "emptyTitle": "Deine Sammlung ist leer",
     "emptyDescription": "Füge dein erstes Objekt hinzu, um deine Sammlung aufzubauen.",
     "searchPlaceholder": "Objekte suchen...",

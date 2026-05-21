@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Link2, MoreHorizontal, Trash2 } from "lucide-react";
+import { CircleAlert, Edit, Link2, MoreHorizontal, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -20,6 +20,18 @@ interface ItemCardProps {
   item: ItemWithRelations;
   onDelete: (id: ItemId) => void;
   onEdit: (id: ItemId) => void;
+  /**
+   * True when the parent's item_tags query failed. Renders a muted indicator
+   * badge in place of the tag list so the user can distinguish "no tags" from
+   * "failed to load tags" (issue #267).
+   */
+  tagsError?: boolean;
+  /**
+   * True when the parent's item_tricks query failed. Renders a muted indicator
+   * badge in place of the linked-tricks count so the user can distinguish
+   * "no linked tricks" from "failed to load" (issue #267).
+   */
+  tricksError?: boolean;
 }
 
 export const MAX_VISIBLE_TAGS = 3;
@@ -28,6 +40,8 @@ export function ItemCard({
   item,
   onEdit,
   onDelete,
+  tagsError,
+  tricksError,
 }: ItemCardProps): React.ReactElement {
   const t = useTranslations("collect");
   const locale = useLocale();
@@ -135,34 +149,78 @@ export function ItemCard({
           </div>
         )}
 
-        {/* Linked tricks count */}
-        {item.tricks.length > 0 && (
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-            <Link2 aria-hidden="true" className="size-3.5" />
-            <span>{t("linkedTricksCount", { count: item.tricks.length })}</span>
-          </div>
+        {/* Linked tricks count — a muted indicator replaces the count when the
+            parent's item_tricks query errored, so "no linked tricks" stays
+            distinguishable from "couldn't load" (issue #267). */}
+        {tricksError ? (
+          <RelationLoadErrorIndicator label={t("tricksLoadError")} />
+        ) : (
+          item.tricks.length > 0 && (
+            <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+              <Link2 aria-hidden="true" className="size-3.5" />
+              <span>
+                {t("linkedTricksCount", { count: item.tricks.length })}
+              </span>
+            </div>
+          )
         )}
 
-        {/* Tags */}
-        {item.tags.length > 0 && (
-          <ul
-            aria-label={t("field.tags")}
-            className="flex flex-wrap items-center gap-1.5"
-          >
-            {visibleTags.map((tag) => (
-              <li key={tag.id}>
-                <TagBadge tag={tag} />
-              </li>
-            ))}
-            {hiddenTagCount > 0 && (
-              <li>
-                <Badge variant="outline">+{hiddenTagCount}</Badge>
-              </li>
-            )}
-          </ul>
+        {/* Tags — a muted indicator replaces the list when the parent's
+            item_tags query errored (issue #267). */}
+        {tagsError ? (
+          <RelationLoadErrorIndicator label={t("tagsLoadError")} />
+        ) : (
+          item.tags.length > 0 && (
+            <ul
+              aria-label={t("field.tags")}
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {visibleTags.map((tag) => (
+                <li key={tag.id}>
+                  <TagBadge tag={tag} />
+                </li>
+              ))}
+              {hiddenTagCount > 0 && (
+                <li>
+                  <Badge variant="outline">+{hiddenTagCount}</Badge>
+                </li>
+              )}
+            </ul>
+          )
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Relation load-error indicator
+// ---------------------------------------------------------------------------
+
+/**
+ * Muted badge shown in place of a relation (tags or linked tricks) when its
+ * PowerSync query errored — lets the user tell "none" from "couldn't load"
+ * (issue #267). Mirrors the repertoire pattern in `trick-card.tsx`.
+ *
+ * The accessible name sits on the icon (`role="img"`), not on a wrapper with
+ * `role="status"`: a list of N cards would otherwise spawn N polite live
+ * regions and queue N announcements. The page-level toast (collect-view)
+ * already announces the failure once.
+ */
+function RelationLoadErrorIndicator({
+  label,
+}: {
+  label: string;
+}): React.ReactElement {
+  return (
+    <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+      <CircleAlert
+        aria-label={label}
+        className="size-3.5 shrink-0"
+        role="img"
+      />
+      <span aria-hidden="true">—</span>
+    </div>
   );
 }
 

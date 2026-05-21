@@ -266,6 +266,8 @@
     "saveFailed": "Impossibile salvare l'oggetto",
     "deleteFailed": "Impossibile eliminare l'oggetto",
     "loadError": "Impossibile caricare i dati",
+    "tagsLoadError": "Impossibile caricare i tag",
+    "tricksLoadError": "Impossibile caricare i trucchi collegati",
     "emptyTitle": "La tua collezione è vuota",
     "emptyDescription": "Aggiungi il tuo primo oggetto per iniziare a costruire la tua collezione.",
     "searchPlaceholder": "Cerca oggetti...",

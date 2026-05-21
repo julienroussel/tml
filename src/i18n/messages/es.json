@@ -266,6 +266,8 @@
     "saveFailed": "Error al guardar el objeto",
     "deleteFailed": "Error al eliminar el objeto",
     "loadError": "Error al cargar los datos",
+    "tagsLoadError": "Error al cargar las etiquetas",
+    "tricksLoadError": "Error al cargar los trucos vinculados",
     "emptyTitle": "Tu colección está vacía",
     "emptyDescription": "Agrega tu primer objeto para empezar a construir tu colección.",
     "searchPlaceholder": "Buscar objetos...",

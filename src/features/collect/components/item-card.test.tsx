@@ -556,3 +556,134 @@ describe("ItemCard condition", () => {
     expect(screen.queryByText(CONDITION_RE)).not.toBeInTheDocument();
   });
 });
+
+describe("ItemCard relation load errors", () => {
+  // Issue #267 — item_tags / item_tricks query failures must surface a
+  // per-card indicator so the user can tell "no relations" from "couldn't
+  // load them". The icon carries role="img" + aria-label so it is reachable
+  // by AT users without spawning a polite live region per card.
+  it("renders a labelled tricks error indicator (not a live region) when tricksError is set", () => {
+    render(
+      <ItemCard
+        item={makeItem({ tricks: [] })}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        tricksError
+      />
+    );
+
+    expect(
+      screen.getByRole("img", { name: "collect.tricksLoadError" })
+    ).toBeInTheDocument();
+    // No status/alert live region — the page-level toast announces it once.
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // The linked-tricks count is replaced by the indicator.
+    expect(screen.queryByText(LINKED_TRICKS_RE)).not.toBeInTheDocument();
+  });
+
+  it("shows the tricks error indicator even when linked-trick data is present (error wins)", () => {
+    render(
+      <ItemCard
+        item={makeItem({
+          tricks: [
+            { id: "trick-1" as TrickId, name: "T1" },
+            { id: "trick-2" as TrickId, name: "T2" },
+          ],
+        })}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        tricksError
+      />
+    );
+
+    expect(
+      screen.getByRole("img", { name: "collect.tricksLoadError" })
+    ).toBeInTheDocument();
+    expect(screen.queryByText(LINKED_TRICKS_RE)).not.toBeInTheDocument();
+  });
+
+  it("renders a labelled tags error indicator when tagsError is set", () => {
+    render(
+      <ItemCard
+        item={makeItem({ tags: [] })}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        tagsError
+      />
+    );
+
+    expect(
+      screen.getByRole("img", { name: "collect.tagsLoadError" })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows the tags error indicator in place of the tag list (error wins over data)", () => {
+    const tags = [
+      makeTag({ id: "t1" as TagId, name: "Tag1" }),
+      makeTag({ id: "t2" as TagId, name: "Tag2" }),
+    ];
+    render(
+      <ItemCard
+        item={makeItem({ tags })}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        tagsError
+      />
+    );
+
+    expect(
+      screen.getByRole("img", { name: "collect.tagsLoadError" })
+    ).toBeInTheDocument();
+    // The tag <ul> and its badges are replaced by the indicator.
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tag1")).not.toBeInTheDocument();
+  });
+
+  it("renders distinct indicators for each relation when both errors are set", () => {
+    render(
+      <ItemCard
+        item={makeItem()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        tagsError
+        tricksError
+      />
+    );
+
+    // Distinct accessible names — each relation gets its own labelled icon.
+    expect(
+      screen.getByRole("img", { name: "collect.tagsLoadError" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "collect.tricksLoadError" })
+    ).toBeInTheDocument();
+  });
+
+  it("renders no error indicator when neither error flag is set", () => {
+    render(
+      <ItemCard
+        item={makeItem({
+          tags: [makeTag({ id: "t1" as TagId, name: "Tag1" })],
+          tricks: [{ id: "trick-1" as TrickId, name: "T1" }],
+        })}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByRole("img", { name: "collect.tagsLoadError" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: "collect.tricksLoadError" })
+    ).not.toBeInTheDocument();
+    // Normal relations still render.
+    expect(screen.getByText("Tag1")).toBeInTheDocument();
+    expect(
+      screen.getByText("collect.linkedTricksCount (count: 1)")
+    ).toBeInTheDocument();
+  });
+});
