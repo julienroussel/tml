@@ -1900,14 +1900,12 @@ describe("RepertoireView", () => {
       );
     });
 
-    // Capture the call count after the initial effect has settled, then
-    // assert linear-bounded growth across rerenders. Each rerender refires
-    // the effect once (the `t` translator identity changes per render in
-    // the next-intl test mock, which is on the effect's dep list), so the
-    // count must grow by at most 1 per rerender — never more. A regression
-    // that, say, drops the stable error reference inside the effect would
-    // compound (every state-change triggers another render which fires the
-    // effect again, which sets a fresh ref…), breaching this bound.
+    // The relations-error effect's deps are the stable query-error refs plus
+    // `t`. `t` is memoized per namespace in the next-intl test mock (issue
+    // #290), so it is referentially stable across rerenders — every effect dep
+    // is stable, the effect fires exactly once (on mount), and the toast count
+    // must not grow on a no-op rerender. A per-rerender effect refire — or a
+    // revert of the mock memoization — breaks this strict-equality assertion.
     const relationsErrorCount = () =>
       vi.mocked(toast.error).mock.calls.filter(([, opts]) => {
         if (!opts || typeof opts !== "object") {
@@ -1921,10 +1919,10 @@ describe("RepertoireView", () => {
     const initialCount = relationsErrorCount();
 
     rerender(<RepertoireView />);
-    expect(relationsErrorCount()).toBeLessThanOrEqual(initialCount + 1);
+    expect(relationsErrorCount()).toBe(initialCount);
 
     rerender(<RepertoireView />);
-    expect(relationsErrorCount()).toBeLessThanOrEqual(initialCount + 2);
+    expect(relationsErrorCount()).toBe(initialCount);
 
     // Every relations-toast call must carry the stable message + id.
     const relationsCalls = vi

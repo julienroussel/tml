@@ -1777,19 +1777,19 @@ describe("CollectView", () => {
       }).length;
     }
 
-    // Capture the call count after the initial render settles, then assert
-    // bounded additive growth per rerender — each rerender may invoke the
-    // effect at most once more (next-intl's `t` is not referentially stable
-    // across renders, so deps change). Tighter than the prior bare `<= 4`:
-    // growth is bounded relative to the baseline, so a regression that fires
-    // multiple toasts per rerender fails here even though sonner dedups by id.
+    // The relations-error effect's deps are the stable query-error refs plus
+    // `t`. `t` is memoized per namespace in the next-intl test mock (issue
+    // #290), so it is referentially stable across rerenders — every effect dep
+    // is stable, the effect fires exactly once (on mount), and the toast count
+    // must not grow on a no-op rerender. A per-rerender effect refire — or a
+    // revert of the mock memoization — breaks this strict-equality assertion.
     const initialCount = countRelationsCalls();
 
     rerender(<CollectView />);
-    expect(countRelationsCalls()).toBeLessThanOrEqual(initialCount + 1);
+    expect(countRelationsCalls()).toBe(initialCount);
 
     rerender(<CollectView />);
-    expect(countRelationsCalls()).toBeLessThanOrEqual(initialCount + 2);
+    expect(countRelationsCalls()).toBe(initialCount);
 
     // Every relations toast call must carry the stable id and message.
     const allRelationsCalls = vi
