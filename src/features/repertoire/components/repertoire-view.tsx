@@ -53,7 +53,7 @@ const SORT_MAP: Record<FilterSortValue, HookSortValue> = {
 };
 
 /** Row shape returned by the trick_tags + tags join query. */
-interface TrickTagRow {
+export interface TrickTagRow {
   color: string | null;
   tag_id: string;
   tag_name: string;
