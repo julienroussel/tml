@@ -603,6 +603,8 @@ export function CollectView(): React.ReactElement {
           items={itemsWithRelations}
           onDelete={handleDeleteItem}
           onEdit={handleEditItem}
+          tagsError={Boolean(itemTagError)}
+          tricksError={Boolean(itemTrickError)}
         />
       );
     }

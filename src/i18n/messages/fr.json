@@ -266,6 +266,8 @@
     "saveFailed": "Échec de l'enregistrement de l'objet",
     "deleteFailed": "Échec de la suppression de l'objet",
     "loadError": "Échec du chargement des données",
+    "tagsLoadError": "Échec du chargement des tags",
+    "tricksLoadError": "Échec du chargement des tours associés",
     "emptyTitle": "Votre collection est vide",
     "emptyDescription": "Ajoutez votre premier objet pour commencer à construire votre collection.",
     "searchPlaceholder": "Rechercher des objets...",

@@ -266,6 +266,8 @@
     "saveFailed": "Failed to save item",
     "deleteFailed": "Failed to delete item",
     "loadError": "Failed to load data",
+    "tagsLoadError": "Failed to load tags",
+    "tricksLoadError": "Failed to load linked tricks",
     "emptyTitle": "Your collection is empty",
     "emptyDescription": "Add your first item to start building your collection.",
     "searchPlaceholder": "Search items...",

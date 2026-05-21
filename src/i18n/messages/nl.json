@@ -266,6 +266,8 @@
     "saveFailed": "Item opslaan mislukt",
     "deleteFailed": "Item verwijderen mislukt",
     "loadError": "Gegevens laden mislukt",
+    "tagsLoadError": "Tags laden mislukt",
+    "tricksLoadError": "Gekoppelde trucs laden mislukt",
     "emptyTitle": "Je collectie is leeg",
     "emptyDescription": "Voeg je eerste item toe om je collectie op te bouwen.",
     "searchPlaceholder": "Items zoeken...",

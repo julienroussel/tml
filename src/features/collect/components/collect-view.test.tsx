@@ -155,12 +155,20 @@ vi.mock("./item-list", () => ({
     items,
     onEdit,
     onDelete,
+    tagsError,
+    tricksError,
   }: {
     items: { id: ItemId; name: string }[];
     onEdit: (id: ItemId) => void;
     onDelete: (id: ItemId) => void;
+    tagsError?: boolean;
+    tricksError?: boolean;
   }) => (
-    <div data-testid="item-list">
+    <div
+      data-tags-error={String(Boolean(tagsError))}
+      data-testid="item-list"
+      data-tricks-error={String(Boolean(tricksError))}
+    >
       {items.map((item) => (
         <div key={item.id}>
           <span>{item.name}</span>
@@ -1400,6 +1408,98 @@ describe("CollectView", () => {
     expect(capturedFormSheetProps.open).toBe(true);
     expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
     expect(capturedFormSheetProps.selectedTrickIds).toEqual([]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #267 — per-card relation-error indicator wiring. collect-view must
+  // forward each join query's error state to ItemList as a boolean so every
+  // card can swap the affected relation for a muted indicator.
+  // ---------------------------------------------------------------------------
+
+  it("passes tagsError to ItemList when the item_tags query has errored (issue #267)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useQuery } = await import("@powersync/react");
+    const item = makeItem("00000000-0000-4000-8000-0000000267a0", "Card Force");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TAGS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: new Error("item_tags schema drift"),
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    const list = screen.getByTestId("item-list");
+    expect(list).toHaveAttribute("data-tags-error", "true");
+    expect(list).toHaveAttribute("data-tricks-error", "false");
+  });
+
+  it("passes tricksError to ItemList when the item_tricks query has errored (issue #267)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const { useQuery } = await import("@powersync/react");
+    const item = makeItem(
+      "00000000-0000-4000-8000-0000000267b0",
+      "Coin Vanish"
+    );
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useQuery).mockImplementation((sql) => {
+      if (sql === ITEM_TRICKS_QUERY) {
+        return {
+          data: [],
+          isLoading: false,
+          isFetching: false,
+          error: new Error("item_tricks parse error"),
+        };
+      }
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    });
+
+    render(<CollectView />);
+
+    const list = screen.getByTestId("item-list");
+    expect(list).toHaveAttribute("data-tricks-error", "true");
+    expect(list).toHaveAttribute("data-tags-error", "false");
+  });
+
+  it("passes neither error flag to ItemList when relation queries are healthy (issue #267)", async () => {
+    const { useItems } = await import("../hooks/use-items");
+    const item = makeItem("00000000-0000-4000-8000-0000000267c0", "Svengali");
+    vi.mocked(useItems).mockReturnValue({
+      items: [item],
+      error: null,
+      isLoading: false,
+    });
+    // useQuery keeps the afterEach default — empty data, no error.
+
+    render(<CollectView />);
+
+    const list = screen.getByTestId("item-list");
+    expect(list).toHaveAttribute("data-tags-error", "false");
+    expect(list).toHaveAttribute("data-tricks-error", "false");
   });
 
   it("does NOT toast for brandsError (supplementary autocomplete)", async () => {
