@@ -575,6 +575,11 @@ describe("ItemCard relation load errors", () => {
     expect(
       screen.getByRole("img", { name: "collect.tricksLoadError" })
     ).toBeInTheDocument();
+    // Issue #327 — a short visible label backs the icon for sighted users.
+    expect(screen.getByText("collect.loadErrorShort")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
     // No status/alert live region — the page-level toast announces it once.
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -600,6 +605,10 @@ describe("ItemCard relation load errors", () => {
     expect(
       screen.getByRole("img", { name: "collect.tricksLoadError" })
     ).toBeInTheDocument();
+    expect(screen.getByText("collect.loadErrorShort")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
     expect(screen.queryByText(LINKED_TRICKS_RE)).not.toBeInTheDocument();
   });
 
@@ -616,6 +625,10 @@ describe("ItemCard relation load errors", () => {
     expect(
       screen.getByRole("img", { name: "collect.tagsLoadError" })
     ).toBeInTheDocument();
+    expect(screen.getByText("collect.loadErrorShort")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -637,6 +650,10 @@ describe("ItemCard relation load errors", () => {
     expect(
       screen.getByRole("img", { name: "collect.tagsLoadError" })
     ).toBeInTheDocument();
+    expect(screen.getByText("collect.loadErrorShort")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
     // The tag <ul> and its badges are replaced by the indicator.
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
     expect(screen.queryByText("Tag1")).not.toBeInTheDocument();
@@ -660,6 +677,13 @@ describe("ItemCard relation load errors", () => {
     expect(
       screen.getByRole("img", { name: "collect.tricksLoadError" })
     ).toBeInTheDocument();
+    // Issue #327 — both indicators carry the shared visible label, and each
+    // stays aria-hidden so the icon's aria-label remains the sole accessible name.
+    const errorLabels = screen.getAllByText("collect.loadErrorShort");
+    expect(errorLabels).toHaveLength(2);
+    for (const errorLabel of errorLabels) {
+      expect(errorLabel).toHaveAttribute("aria-hidden", "true");
+    }
   });
 
   it("renders no error indicator when neither error flag is set", () => {
@@ -679,6 +703,9 @@ describe("ItemCard relation load errors", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("img", { name: "collect.tricksLoadError" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("collect.loadErrorShort")
     ).not.toBeInTheDocument();
     // Normal relations still render.
     expect(screen.getByText("Tag1")).toBeInTheDocument();

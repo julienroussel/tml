@@ -241,6 +241,12 @@ describe("TrickCard", () => {
     expect(
       screen.getByRole("img", { name: "repertoire.loadError" })
     ).toBeInTheDocument();
+    // Issue #327 — a short visible label backs the icon for sighted users,
+    // kept aria-hidden so the icon's aria-label stays the sole accessible name.
+    expect(screen.getByText("repertoire.loadErrorShort")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
 
     // No status/alert live region — must NOT spawn polite/assertive regions.
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -267,6 +273,9 @@ describe("TrickCard", () => {
     expect(
       screen.queryByRole("img", { name: "repertoire.loadError" })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("repertoire.loadErrorShort")
+    ).not.toBeInTheDocument();
   });
 
   it("renders nothing for linked items when linkedItemsError is false and the list is empty", () => {
@@ -284,6 +293,9 @@ describe("TrickCard", () => {
     // of the role="img" loadError node.
     expect(
       screen.queryByRole("img", { name: "repertoire.loadError" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("repertoire.loadErrorShort")
     ).not.toBeInTheDocument();
   });
 

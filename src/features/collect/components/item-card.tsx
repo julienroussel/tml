@@ -198,20 +198,26 @@ export function ItemCard({
 // ---------------------------------------------------------------------------
 
 /**
- * Muted badge shown in place of a relation (tags or linked tricks) when its
- * PowerSync query errored — lets the user tell "none" from "couldn't load"
- * (issue #267). Mirrors the repertoire pattern in `trick-card.tsx`.
+ * Muted icon + label row shown in place of a relation (tags or linked tricks)
+ * when its PowerSync query errored — lets the user tell "none" from "couldn't
+ * load" (issue #267). Mirrors the repertoire pattern in `trick-card.tsx`.
  *
  * The accessible name sits on the icon (`role="img"`), not on a wrapper with
  * `role="status"`: a list of N cards would otherwise spawn N polite live
  * regions and queue N announcements. The page-level toast (collect-view)
  * already announces the failure once.
+ *
+ * The icon's `aria-label` is invisible to sighted users, so a short visible
+ * label accompanies it — without it the state reads as an ambiguous dash
+ * (issue #327).
  */
 function RelationLoadErrorIndicator({
   label,
 }: {
   label: string;
 }): React.ReactElement {
+  const t = useTranslations("collect");
+
   return (
     <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
       <CircleAlert
@@ -219,7 +225,9 @@ function RelationLoadErrorIndicator({
         className="size-3.5 shrink-0"
         role="img"
       />
-      <span aria-hidden="true">—</span>
+      {/* Visual-only — the icon's aria-label is the single accessible name;
+          aria-hidden keeps this from double-announcing across a list of N cards. */}
+      <span aria-hidden="true">{t("loadErrorShort")}</span>
     </div>
   );
 }
