@@ -13,6 +13,7 @@ import {
   RepertoireView,
   TRICK_ITEMS_QUERY,
   TRICK_TAGS_QUERY,
+  type TrickTagRow,
 } from "./repertoire-view";
 import type { TrickDeleteDialogProps } from "./trick-delete-dialog";
 import type { TrickFiltersProps } from "./trick-filters";
@@ -294,6 +295,38 @@ const makeTrick = (
   ...overrides,
 });
 
+/**
+ * Seeds the trick_tags join query for the trick under edit, returning empty
+ * data for every other SQL string. Mirrors collect-view's mockItemRelations.
+ * Tags-only: the repertoire trick form has no trick/item selection. Ids need
+ * not be UUID-shaped — buildTrickTagMap does not validate at the trust
+ * boundary, unlike collect's buildItemTagMap.
+ */
+async function mockTrickRelations(opts: {
+  trickId: string;
+  tagIds?: TagId[];
+}): Promise<void> {
+  const { useQuery } = await import("@powersync/react");
+  vi.mocked(useQuery).mockImplementation((sql) => {
+    if (sql === TRICK_TAGS_QUERY) {
+      return {
+        data: (opts.tagIds ?? []).map(
+          (tagId): TrickTagRow => ({
+            trick_id: opts.trickId,
+            tag_id: tagId,
+            tag_name: `name-${tagId}`,
+            color: null,
+          })
+        ),
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+      };
+    }
+    return { data: [], isLoading: false, isFetching: false, error: undefined };
+  });
+}
+
 describe("RepertoireView", () => {
   it("renders without crashing", () => {
     render(<RepertoireView />);
@@ -484,23 +517,29 @@ describe("RepertoireView", () => {
     );
   });
 
-  it("toggles a tag via onToggleTag without throwing", async () => {
+  it("toggles a tag in add mode and tracks tagsDirty", async () => {
     render(<RepertoireView />);
     // Open sheet first
     await userEvent.click(
       screen.getByRole("button", { name: ADD_TRICK_PATTERN })
     );
-    // Toggle a tag — exercises handleToggleTag add path
+    // Add mode, empty selection — not dirty.
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+
+    // Toggle a tag — exercises handleToggleTag add path.
     act(() => {
       capturedFormSheetProps.onToggleTag?.("tag-1" as TagId);
     });
     expect(capturedFormSheetProps.selectedTagIds).toEqual(["tag-1"]);
+    expect(capturedFormSheetProps.tagsDirty).toBe(true);
 
-    // Toggle again to remove — exercises the filter branch
+    // Toggle again to remove — exercises the filter branch and returns the
+    // add-mode selection to empty, so tagsDirty flips back to false.
     act(() => {
       capturedFormSheetProps.onToggleTag?.("tag-1" as TagId);
     });
     expect(capturedFormSheetProps.selectedTagIds).toEqual([]);
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
   });
 
   it("calls updateTrick when submitting the form in edit mode", async () => {
@@ -596,56 +635,43 @@ describe("RepertoireView", () => {
     ).toHaveValue("nonexistent");
   });
 
-  it("computes tagsDirty correctly when editing a trick with changed tags", async () => {
+  it("computes tag add/remove diff when editing a trick", async () => {
     const { useTricks } = await import("../hooks/use-tricks");
     const { useTrick } = await import("../hooks/use-trick");
-    const { useQuery } = await import("@powersync/react");
 
-    // Set up a trick with an existing tag
-    vi.mocked(useQuery).mockReturnValue({
-      data: [
-        {
-          trick_id: "trick-tags-1",
-          tag_id: "tag-existing",
-          tag_name: "Existing",
-          color: null,
-        },
-      ],
-      isLoading: false,
-      isFetching: false,
-      error: undefined,
-    });
+    const trick = makeTrick("trick-tags-1", "Tagged Trick");
     vi.mocked(useTricks).mockReturnValue({
-      tricks: [makeTrick("trick-tags-1", "Tagged Trick")],
+      tricks: [trick],
       error: null,
       isLoading: false,
     });
     vi.mocked(useTrick).mockReturnValue({
-      trick: makeTrick("trick-tags-1", "Tagged Trick"),
+      trick,
       isLoading: false,
       error: null,
       hasSettled: false,
     });
+    await mockTrickRelations({
+      trickId: "trick-tags-1",
+      tagIds: ["tag-existing" as TagId],
+    });
 
     render(<RepertoireView />);
 
-    // Open edit mode — preloads tag-existing into selectedTagIds
+    // Open edit mode — preloads tag-existing into selectedTagIds.
     await userEvent.click(screen.getByTestId("edit-trick-tags-1"));
     expect(capturedFormSheetProps.open).toBe(true);
+    // Seed asserted — confirms hydration completed before the toggles below.
+    expect(capturedFormSheetProps.selectedTagIds).toEqual(["tag-existing"]);
 
-    // Toggle tag-existing (remove it) — exercises the filter branch (243-244)
-    // and marks tags as dirty via selectedTagIds.some(...) (line 156)
+    // Remove the seeded tag, add a new one, then submit and assert the diff.
     act(() => {
       capturedFormSheetProps.onToggleTag?.("tag-existing" as TagId);
     });
-
-    // Toggle a new tag (add it) — exercises the spread branch
     act(() => {
       capturedFormSheetProps.onToggleTag?.("tag-new" as TagId);
     });
 
-    // At this point tagsDirty should be true and selectedTagIds differs from original
-    // Submit to exercise the removeTagIds.filter callback (line 195)
     await capturedFormSheetProps.onSubmit?.({
       name: "Tagged Trick",
       status: "new",
@@ -672,6 +698,67 @@ describe("RepertoireView", () => {
       ["tag-new"],
       ["tag-existing"]
     );
+  });
+
+  it("reports tagsDirty false when an edited trick's tags match the seed (issue #315)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+
+    const seedTag = "tag-seed" as TagId;
+    const trick = makeTrick("trick-dirty-1", "Tagged Trick");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+      hasSettled: false,
+    });
+    await mockTrickRelations({ trickId: "trick-dirty-1", tagIds: [seedTag] });
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId("edit-trick-dirty-1"));
+
+    // Seed asserted → hydration completed → the false below is meaningful
+    // (not the indistinguishable during-hydration false).
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([seedTag]);
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+  });
+
+  it("flips tagsDirty true after a tag is changed in edit mode (issue #315)", async () => {
+    const { useTricks } = await import("../hooks/use-tricks");
+    const { useTrick } = await import("../hooks/use-trick");
+
+    const seedTag = "tag-seed" as TagId;
+    const trick = makeTrick("trick-dirty-2", "Tagged Trick");
+    vi.mocked(useTricks).mockReturnValue({
+      tricks: [trick],
+      error: null,
+      isLoading: false,
+    });
+    vi.mocked(useTrick).mockReturnValue({
+      trick,
+      isLoading: false,
+      error: null,
+      hasSettled: false,
+    });
+    await mockTrickRelations({ trickId: "trick-dirty-2", tagIds: [seedTag] });
+
+    render(<RepertoireView />);
+    await userEvent.click(screen.getByTestId("edit-trick-dirty-2"));
+
+    // Seed asserted → hydration completed → a meaningful false baseline.
+    expect(capturedFormSheetProps.selectedTagIds).toEqual([seedTag]);
+    expect(capturedFormSheetProps.tagsDirty).toBe(false);
+
+    // Adding a tag diverges the selection from the seed → dirty.
+    act(() => {
+      capturedFormSheetProps.onToggleTag?.("tag-added" as TagId);
+    });
+    expect(capturedFormSheetProps.tagsDirty).toBe(true);
   });
 
   it("updates sort when a valid sort value is provided via onSortChange", () => {

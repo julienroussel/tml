@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ItemId, TagId, TrickId } from "@/db/types";
 import type { ParsedItem } from "../types";
+import type { ItemTagRow, ItemTrickRow } from "./collect-helpers";
 import {
   AVAILABLE_TRICKS_QUERY,
   CollectView,
@@ -254,12 +255,14 @@ async function mockItemRelations(opts: {
   vi.mocked(useQuery).mockImplementation((sql) => {
     if (sql === ITEM_TAGS_QUERY) {
       return {
-        data: (opts.tagIds ?? []).map((tagId) => ({
-          item_id: opts.itemId,
-          tag_id: tagId,
-          tag_name: `name-${tagId}`,
-          color: null,
-        })),
+        data: (opts.tagIds ?? []).map(
+          (tagId): ItemTagRow => ({
+            item_id: opts.itemId,
+            tag_id: tagId,
+            tag_name: `name-${tagId}`,
+            color: null,
+          })
+        ),
         isLoading: false,
         isFetching: false,
         error: undefined,
@@ -267,11 +270,13 @@ async function mockItemRelations(opts: {
     }
     if (sql === ITEM_TRICKS_QUERY) {
       return {
-        data: (opts.trickIds ?? []).map((trickId) => ({
-          item_id: opts.itemId,
-          trick_id: trickId,
-          trick_name: `name-${trickId}`,
-        })),
+        data: (opts.trickIds ?? []).map(
+          (trickId): ItemTrickRow => ({
+            item_id: opts.itemId,
+            trick_id: trickId,
+            trick_name: `name-${trickId}`,
+          })
+        ),
         isLoading: false,
         isFetching: false,
         error: undefined,
