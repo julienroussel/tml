@@ -204,7 +204,9 @@ export function TrickCard({
             (role="img") rather than the wrapper (role="status"): a list of
             N cards would otherwise spawn N polite live regions and queue N
             announcements; the page-level toast already announces the failure
-            once. aria-label reuses the existing `loadError` translation. */}
+            once. aria-label reuses the existing `loadError` translation; a
+            short visible `loadErrorShort` label accompanies the icon so
+            sighted users get more than an ambiguous dash (issue #327). */}
         {linkedItemsError ? (
           <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
             <CircleAlert
@@ -212,7 +214,9 @@ export function TrickCard({
               className="size-3.5 shrink-0"
               role="img"
             />
-            <span aria-hidden="true">—</span>
+            {/* Visual-only — the icon's aria-label is the single accessible
+                name; see the aria reasoning in the block comment above. */}
+            <span aria-hidden="true">{t("loadErrorShort")}</span>
           </div>
         ) : (
           linkedItems &&
