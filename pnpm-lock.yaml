@@ -14,8 +14,8 @@ importers:
   .:
     dependencies:
       '@hookform/resolvers':
-        specifier: 5.2.2
-        version: 5.2.2(react-hook-form@7.76.0(react@19.2.6))
+        specifier: 5.4.0
+        version: 5.4.0(react-hook-form@7.76.0(react@19.2.6))
       '@journeyapps/wa-sqlite':
         specifier: 1.7.0
         version: 1.7.0
@@ -174,8 +174,8 @@ importers:
         specifier: 0.9.5
         version: 0.9.5(@types/json-schema@7.0.15)(@types/node@25.9.1)
       react-email:
-        specifier: 6.1.5
-        version: 6.1.5(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 6.3.1
+        version: 6.3.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       shadcn:
         specifier: 4.8.0
         version: 4.8.0(@types/node@25.9.1)(typescript@6.0.3)
@@ -1492,8 +1492,8 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@hookform/resolvers@5.2.2':
-    resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
+  '@hookform/resolvers@5.4.0':
+    resolution: {integrity: sha512-EIsqr/t/qbinPIhGjMdtvutIN1Kk4uwbROE9/UQ93CAVGR7GkA7Y92+fX80OzXi/OB67jVFYwKGO1WzkxmkFZw==}
     peerDependencies:
       react-hook-form: ^7.55.0
 
@@ -6848,10 +6848,6 @@ packages:
     resolution: {integrity: sha512-NxVFwLAnrd9i7KUBxC4DrUhmgjzOs+1Qm50D3oF1/oL+r1NpZ4gA7xvG0/zJ8evR7zIKn4vLf7qTNduWFtCrRw==}
     engines: {node: 20 || >=22}
 
-  lru-cache@11.4.0:
-    resolution: {integrity: sha512-W+R+kFL4HgVxONq2bhXPi3bGpzGe/yEhVOp233qw9wCRtgncJ15P3bC+e4zZMu4Cq7d+WAJjXGW0uUkifhcatA==}
-    engines: {node: 20 || >=22}
-
   lru-cache@11.5.0:
     resolution: {integrity: sha512-5YgH9UJd7wVb9hIouI2adWpgqrrICkt070Dnj8EUY1+B4B2P9eRLPAkAAo6NICA7CEhOIeBHl46u9zSNpNu7zA==}
     engines: {node: 20 || >=22}
@@ -7853,8 +7849,8 @@ packages:
     peerDependencies:
       react: ^19.2.6
 
-  react-email@6.1.5:
-    resolution: {integrity: sha512-f4I7Y+9kEMjALvcL5dn1TAsDJG7VgksrcR4x9PMQiaCCud4iUefJMBQAcOhvoBpk1k75lGhR/p75d7WMF24PfA==}
+  react-email@6.3.1:
+    resolution: {integrity: sha512-mmd7pMAIdoGS28GEmudWDvUXVugOGRQiCfL8zMNcvg02iuq8AGYFxVPJIY1Yof+0ftHLsHdOEefheZkfDXqhNQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -9487,7 +9483,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.0
       '@babel/generator': 7.29.1
-      '@babel/parser': 7.27.0
+      '@babel/parser': 7.29.3
       '@babel/template': 7.28.6
       '@babel/types': 7.29.0
       debug: 4.4.3(supports-color@8.1.1)
@@ -9682,14 +9678,14 @@ snapshots:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
-  '@daveyplate/better-auth-ui@3.3.9(7d43af40c040c943d9ec9657f20b615b)':
+  '@daveyplate/better-auth-ui@3.3.9(6d32de5b7cb70449bbc5f711c17cc3db)':
     dependencies:
       '@better-auth/passkey': 1.4.9(@better-auth/core@1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-auth@1.4.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)(vue@3.5.30(typescript@6.0.3)))(better-call@1.1.7(zod@4.4.3))(nanostores@1.2.0)
       '@better-fetch/fetch': 1.1.21
       '@captchafox/react': 1.11.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@daveyplate/better-auth-tanstack': 1.3.6(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.2.6))(better-auth@1.4.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)(vue@3.5.30(typescript@6.0.3)))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@hcaptcha/react-hcaptcha': 1.17.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@hookform/resolvers': 5.2.2(react-hook-form@7.76.0(react@19.2.6))
+      '@hookform/resolvers': 5.4.0(react-hook-form@7.76.0(react@19.2.6))
       '@instantdb/react': 0.22.158(react@19.2.6)
       '@marsidev/react-turnstile': 1.4.2(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@noble/hashes': 2.2.0
@@ -9749,7 +9745,7 @@ snapshots:
   '@dxup/nuxt@0.3.2(magicast@0.5.3)':
     dependencies:
       '@dxup/unimport': 0.1.2
-      '@nuxt/kit': 4.3.1(magicast@0.5.3)
+      '@nuxt/kit': 4.4.6(magicast@0.5.3)
       chokidar: 5.0.0
       pathe: 2.0.3
       tinyglobby: 0.2.16
@@ -10255,7 +10251,7 @@ snapshots:
     dependencies:
       hono: 4.12.21
 
-  '@hookform/resolvers@5.2.2(react-hook-form@7.76.0(react@19.2.6))':
+  '@hookform/resolvers@5.4.0(react-hook-form@7.76.0(react@19.2.6))':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.76.0(react@19.2.6)
@@ -10718,9 +10714,9 @@ snapshots:
     dependencies:
       '@better-auth/passkey': 1.4.9(@better-auth/core@1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-auth@1.4.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)(vue@3.5.30(typescript@6.0.3)))(better-call@1.1.7(zod@4.4.3))(nanostores@1.2.0)
       '@captchafox/react': 1.11.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@daveyplate/better-auth-ui': 3.3.9(7d43af40c040c943d9ec9657f20b615b)
+      '@daveyplate/better-auth-ui': 3.3.9(6d32de5b7cb70449bbc5f711c17cc3db)
       '@hcaptcha/react-hcaptcha': 1.17.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@hookform/resolvers': 5.2.2(react-hook-form@7.76.0(react@19.2.6))
+      '@hookform/resolvers': 5.4.0(react-hook-form@7.76.0(react@19.2.6))
       '@marsidev/react-turnstile': 1.4.2(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@neondatabase/auth': 0.4.1-beta(e67b7ccac560682ea9717689092a465d)
       '@radix-ui/react-avatar': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -15793,10 +15789,7 @@ snapshots:
 
   lru-cache@11.3.5: {}
 
-  lru-cache@11.4.0: {}
-
-  lru-cache@11.5.0:
-    optional: true
+  lru-cache@11.5.0: {}
 
   lru-cache@5.1.1:
     dependencies:
@@ -16605,7 +16598,7 @@ snapshots:
 
   path-scurry@2.0.2:
     dependencies:
-      lru-cache: 11.4.0
+      lru-cache: 11.5.0
       minipass: 7.1.3
 
   path-to-regexp@6.3.0: {}
@@ -17119,7 +17112,7 @@ snapshots:
       react: 19.2.6
       scheduler: 0.27.0
 
-  react-email@6.1.5(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+  react-email@6.3.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
     dependencies:
       '@babel/parser': 7.27.0
       '@babel/traverse': 7.27.0
