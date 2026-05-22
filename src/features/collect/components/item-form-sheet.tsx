@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { LoadingAnnouncer } from "@/components/loading-announcer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,6 +85,20 @@ function toFormDefaults(item: ParsedItem): Partial<ItemFormValues> {
     type: item.type,
     url: item.url ?? "",
   };
+}
+
+/** Resolve the loading→ready live-region announcement for the current mode. */
+function loadingAnnouncement(
+  mode: ItemFormSheetMode,
+  t: (key: "itemReady" | "loadingItem") => string
+): string {
+  if (mode.mode === "loading") {
+    return t("loadingItem");
+  }
+  if (mode.mode === "edit") {
+    return t("itemReady");
+  }
+  return "";
 }
 
 function ItemFormSheet({
@@ -183,34 +198,12 @@ function ItemFormSheet({
 
           <ScrollArea className="flex-1 overflow-y-auto">
             <div className="p-4">
-              {/* Persistent aria-live region — owns the loading→ready
-                  announcement so screen readers don't fall silent when the
-                  skeleton unmounts (WCAG 2.2 SC 4.1.3, issue #288 F3).
-                  Sibling of the conditional so the form's `key` remount
-                  cannot disturb it.
-
-                  Known platform caveats (not blockers):
-                  - VoiceOver iOS may swallow the initial "Loading…" content
-                    announced at mount; the loading→ready transition (a
-                    mutation, not initial content) is reliable across SR/browser
-                    combos and is what the SC requires.
-                  - On fast hydration, the polite queue may collapse the
-                    loading announcement behind Radix Dialog's SheetTitle
-                    read. Acceptable for the common case (hydration is
-                    typically perceptible).
-                  - The edit→create transition empties the region; most SRs
-                    treat empty atomic content as silence, but a few will
-                    announce blank. Acceptable — no meaningful content to
-                    convey on a sheet that's about to close anyway. */}
-              <span
-                aria-atomic="true"
-                aria-live="polite"
-                className="sr-only"
-                role="status"
-              >
-                {mode.mode === "loading" && t("loadingItem")}
-                {mode.mode === "edit" && t("itemReady")}
-              </span>
+              {/* Loading→ready announcer — the two-tick rationale and the
+                  remaining screen-reader caveats live in LoadingAnnouncer
+                  (issues #288 F3, #295). Unconditional sibling of the
+                  conditional below so the form's `key` remount can't reach
+                  it. */}
+              <LoadingAnnouncer message={loadingAnnouncement(mode, t)} />
               {mode.mode === "loading" ? (
                 // aria-busy directly on the skeleton container — NOT on its
                 // parent — so AT walking the tree treats the skeletons as
