@@ -133,3 +133,68 @@ test.describe("Repertoire — Trick CRUD", () => {
     await expect(page.getByText(name)).not.toBeVisible({ timeout: 10_000 });
   });
 });
+
+// The form-sheet loading announcer (issue #295) is covered at the unit level
+// by src/components/loading-announcer.test.tsx. This browser-level check of the
+// two-tick render — live region inserted empty, then the loading text added as
+// a separate DOM mutation — needs the edit-sheet flow, which is test.fixme
+// above for PowerSync E2E timing instability. It activates with those tests
+// once the PowerSync E2E patterns stabilise.
+test.describe("Repertoire — form-sheet loading announcer (#295)", () => {
+  test.beforeEach(() => {
+    test.skip(!hasAuthSession(), "No authenticated session available");
+  });
+
+  test.fixme("loading text is added to the live region as a mutation, not at mount", async ({
+    page,
+  }) => {
+    const name = `E2E A11y ${Date.now().toString()}`;
+    await page.goto("/repertoire");
+    await waitForAddButton(page, ADD_TRICK_RE);
+    await createTrick(page, name);
+
+    // Before the edit sheet opens, watch for any DOM mutation that targets a
+    // role=status element — text added/changed AFTER the live region span is
+    // already mounted. Content-at-mount would insert the span with its text
+    // inline, so no mutation would ever target the span itself.
+    await page.evaluate(() => {
+      const flag = window as unknown as { __lrMutatedAfterMount: boolean };
+      flag.__lrMutatedAfterMount = false;
+      new MutationObserver((batch) => {
+        for (const record of batch) {
+          let target: Element | null = null;
+          if (record.type === "characterData") {
+            target = record.target.parentElement;
+          } else if (record.target instanceof Element) {
+            target = record.target;
+          }
+          // Count only a status region INSIDE the dialog — a sonner toast is
+          // also role="status" but renders in a body-level portal.
+          if (
+            target?.getAttribute("role") === "status" &&
+            target?.closest('[role="dialog"]')
+          ) {
+            flag.__lrMutatedAfterMount = true;
+          }
+        }
+      }).observe(document.body, {
+        characterData: true,
+        childList: true,
+        subtree: true,
+      });
+    });
+
+    // Open the edit sheet — it mounts in loading mode while the trick row
+    // hydrates from PowerSync, then transitions to the edit form.
+    await page.getByRole("button", { name: new RegExp(name) }).click();
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("status")).toBeAttached();
+
+    const mutatedAfterMount = await page.evaluate(
+      () =>
+        (window as unknown as { __lrMutatedAfterMount: boolean })
+          .__lrMutatedAfterMount
+    );
+    expect(mutatedAfterMount).toBe(true);
+  });
+});
