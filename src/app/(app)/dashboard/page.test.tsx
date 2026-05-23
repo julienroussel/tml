@@ -7,15 +7,15 @@ vi.mock("@/components/dashboard-grid", () => ({
 }));
 
 vi.mock("@/components/collection-card", () => ({
-  CollectionCard: ({ itemCount }: { itemCount: number }) => (
-    <div data-count={itemCount} data-testid="collection-card" />
-  ),
+  CollectionCard: () => <div data-testid="collection-card" />,
 }));
 
 vi.mock("@/components/repertoire-card", () => ({
-  RepertoireCard: ({ trickCount }: { trickCount: number }) => (
-    <div data-count={trickCount} data-testid="repertoire-card" />
-  ),
+  RepertoireCard: () => <div data-testid="repertoire-card" />,
+}));
+
+vi.mock("@/features/activity/components/recent-activity-card", () => ({
+  RecentActivityCard: () => <div data-testid="recent-activity-card" />,
 }));
 
 interface MockSession {
@@ -34,47 +34,6 @@ vi.mock("@/auth/server", () => ({
   },
 }));
 
-const mockWhere = vi.fn(() => Promise.resolve([{ count: 3 }]));
-const mockFrom = vi.fn(() => ({ where: mockWhere }));
-const mockSelect = vi.fn(() => ({ from: mockFrom }));
-
-// The dashboard page calls select().from(tricks).where() then select().from(items).where()
-// Both return the same mock chain — the mockWhere default returns [{ count: 3 }] for both.
-
-vi.mock("@/db", () => ({
-  getDb: vi.fn(() => ({
-    select: mockSelect,
-  })),
-}));
-
-const mockAnd = vi.fn((...args: unknown[]) => args);
-const mockCount = vi.fn(() => "count()");
-const mockEq = vi.fn(
-  (col: unknown, val: unknown) => `eq(${String(col)},${String(val)})`
-);
-const mockIsNull = vi.fn((col: unknown) => `isNull(${String(col)})`);
-
-vi.mock("drizzle-orm", () => ({
-  and: (...args: unknown[]) => mockAnd(...args),
-  count: () => mockCount(),
-  eq: (col: unknown, val: unknown) => mockEq(col, val),
-  isNull: (col: unknown) => mockIsNull(col),
-}));
-
-vi.mock("@/db/schema/items", () => ({
-  items: {
-    userId: "items.userId",
-    deletedAt: "items.deletedAt",
-  },
-}));
-
-vi.mock("@/db/schema/tricks", () => ({
-  tricks: {
-    userId: "tricks.userId",
-    deletedAt: "tricks.deletedAt",
-  },
-}));
-
 describe("DashboardPage", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -83,31 +42,36 @@ describe("DashboardPage", () => {
         data: { user: { id: "user-1", name: "Test Magician" } },
       })
     );
-    mockWhere.mockImplementation(() => Promise.resolve([{ count: 3 }]));
-    mockFrom.mockImplementation(() => ({ where: mockWhere }));
-    mockSelect.mockImplementation(() => ({ from: mockFrom }));
   });
 
-  it("renders the CollectionCard with the correct itemCount", async () => {
-    mockWhere
-      .mockResolvedValueOnce([{ count: 3 }]) // tricks query (first)
-      .mockResolvedValueOnce([{ count: 7 }]); // items query (second)
+  it("renders the CollectionCard", async () => {
     render(await DashboardPage());
+    expect(screen.getByTestId("collection-card")).toBeInTheDocument();
+  });
 
-    const card = screen.getByTestId("collection-card");
-    expect(card).toBeInTheDocument();
-    expect(card).toHaveAttribute("data-count", "7");
+  it("renders the RepertoireCard", async () => {
+    render(await DashboardPage());
+    expect(screen.getByTestId("repertoire-card")).toBeInTheDocument();
+  });
+
+  it("renders the RecentActivityCard", async () => {
+    render(await DashboardPage());
+    expect(screen.getByTestId("recent-activity-card")).toBeInTheDocument();
+  });
+
+  it("renders the DashboardGrid", async () => {
+    render(await DashboardPage());
+    expect(screen.getByTestId("dashboard-grid")).toBeInTheDocument();
   });
 
   it("renders the Dashboard heading", async () => {
     render(await DashboardPage());
-
     expect(
       screen.getByRole("heading", { name: "dashboard.title" })
     ).toBeInTheDocument();
   });
 
-  it("renders a personalized welcome message", async () => {
+  it("renders a personalized welcome message when the user has a name", async () => {
     render(await DashboardPage());
 
     const welcomeSection = screen.getByRole("heading", {
@@ -121,40 +85,8 @@ describe("DashboardPage", () => {
     expect(paragraph?.textContent).not.toBe("dashboard.welcome");
   });
 
-  it("renders the DashboardGrid component", async () => {
-    render(await DashboardPage());
-
-    expect(screen.getByTestId("dashboard-grid")).toBeInTheDocument();
-  });
-
-  it("renders the RepertoireCard with the correct trickCount", async () => {
-    mockWhere
-      .mockResolvedValueOnce([{ count: 3 }]) // tricks query (first)
-      .mockResolvedValueOnce([{ count: 7 }]); // items query (second)
-    render(await DashboardPage());
-
-    const card = screen.getByTestId("repertoire-card");
-    expect(card).toBeInTheDocument();
-    expect(card).toHaveAttribute("data-count", "3");
-  });
-
-  it("queries the database with correct parameters", async () => {
-    render(await DashboardPage());
-
-    expect(mockSelect).toHaveBeenCalled();
-    expect(mockFrom).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith("tricks.userId", "user-1");
-    expect(mockIsNull).toHaveBeenCalledWith("tricks.deletedAt");
-    expect(mockEq).toHaveBeenCalledWith("items.userId", "user-1");
-    expect(mockIsNull).toHaveBeenCalledWith("items.deletedAt");
-    expect(mockAnd).toHaveBeenCalled();
-    expect(mockWhere).toHaveBeenCalled();
-  });
-
-  it("shows generic welcome when session.user is falsy", async () => {
-    mockGetSession.mockResolvedValueOnce({
-      data: { user: null },
-    });
+  it("shows the generic welcome when session.user is falsy", async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { user: null } });
 
     render(await DashboardPage());
 
@@ -164,40 +96,10 @@ describe("DashboardPage", () => {
     const paragraph = welcomeSection?.querySelector("p");
     expect(paragraph).toBeInTheDocument();
     expect(paragraph?.textContent).toBeTruthy();
-  });
-
-  it("throws when DB query fails", async () => {
-    mockWhere.mockRejectedValueOnce(new Error("DB connection failed"));
-
-    await expect(DashboardPage()).rejects.toThrow("DB connection failed");
   });
 
   it("throws when getSession rejects", async () => {
     mockGetSession.mockRejectedValueOnce(new Error("Auth service down"));
-
     await expect(DashboardPage()).rejects.toThrow("Auth service down");
-  });
-
-  it("skips DB query when userId is empty", async () => {
-    mockGetSession.mockResolvedValueOnce({
-      data: { user: { id: "", name: "No ID User" } },
-    });
-
-    mockSelect.mockClear();
-    mockFrom.mockClear();
-    mockWhere.mockClear();
-
-    render(await DashboardPage());
-
-    const welcomeSection = screen.getByRole("heading", {
-      name: "dashboard.title",
-    }).parentElement;
-    const paragraph = welcomeSection?.querySelector("p");
-    expect(paragraph).toBeInTheDocument();
-    expect(paragraph?.textContent).toBeTruthy();
-
-    expect(mockSelect).not.toHaveBeenCalled();
-    expect(mockFrom).not.toHaveBeenCalled();
-    expect(mockWhere).not.toHaveBeenCalled();
   });
 });

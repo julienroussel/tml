@@ -1,22 +1,29 @@
+"use client";
+
 import { ChevronRight, WandSparkles } from "lucide-react";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import type { ReactElement } from "react";
+import { useTranslations } from "next-intl";
+import { type ReactElement, useEffect } from "react";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTrickCount } from "@/features/repertoire/hooks/use-trick-count";
 
-interface RepertoireCardProps {
-  trickCount: number;
-}
+function RepertoireCard(): ReactElement {
+  const t = useTranslations("dashboard");
+  const { count, isLoading, error } = useTrickCount();
 
-export async function RepertoireCard({
-  trickCount,
-}: RepertoireCardProps): Promise<ReactElement> {
-  const t = await getTranslations("dashboard");
+  // Em-dash on error keeps the card usable as a nav tile; the loading
+  // skeleton would otherwise persist indefinitely on hook failure.
+  useEffect(() => {
+    if (error) {
+      console.error("RepertoireCard: failed to load trick count", error);
+    }
+  }, [error]);
 
   return (
     <Link
@@ -32,8 +39,8 @@ export async function RepertoireCard({
             </div>
             <div className="flex flex-1 flex-col gap-1">
               <CardTitle>{t("repertoireTitle")}</CardTitle>
-              <CardDescription>
-                {t("repertoireDescription", { count: trickCount })}
+              <CardDescription aria-busy={isLoading ? true : undefined}>
+                {renderDescription({ count, error, isLoading, t })}
               </CardDescription>
             </div>
             <ChevronRight
@@ -46,3 +53,27 @@ export async function RepertoireCard({
     </Link>
   );
 }
+
+interface RenderDescriptionArgs {
+  count: number;
+  error: Error | null;
+  isLoading: boolean;
+  t: ReturnType<typeof useTranslations<"dashboard">>;
+}
+
+function renderDescription({
+  count,
+  error,
+  isLoading,
+  t,
+}: RenderDescriptionArgs): ReactElement | string {
+  if (error) {
+    return "—";
+  }
+  if (isLoading) {
+    return <Skeleton className="h-4 w-32" />;
+  }
+  return t("repertoireDescription", { count });
+}
+
+export { RepertoireCard };
