@@ -1,4 +1,3 @@
-import { and, count, eq, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import type { ReactElement } from "react";
@@ -6,9 +5,6 @@ import { auth } from "@/auth/server";
 import { CollectionCard } from "@/components/collection-card";
 import { DashboardGrid } from "@/components/dashboard-grid";
 import { RepertoireCard } from "@/components/repertoire-card";
-import { getDb } from "@/db";
-import { items } from "@/db/schema/items";
-import { tricks } from "@/db/schema/tricks";
 import { RecentActivityCard } from "@/features/activity/components/recent-activity-card";
 
 export const metadata: Metadata = {
@@ -19,25 +15,6 @@ export const metadata: Metadata = {
 export default async function DashboardPage(): Promise<ReactElement> {
   const t = await getTranslations("dashboard");
   const { data: session } = await auth.getSession();
-  const userId = session?.user?.id;
-  let trickCount = 0;
-  let itemCount = 0;
-
-  if (userId) {
-    const db = getDb();
-    const [trickRows, itemRows] = await Promise.all([
-      db
-        .select({ count: count() })
-        .from(tricks)
-        .where(and(eq(tricks.userId, userId), isNull(tricks.deletedAt))),
-      db
-        .select({ count: count() })
-        .from(items)
-        .where(and(eq(items.userId, userId), isNull(items.deletedAt))),
-    ]);
-    trickCount = trickRows[0]?.count ?? 0;
-    itemCount = itemRows[0]?.count ?? 0;
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,8 +30,8 @@ export default async function DashboardPage(): Promise<ReactElement> {
       </div>
       <div className="grid items-start gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-4">
-          <RepertoireCard trickCount={trickCount} />
-          <CollectionCard itemCount={itemCount} />
+          <RepertoireCard />
+          <CollectionCard />
         </div>
         <RecentActivityCard />
       </div>

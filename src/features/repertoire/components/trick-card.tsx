@@ -98,9 +98,14 @@ export function TrickCard({
       tabIndex={0}
     >
       <CardHeader className="relative">
-        <div className="flex items-start justify-between gap-2">
+        {/* min-w-0 here is load-bearing: CardHeader is a CSS grid with implicit
+            auto columns, so this grid item's default min-width: auto would
+            expand to its min-content (the full untruncated title). min-w-0
+            lets the grid track shrink so the inner truncation/line-clamp
+            chain triggers as designed. */}
+        <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="truncate font-semibold">{trick.name}</h3>
+            <h3 className="line-clamp-2 font-semibold">{trick.name}</h3>
             {trick.description ? (
               <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
                 {trick.description}

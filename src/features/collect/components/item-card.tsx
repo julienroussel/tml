@@ -71,31 +71,44 @@ export function ItemCard({
     // so we avoid it by giving each action its own real <button>.
     <Card className="hover:border-ring motion-safe:transition-colors">
       <CardHeader className="relative">
-        <div className="flex items-start justify-between gap-2">
+        {/* min-w-0 here is load-bearing: CardHeader is a CSS grid with implicit
+            auto columns, so this grid item's default min-width: auto would
+            expand to its min-content (the full untruncated title), defeating
+            the inner truncate. min-w-0 lets the grid track shrink, which then
+            lets the flex chain below trigger truncation. */}
+        <div className="flex min-w-0 items-start justify-between gap-2">
           {/* Phrasing-only inside <button> per HTML spec — use <span> with heading styles.
               The name span gets role="heading" aria-level={3} so screen-reader H-key
               navigation still works and the document outline stays intact, matching
-              the semantic <h3> used in trick-card.tsx. */}
-          <button
-            aria-label={`${t("edit")}: ${item.name}`}
-            className="min-w-0 flex-1 cursor-pointer rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            onClick={handleEditClick}
-            type="button"
-          >
-            {/* biome-ignore lint/a11y/useSemanticElements: <h3> is phrasing-content-only and invalid inside <button>; the ARIA role preserves H-key nav without breaking HTML. */}
-            <span
-              aria-level={3}
-              className="block truncate font-semibold"
-              role="heading"
+              the semantic <h3> used in trick-card.tsx.
+
+              The button is wrapped in a <div className="min-w-0 flex-1"> so the flex
+              item carrying the shrink/min-width is a <div>, not the button itself.
+              Buttons-as-flex-items don't shrink below their intrinsic content width
+              reliably (UA styling), so the inner <span class="truncate"> never
+              triggered; matching trick-card.tsx restores the truncation chain. */}
+          <div className="min-w-0 flex-1">
+            <button
+              aria-label={`${t("edit")}: ${item.name}`}
+              className="block w-full cursor-pointer rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              onClick={handleEditClick}
+              type="button"
             >
-              {item.name}
-            </span>
-            {item.description ? (
-              <span className="mt-1 line-clamp-2 block font-normal text-muted-foreground text-sm">
-                {item.description}
+              {/* biome-ignore lint/a11y/useSemanticElements: <h3> is phrasing-content-only and invalid inside <button>; the ARIA role preserves H-key nav without breaking HTML. */}
+              <span
+                aria-level={3}
+                className="line-clamp-2 font-semibold"
+                role="heading"
+              >
+                {item.name}
               </span>
-            ) : null}
-          </button>
+              {item.description ? (
+                <span className="mt-1 line-clamp-2 block font-normal text-muted-foreground text-sm">
+                  {item.description}
+                </span>
+              ) : null}
+            </button>
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
