@@ -19,6 +19,14 @@ const hasVercelBypass = !!(
   process.env.BASE_URL && process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 );
 
+// Specs that require an authenticated session. Listed once and reused in
+// both the `chromium` project's `testIgnore` (so the unauthenticated lane
+// skips them) AND the `authenticated` project's `testMatch` (so the
+// authenticated lane runs them). Adding a new authenticated spec only
+// requires editing this constant — the two project entries below stay in sync.
+const AUTH_SPECS =
+  /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts|sync-degraded\.spec\.ts/;
+
 // In CI, PLAYWRIGHT_SKIP_BUILD reuses the .next/ output from an earlier step.
 // Without it, build + start from scratch. Locally, use the Turbopack dev server.
 function webServerCommand(): string {
@@ -60,8 +68,10 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore:
-        /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts|pwa-offline\.spec\.ts/,
+      // testIgnore is AUTH_SPECS plus the PWA spec (which the dedicated `pwa`
+      // project below picks up). Kept inline because the PWA exclusion is
+      // unrelated to the auth/non-auth split that AUTH_SPECS captures.
+      testIgnore: new RegExp(`${AUTH_SPECS.source}|pwa-offline\\.spec\\.ts`),
     },
     // Authenticated tests — settings, locale, theme, repertoire
     {
@@ -70,8 +80,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         storageState: AUTH_STATE_PATH,
       },
-      testMatch:
-        /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts/,
+      testMatch: AUTH_SPECS,
       dependencies: ["setup"],
     },
     // PWA tests — SW registration, activation, cache verification.

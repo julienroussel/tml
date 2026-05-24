@@ -1,6 +1,33 @@
 name: Deploy PowerSync sync config
 
+# Single workflow, two events:
+#   pull_request → deploy to the DEV PowerSync instance (used by Vercel's
+#     development/preview envs + local dev).
+#   push to main → deploy to the PROD PowerSync instance (themagiclab.app).
+#
+# Concurrency: see the inline block above the `concurrency:` key below — all
+# dev deploys share a single 'dev' group (PR runs serialize, fresh PR pushes
+# cancel the in-flight run even if it belonged to another PR); push/dispatch
+# events share a 'main' group (prod deploys serialize, no cancellation).
+#
+# REPOSITORY VARIABLES (required before this workflow runs):
+#   - POWERSYNC_PROJECT_ID, POWERSYNC_INSTANCE_ID_DEV, POWERSYNC_INSTANCE_ID_PROD
+#
+# GITHUB ENVIRONMENTS (required, with required reviewers configured):
+#   - `preview` (PR deploys) and `production` (push/dispatch deploys).
+#   See `.claude/rules/sync-engine.md` → "GitHub Environment gating" for the
+#   protection-rule recipe and threat-model rationale.
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "powersync/sync-config.yaml"
+      - "src/db/schema/**"
+      - "src/sync/schema.ts"
+      - "src/sync/synced-columns.ts"
+      - "scripts/generate-sync.ts"
+      - "scripts/powersync.ts"
+      - ".github/workflows/deploy-sync.yml"
   push:
     branches: [main]
     paths:
@@ -16,15 +43,50 @@ on:
 permissions:
   contents: read
 
+# Trade-off: workflow-level concurrency cancels BOTH validate and deploy on a
+# fresh PR push. Validate (cheap, no secrets) is recomputed by the next push;
+# this is fine for the current "validate is recommended-required but not yet
+# wired" posture. If validate ever becomes a required status check, split into
+# per-job concurrency: workflow-level for deploy serialization, no concurrency
+# on validate so an in-flight validate is allowed to finish before the next
+# push starts a new one. Otherwise GitHub treats the cancelled validate as
+# neither pass nor fail and permanently blocks merge.
+#
+# Concurrency: all dev deploys share a single "dev" group so two PRs touching
+# sync paths cannot race and leave the shared dev instance in a state matching
+# neither HEAD. `cancel-in-progress: true` for PR events means a fresh PR push
+# cancels the in-flight dev run. Note: when PR #2 cancels PR #1's mid-flight
+# run, PR #2 deploys ITS OWN sync config; PR #1's config is NOT auto-redeployed
+# afterwards. PR #1 has to push a new commit (or the workflow has to be
+# re-triggered manually) for the dev instance to reflect #1's config again.
+# Trade-off: faster turnaround for the latest pushed PR, at the cost of dev
+# state lagging older PRs that paused. If reviewers report that the dev
+# instance state does not match the PR they are viewing, that's the cause —
+# tell them to push an empty commit to re-trigger deploy for their PR.
+# `push` to main AND `workflow_dispatch` (manual ops-recovery deploys also
+# targeting prod) share the "main" group so prod deploys serialize without
+# being cancelled mid-flight.
+# A cancelled dev run can also leave the dev instance in the partial-state
+# described in `.claude/rules/sync-engine.md` "Partial-state recovery" —
+# follow that procedure if the dev instance looks wedged after a cancellation.
 concurrency:
-  group: deploy-sync
-  cancel-in-progress: false
+  group: deploy-sync-${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'main' || 'dev' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  deploy:
-    name: Deploy sync-config.yaml
+  # Validate sync artifacts are up to date. Runs on every PR/push/dispatch,
+  # including fork PRs (which the deploy job skips). Needs no secrets — this
+  # is the gate that catches a contributor editing src/db/schema/** without
+  # running `pnpm sync:generate`, regardless of whether they can deploy.
+  validate:
+    name: Validate sync artifacts
+    # Skip Dependabot PRs to match the conservative posture of the deploy job
+    # (Dependabot bumps shouldn't be touching sync artifacts anyway). Fork PRs
+    # SHOULD run validate — that's the regression this job exists to close.
+    if: >-
+      github.event_name != 'pull_request'
+      || github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -45,16 +107,149 @@ jobs:
       - name: Check sync artifacts are up to date
         run: pnpm sync:check
 
-      - name: Validate sync config
+  deploy:
+    name: Deploy sync-config.yaml
+    needs: validate
+    # Skip fork PRs (no access to POWERSYNC_ADMIN_TOKEN — would fail opaquely)
+    # and Dependabot PRs (same secrets restriction). Push runs unconditionally.
+    # `workflow_dispatch` is gated to `refs/heads/main` so an operator cannot
+    # ship unreviewed sync rules to prod by dispatching from a feature branch
+    # (resolve-target maps any non-PR event to PROD). Manual dispatch from main
+    # is permitted only when the `production` environment has required
+    # reviewers configured — that gate is enforced operationally by the
+    # `environment: production` binding on the `deploy` job below.
+    #
+    # ⚠️ BRANCH-PROTECTION CONTRACT: NEVER mark this `deploy` job as a required
+    # status check. The `if:` below produces "skipped" status for fork PRs and
+    # Dependabot PRs — GitHub treats "skipped" as neither pass nor fail, which
+    # permanently blocks merge for required checks. Mark the `validate` job
+    # required instead (it runs for all PRs including forks). See the
+    # symmetric note in `.claude/rules/sync-engine.md`.
+    if: >-
+      github.event_name == 'push'
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+      || (github.event.pull_request.head.repo.full_name == github.repository
+          && github.event.pull_request.user.login != 'dependabot[bot]')
+      # user.login = immutable PR author; github.actor would shift if a maintainer pushes to the Dependabot branch.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Bind the job to a GitHub Environment so deploys go through the
+    # environment's protection rules (required reviewers, wait timers,
+    # deployment branches). The environment name is derived from the same
+    # event-type expression that drives the concurrency group: PR → `preview`,
+    # push/dispatch → `production`. Both environments must exist under
+    # Settings → Environments before this workflow can run — if missing, the
+    # job fails at startup with "Could not find the environment …".
+    #
+    # Note: the GitHub Environment is named `preview` (matching Vercel's
+    # terminology for PR deployments) even though it deploys to the DEV
+    # PowerSync instance via vars.POWERSYNC_INSTANCE_ID_DEV. The two names
+    # describe different layers — GitHub deploy target vs. PowerSync runtime.
+    #
+    # IMPORTANT — current state: APPROVAL GATE, NOT ISOLATION.
+    #
+    # Both `preview` and `production` GitHub Environments must have required
+    # reviewers configured (Settings → Environments); without that, the
+    # environment binding is inert. The reviewer click is the only line of
+    # defense against PR-side PAT exfiltration until env-scoped PATs are in
+    # place — `POWERSYNC_ADMIN_TOKEN` is currently a REPOSITORY secret (not
+    # environment-scoped), so a malicious PR that edits `scripts/powersync.ts`
+    # to exfiltrate the token will succeed if a reviewer approves the run
+    # without reading the diff. PREFERRED MITIGATION: provision env-scoped
+    # PATs (one PAT per environment, dev PAT scoped to the dev instance only)
+    # and remove the repository-level secret. Recipe: provision a second PAT
+    # in the PowerSync dashboard scoped to dev → move both PATs to environment
+    # secrets → delete the repository-level secret. Full write-up:
+    # `.claude/rules/sync-engine.md` → "GitHub Environment gating".
+    environment:
+      name: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'production' || 'preview' }}
+    env:
+      POWERSYNC_PROJECT_ID: ${{ vars.POWERSYNC_PROJECT_ID }}
+    steps:
+      # Resolve target instance with an explicit fail-fast guard. GitHub Actions
+      # ternary semantics (`A && B || C`) would silently fall through to C when
+      # B is empty — so if `POWERSYNC_INSTANCE_ID_DEV` is unset, a PR event
+      # would deploy to PROD. This step refuses to proceed without the matching
+      # instance variable for the event type, then exposes the chosen ID as a
+      # step output for subsequent steps to consume via env.
+      - name: Resolve target instance
+        id: target
+        env:
+          DEV_ID: ${{ vars.POWERSYNC_INSTANCE_ID_DEV }}
+          PROD_ID: ${{ vars.POWERSYNC_INSTANCE_ID_PROD }}
+          PROJECT_ID: ${{ vars.POWERSYNC_PROJECT_ID }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # POWERSYNC_PROJECT_ID is consumed by every subsequent step via the
+          # job-level env: block; if it's unset, downstream failures surface
+          # deep in the CLI rather than at workflow level. Validate up-front
+          # so the operator sees a clear actionable error.
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error::POWERSYNC_PROJECT_ID is not set on this repository. Set it under Settings → Secrets and variables → Actions → Variables."
+            exit 1
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if [ -z "$DEV_ID" ]; then
+              echo "::error::POWERSYNC_INSTANCE_ID_DEV is not set on this repository. Set it under Settings → Secrets and variables → Actions → Variables before merging."
+              exit 1
+            fi
+            echo "label=dev" >> "$GITHUB_OUTPUT"
+            echo "instance_id=$DEV_ID" >> "$GITHUB_OUTPUT"
+            # Step summary for at-a-glance audit on the Actions run page.
+            echo "Target: dev" >> "$GITHUB_STEP_SUMMARY"
+          else
+            if [ -z "$PROD_ID" ]; then
+              echo "::error::POWERSYNC_INSTANCE_ID_PROD is not set on this repository. Set it under Settings → Secrets and variables → Actions → Variables before pushing to main."
+              exit 1
+            fi
+            echo "label=prod" >> "$GITHUB_OUTPUT"
+            echo "instance_id=$PROD_ID" >> "$GITHUB_OUTPUT"
+            # Step summary for at-a-glance audit on the Actions run page.
+            echo "Target: prod" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Deploy the PowerSync instance itself BEFORE attempting sync-config
+      # validation. The CLI fails sync-config validate with "Deploy the
+      # instance, with powersync deploy, before validating sync config." when
+      # the instance state has drifted. This step is the fix for that failure
+      # mode; it was silently missing from 2026-05-18 onward.
+      #
+      # CLI sub-commands (verified against @powersync/cli — re-verify on bump):
+      #   - `powersync deploy` (bare) → deploys instance config only.
+      #   - `powersync deploy sync-config` (run by `pnpm sync:deploy` below)
+      #     → publishes sync rules.
+      # If `sync:validate` fails between the two, the instance has new state
+      # but rules remain on the previous version — see sync-engine.md
+      # "Partial-state recovery" for the documented recovery procedure.
+      - name: Deploy PowerSync instance (${{ steps.target.outputs.label }})
+        run: pnpm exec tsx scripts/powersync.ts deploy
+        env:
+          POWERSYNC_INSTANCE_ID: ${{ steps.target.outputs.instance_id }}
+          POWERSYNC_ADMIN_TOKEN: ${{ secrets.POWERSYNC_ADMIN_TOKEN }}
+
+      - name: Validate sync config (${{ steps.target.outputs.label }})
         run: pnpm sync:validate
         env:
+          POWERSYNC_INSTANCE_ID: ${{ steps.target.outputs.instance_id }}
           POWERSYNC_ADMIN_TOKEN: ${{ secrets.POWERSYNC_ADMIN_TOKEN }}
-          POWERSYNC_INSTANCE_ID: ${{ vars.POWERSYNC_INSTANCE_ID }}
-          POWERSYNC_PROJECT_ID: ${{ vars.POWERSYNC_PROJECT_ID }}
 
-      - name: Deploy sync config
+      - name: Deploy sync config (${{ steps.target.outputs.label }})
         run: pnpm sync:deploy
         env:
+          POWERSYNC_INSTANCE_ID: ${{ steps.target.outputs.instance_id }}
           POWERSYNC_ADMIN_TOKEN: ${{ secrets.POWERSYNC_ADMIN_TOKEN }}
-          POWERSYNC_INSTANCE_ID: ${{ vars.POWERSYNC_INSTANCE_ID }}
-          POWERSYNC_PROJECT_ID: ${{ vars.POWERSYNC_PROJECT_ID }}

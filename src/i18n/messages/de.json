@@ -461,7 +461,10 @@
     "pendingChanges": "Ausstehende Änderungen",
     "error": "Synchronisierungsfehler",
     "mutationDropped": "{count, plural, one {# Änderung konnte nicht gespeichert werden} other {# Änderungen konnten nicht gespeichert werden}}",
-    "mutationDroppedDescription": "Der Server hat die Änderung abgelehnt. Deine lokalen Daten sind möglicherweise nicht synchron."
+    "mutationDroppedDescription": "Der Server hat die Änderung abgelehnt. Deine lokalen Daten sind möglicherweise nicht synchron.",
+    "degraded": "Synchronisierung eingeschränkt",
+    "dbInitFailed": "Der Offline-Speicher konnte nicht gestartet werden. Lade die Seite neu, um es erneut zu versuchen.",
+    "connectFailed": "Sync-Verbindung fehlgeschlagen. Wir versuchen es automatisch erneut."
   },
   "pushNotifications": {
     "notSupported": "Push-Benachrichtigungen werden in diesem Browser nicht unterstützt.",

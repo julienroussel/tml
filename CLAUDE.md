@@ -84,6 +84,7 @@ Pinned versions in `package.json`. Opinionated choices that aren't obvious from 
 
 - **shadcn/ui (new-york style)** built on the umbrella `radix-ui` package — never `@radix-ui/react-*` subpackages.
 - **PowerSync direction**: offline-first SQLite is the **primary read source**; Neon is downstream. Don't bypass.
+- **PowerSync instances**: two instances live under one project — `dev` (used by local, Vercel "development" / "preview") and `prod` (used by `themagiclab.app`). `.github/workflows/deploy-sync.yml` routes by event: `pull_request` → dev, `push to main` → prod. A stale-instance symptom (sync stream subscribes but returns no buckets) surfaces as the `degraded` `SyncStatus` pill — see `.claude/rules/sync-engine.md` "PowerSync Instance Topology" for the diagnostic recipe.
 - **Sync codegen**: `src/sync/schema.ts` and `powersync/sync-config.yaml` are **generated** from Drizzle. Never hand-edit.
 - **Style utility**: `cn()` in `src/lib/utils.ts` (CVA + clsx + tailwind-merge). Use for every conditional-class case.
 - **Lefthook** (not Husky) for pre-commit; **Vitest** (not Jest); **Biome via Ultracite** (no ESLint/Prettier).
