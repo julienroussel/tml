@@ -461,7 +461,10 @@
     "pendingChanges": "Pending changes",
     "error": "Sync error",
     "mutationDropped": "{count, plural, one {# change could not be saved} other {# changes could not be saved}}",
-    "mutationDroppedDescription": "The server rejected the change. Your local data may be out of sync."
+    "mutationDroppedDescription": "The server rejected the change. Your local data may be out of sync.",
+    "degraded": "Sync limited",
+    "dbInitFailed": "The app couldn't start offline mode. Please reload the page to try again.",
+    "connectFailed": "Sync connection failed. We'll retry automatically."
   },
   "pushNotifications": {
     "notSupported": "Push notifications are not supported in this browser.",

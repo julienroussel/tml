@@ -1,18 +1,15 @@
-import type { useStatus } from "@powersync/react";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ObservedStatus } from "@/sync/provider";
 import { SyncStatus } from "./sync-status";
 
-// Derive the mock shape from the real `useStatus()` return type so the test
-// breaks at compile time if @powersync/react renames or retypes a field —
-// rather than silently passing against a stale fictional shape. The mapped
+// Derive the mock shape from `ObservedStatus` (the production narrowed type
+// — `Pick<SyncStatus, "connected" | "dataFlowStatus" | "lastSyncedAt">`)
+// instead of duplicating the key list. If `ObservedStatus` grows in
+// provider.tsx, the test surface tracks automatically. The mapped
 // `-readonly` modifier strips SyncStatus's readonly getters so tests can
 // mutate fields between cases.
-type MockStatus = {
-  -readonly [K in "connected" | "dataFlowStatus" | "lastSyncedAt"]: ReturnType<
-    typeof useStatus
-  >[K];
-};
+type MockStatus = { -readonly [K in keyof ObservedStatus]: ObservedStatus[K] };
 
 const mockStatus: MockStatus = {
   connected: false,
@@ -24,6 +21,25 @@ const mockStatus: MockStatus = {
     uploadError: undefined,
   },
 };
+
+// Bucket-health stub. Default to "healthy" (has server buckets) so existing
+// tests for online/syncing/pendingChanges/error all retain their original
+// semantics — the `degraded` branch only triggers when this returns false.
+// Mutable singleton intentionally reset per-test via resetStatus(); tests run
+// in isolation via beforeEach.
+type MockBucketHealth = {
+  error: Error | null;
+  hasServerBuckets: boolean;
+  isLoading: boolean;
+};
+
+const DEFAULT_BUCKET_HEALTH: MockBucketHealth = {
+  hasServerBuckets: true,
+  isLoading: false,
+  error: null,
+};
+
+const mockBucketHealth: MockBucketHealth = { ...DEFAULT_BUCKET_HEALTH };
 
 // Module-level latch: when true, the next `useStatus()` call throws (simulating
 // rendering outside a PowerSyncContext) so SyncStatusBoundary catches it and
@@ -39,6 +55,10 @@ vi.mock("@powersync/react", () => ({
   },
 }));
 
+vi.mock("@/sync/use-bucket-health", () => ({
+  useBucketHealth: () => mockBucketHealth,
+}));
+
 function resetStatus(): void {
   mockStatus.connected = false;
   mockStatus.lastSyncedAt = undefined;
@@ -46,6 +66,7 @@ function resetStatus(): void {
   mockStatus.dataFlowStatus.downloading = false;
   mockStatus.dataFlowStatus.downloadError = undefined;
   mockStatus.dataFlowStatus.uploadError = undefined;
+  Object.assign(mockBucketHealth, DEFAULT_BUCKET_HEALTH);
   useStatusShouldThrow = false;
 }
 
@@ -112,6 +133,7 @@ describe("SyncStatus", () => {
   });
 
   it("renders error status when there is an upload error", () => {
+    mockStatus.connected = true;
     mockStatus.dataFlowStatus.uploadError = new Error("upload failed");
     render(<SyncStatus />);
 
@@ -126,6 +148,149 @@ describe("SyncStatus", () => {
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.error")).toBeInTheDocument();
+  });
+
+  it("renders degraded status when connected and synced but no server buckets exist", () => {
+    // Regression guard for #332: pill must not say "online" when the sync
+    // stream subscribes but produces no buckets (stale-instance / sync-rules
+    // never deployed). `lastSyncedAt` set + `hasServerBuckets=false` is the
+    // signature of that silent failure.
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockBucketHealth.hasServerBuckets = false;
+    render(<SyncStatus />);
+
+    expect(screen.getByText("sync.degraded")).toBeInTheDocument();
+    expect(getPill()).toHaveAttribute("data-sync-state", "degraded");
+  });
+
+  it("does not flip to degraded before the first sync attempt (no lastSyncedAt)", () => {
+    // Without lastSyncedAt, the bucket count is meaningless — sync hasn't
+    // run yet. Showing "degraded" here would flicker on every fresh boot.
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = undefined;
+    mockBucketHealth.hasServerBuckets = false;
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "online");
+  });
+
+  it("does not flip to degraded while bucket-health query is still loading", () => {
+    // The hook returns `hasServerBuckets=false` while loading; trusting that
+    // before the query resolves would emit a spurious degraded flash.
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockBucketHealth.hasServerBuckets = false;
+    mockBucketHealth.isLoading = true;
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "online");
+  });
+
+  it("prioritizes error over degraded status", () => {
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockStatus.dataFlowStatus.downloadError = new Error("down fail");
+    mockBucketHealth.hasServerBuckets = false;
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "error");
+  });
+
+  it("falls into degraded (not error) when bucket-health query itself errors", () => {
+    // Fail-safe contract from use-bucket-health.ts docstring: a SDK-internal
+    // failure on the ps_buckets query must NOT escalate to "error" — that
+    // tier is reserved for sync-level download/upload errors. Instead the
+    // pill degrades so users get an amber hint rather than a red alarm for
+    // a diagnostic-tier failure they can't act on.
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockBucketHealth.hasServerBuckets = false;
+    mockBucketHealth.error = new Error("ps_buckets table renamed");
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "degraded");
+  });
+
+  it("flips to degraded when bucket-health query errors even though buckets are present", () => {
+    // Fail-safe contract: a non-null error MUST degrade regardless of the
+    // hasServerBuckets value. A regression that swapped `||` to `&&` in
+    // deriveSyncKey would let this case pass through to `online`.
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockBucketHealth.hasServerBuckets = true;
+    mockBucketHealth.error = new Error("transient SDK issue");
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "degraded");
+  });
+
+  it("prioritizes pendingChanges over degraded status", () => {
+    // Active upload signal beats degraded — the user's writes are in flight,
+    // which is more relevant than the stale-instance hint.
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockStatus.dataFlowStatus.uploading = true;
+    mockBucketHealth.hasServerBuckets = false;
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "pendingChanges");
+  });
+
+  it("prioritizes pendingChanges over a download error", () => {
+    mockStatus.connected = true;
+    mockStatus.dataFlowStatus.uploading = true;
+    mockStatus.dataFlowStatus.downloadError = new Error("download failed");
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "pendingChanges");
+  });
+
+  it("prioritizes pendingChanges over its own upload error", () => {
+    // The actively-uploading signal beats the previous upload's error: the
+    // pill should reflect that another write is in flight, not stay stuck
+    // on the most recent failure.
+    mockStatus.connected = true;
+    mockStatus.dataFlowStatus.uploading = true;
+    mockStatus.dataFlowStatus.uploadError = new Error(
+      "previous attempt failed"
+    );
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "pendingChanges");
+  });
+
+  // Priority-chain matrix (#332): pin which key `deriveSyncKey` returns when
+  // multiple conditions could match. Mirrors the precedence order in
+  // src/components/sync-status.tsx.
+  it("prioritizes syncing over degraded when downloading with no server buckets", () => {
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockStatus.dataFlowStatus.downloading = true;
+    mockBucketHealth.hasServerBuckets = false;
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "syncing");
+  });
+
+  it("prioritizes offline over degraded when disconnected with no server buckets", () => {
+    mockStatus.connected = false;
+    mockStatus.lastSyncedAt = new Date();
+    mockBucketHealth.hasServerBuckets = false;
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "offline");
+  });
+
+  it("prioritizes sync error over a bucket-health error (error tier > degraded)", () => {
+    mockStatus.connected = true;
+    mockStatus.lastSyncedAt = new Date();
+    mockStatus.dataFlowStatus.downloadError = new Error("download failed");
+    mockBucketHealth.hasServerBuckets = false;
+    mockBucketHealth.error = new Error("ps_buckets renamed");
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "error");
   });
 
   it("reflects lastSyncedAt set via data-has-synced='true'", () => {
@@ -170,6 +335,14 @@ describe("SyncStatus", () => {
       expect(getPill()).toBeInTheDocument();
       expect(getPill()).toHaveAttribute("data-sync-state", "uninitialized");
       expect(getPill()).toHaveAttribute("data-has-synced", "false");
+      // The boundary must log via componentDidCatch — silent swallowing would
+      // erase the breadcrumb if a future hook throws for an unexpected reason
+      // (e.g. @powersync/web upgrade renames ps_buckets and useBucketHealth
+      // starts throwing synchronously).
+      expect(errorSpy).toHaveBeenCalledWith(
+        "[sync-status] boundary caught render error:",
+        expect.any(Error)
+      );
     } finally {
       errorSpy.mockRestore();
     }

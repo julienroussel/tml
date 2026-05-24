@@ -19,6 +19,13 @@ const authMiddleware = auth.middleware({
 const AUTH_ROUTES = new Set(["/auth/sign-in", "/auth/sign-up"]);
 
 /** Route prefixes that require authentication */
+// `/dev/*` is listed for defense-in-depth: the (app) layout's auth.getSession()
+// already redirects unauthed users to /sign-in, and the page-level
+// `process.env.NODE_ENV !== "development"` gate returns 404 in prod/preview, so
+// `/dev/*` is invisible to unauthed users today. Listing it here keeps the
+// guard intact if a future refactor moves the auth check out of the (app)
+// layout or adds a `/dev/*` route that bypasses the layout. Cost: one line;
+// benefit: the proxy gate continues to hold under those refactors.
 const PROTECTED_PREFIXES = [
   "/auth",
   "/dashboard",
@@ -31,6 +38,7 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/admin",
   "/account",
+  "/dev",
 ];
 
 /** Bare marketing paths that should redirect to locale-prefixed versions. */

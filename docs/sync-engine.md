@@ -124,18 +124,33 @@ Server-only tables (`users`, `user_preferences`, `push_subscriptions`) are exclu
 
 ## Deployment
 
-Deployment flows through the PowerSync CLI (`powersync deploy sync-config`) via `.github/workflows/deploy-sync.yml`. The workflow runs on `push` to `main` only when sync-related paths change.
+Deployment flows through the PowerSync CLI via `.github/workflows/deploy-sync.yml`. There are **two PowerSync instances under one project** — a `dev` instance and a `prod` instance — and the workflow routes each run to the correct one based on the GitHub event type:
+
+| Event | Target instance | Used by |
+|---|---|---|
+| `pull_request` to `main` (paths match) | **dev** | local dev, Vercel "development" and "preview" |
+| `push` to `main` (paths match) | **prod** | production (`themagiclab.app`) |
+| `workflow_dispatch` from `main` only | **prod** | manual ops-recovery deploys |
+
+Per-run sequence: `pnpm exec tsx scripts/powersync.ts deploy` (instance config) → `pnpm sync:validate` → `pnpm sync:deploy` (sync rules). The instance-deploy step is non-optional — without it, sync-config validation fails with `Deploy the instance, with powersync deploy, before validating sync config.`
+
+The deploy job is bound to a **GitHub Environment** (`production` on push/dispatch, `preview` on PR events) so deploys go through that environment's protection rules (required reviewers, deployment branches). Both environments must exist under Settings → Environments before the workflow can run. The `preview` environment binds to the **dev** PowerSync instance — the names describe different layers (GitHub deploy target vs. PowerSync runtime). See `.claude/rules/sync-engine.md` "GitHub Environment gating" for the threat model and the upgrade path to true secret isolation.
 
 All env vars use a consistent `POWERSYNC_*` prefix. A thin wrapper (`scripts/powersync.ts`) maps them to the bare names the CLI expects at invocation time.
 
 | Env var | Storage | Purpose |
 |---|---|---|
-| `POWERSYNC_ADMIN_TOKEN` | GitHub secret | Personal Access Token generated at https://dashboard.powersync.com/account/access-tokens |
-| `POWERSYNC_INSTANCE_ID` | GitHub variable | PowerSync instance ID; discover locally via `powersync fetch instances` after `powersync login` |
-| `POWERSYNC_PROJECT_ID` | GitHub variable | PowerSync project ID |
-| `POWERSYNC_ORG_ID` | GitHub variable (optional) | Needed only if the PAT spans multiple organisations |
+| `POWERSYNC_ADMIN_TOKEN` | GitHub **secret** | Personal Access Token generated at https://dashboard.powersync.com/account/access-tokens (one PAT covers all instances in the project) |
+| `POWERSYNC_INSTANCE_ID_DEV` | GitHub **variable** | PowerSync dev-instance ID; deployed to on PR events |
+| `POWERSYNC_INSTANCE_ID_PROD` | GitHub **variable** | PowerSync prod-instance ID; deployed to on push/dispatch events |
+| `POWERSYNC_PROJECT_ID` | GitHub **variable** | PowerSync project ID (one per project; covers both instances) |
+| `POWERSYNC_ORG_ID` | GitHub **variable** (optional) | Needed only if the PAT spans multiple organisations |
 
-For local emergency deploys or first-time setup, run `POWERSYNC_ADMIN_TOKEN=... POWERSYNC_INSTANCE_ID=... POWERSYNC_PROJECT_ID=... pnpm sync:deploy`. `pnpm sync:validate` runs the CLI validator against `powersync/sync-config.yaml` — useful as a fast sanity check before pushing.
+For local emergency deploys or first-time setup, run `POWERSYNC_ADMIN_TOKEN=... POWERSYNC_INSTANCE_ID=... POWERSYNC_PROJECT_ID=... pnpm sync:deploy` (use the dev or prod instance ID directly). `pnpm sync:validate` runs the CLI validator against `powersync/sync-config.yaml` — useful as a fast sanity check before pushing.
+
+**Branch-protection contract**: mark the `validate` job in `deploy-sync.yml` as a **required** status check — it runs for all PRs including fork PRs and Dependabot. Do NOT mark the `deploy` job required — it skips for fork/Dependabot PRs, and GitHub treats "skipped" as neither pass nor fail, which would permanently block merge.
+
+> ⚠️ **Prerequisite before marking `validate` required**: the workflow currently uses workflow-level `concurrency.cancel-in-progress: true` on PR events, which cancels an in-flight `validate` when a fresh PR push arrives. GitHub treats cancelled checks the same as "skipped" for required-check rules, so marking `validate` required without first splitting concurrency would permanently block merge on rapid back-to-back pushes. Before flipping the required flag, move concurrency from the workflow level to the `deploy` job only (validate has no concurrency block; deploy keeps `cancel-in-progress` on PR events).
 
 The CLI has no native rollback: revert the commit and re-run the workflow to restore a prior config. `powersync/cli.yaml` (the local link file) is git-ignored to keep instance IDs out of the repo.
 

@@ -461,7 +461,10 @@
     "pendingChanges": "Alterações pendentes",
     "error": "Erro de sincronização",
     "mutationDropped": "{count, plural, one {# alteração não pôde ser guardada} other {# alterações não puderam ser guardadas}}",
-    "mutationDroppedDescription": "O servidor rejeitou a alteração. Os seus dados locais podem estar dessincronizados."
+    "mutationDroppedDescription": "O servidor rejeitou a alteração. Os seus dados locais podem estar dessincronizados.",
+    "degraded": "Sincronização limitada",
+    "dbInitFailed": "Não foi possível preparar o modo offline. Recarregue a página para tentar novamente.",
+    "connectFailed": "Falha na conexão de sincronização. Tentaremos novamente automaticamente."
   },
   "pushNotifications": {
     "notSupported": "As notificações push não são compatíveis com este navegador.",
