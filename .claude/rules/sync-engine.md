@@ -43,7 +43,7 @@ There are **two PowerSync instances under one PowerSync project** (`POWERSYNC_PR
 | **Dev** | `69b6f273…` | `…powersync.journeyapps.com` set in development Vercel env's `NEXT_PUBLIC_POWERSYNC_URL` | local dev (`.env.local`), Vercel "development", Vercel "preview" |
 | **Prod** | `69b6f2747c4f8b306a1bc349` | production Vercel env's `NEXT_PUBLIC_POWERSYNC_URL` | production `themagiclab.app` |
 
-They are **independent runtimes** — separate sync-rules state, separate bucket store, separate JWT trust configs. Rules deployed to one do not propagate to the other.
+They are **independent runtimes** for per-instance state (replication slot, bucket store, sync-rules deployment) but the per-instance Postgres connection (`replication.connections[].uri`) decides which Neon branch each one reads from. Today both instances live in the same Neon project (`snowy-wind-99317396`); they read different branches: dev reads `dev/julien` (`ep-calm-cell-agtdsd5q`), prod reads `main` (`ep-bitter-shadow-ag8n8y04`). The "independent" claim historically meant "no rule propagation"; do not extrapolate to "different databases" — verify with `pnpm exec tsx scripts/powersync.ts fetch status --instance-id=<your-dev-instance-id> --project-id=<your-project-id>` before assuming. Rules deployed to one do not propagate to the other.
 
 `deploy-sync.yml` routes by event:
 
@@ -78,6 +78,8 @@ To upgrade to **true secret isolation** (the stronger posture):
 
 ### Symptoms of a stale / un-deployed instance
 
+These symptoms are **shared across multiple root causes** — sync-rules drift, source-DB drift (#338), and auth-config drift all surface identically. The recipe in this section identifies sync-rules drift; for source-DB drift see the "Source-DB drift (#338)" section.
+
 If the deployed sync config is missing or drifted from `powersync/sync-config.yaml`, clients see all of these at once:
 
 - `SyncStatus` pill reports `degraded` (orange) — not `online`. Orange is distinct from the amber `pendingChanges` pill: amber = "writes queued, will resolve itself"; orange = "server returned no buckets, data may be wiped on next sync". Powered by `useBucketHealth()` in `src/sync/use-bucket-health.ts`, which counts non-`$local` rows in `ps_buckets`.
@@ -91,6 +93,65 @@ Resolution recipe: confirm CI deploy succeeded for the affected instance label (
 ### Partial-state recovery
 
 Deploy order is `instance deploy` → `sync:validate` → `sync:deploy`. If `sync:validate` fails between the first and third steps, the instance has been re-deployed (new connector / auth config) but sync rules remain on the previous version. The instance continues to serve old rules to clients — no immediate data corruption — until the workflow is re-run. Fix the config error and re-trigger (push or manual dispatch); the instance-deploy step is idempotent.
+
+### Source-DB drift (#338)
+
+Distinct from sync-rules drift (covered in the "Symptoms of a stale / un-deployed instance" section): the **deployed sync config is correct** and the instance reports `Status: connected` / `Initial replication done: true`, but **server-side buckets never materialize for the connecting user** because the instance is reading from a different Neon branch than the client is writing to. Symptoms are identical to a sync-rules drift (degraded pill, `ps_oplog = 0`, only `$local` bucket) — the discriminator is in the source-DB row count, not in the PowerSync status.
+
+**Why it happens here.** Per-environment branch isolation:
+
+| Environment | Writes to (Neon branch) | Reads from (PowerSync source) |
+|---|---|---|
+| Local (`.env.local`) | per-developer Neon branch (today: `dev/julien` for solo dev, endpoint `ep-calm-cell-agtdsd5q`) | dev PowerSync → must point at that branch |
+| Vercel preview / per-PR | `DATABASE_URL` is `main` in all Vercel envs today (Vercel-Neon creates per-PR branches but does not auto-rewrite `DATABASE_URL`); previews write to `main` | dev PowerSync → reads the per-developer branch → mismatch either way |
+| Vercel production | `main` (`ep-bitter-shadow-ag8n8y04`) | prod PowerSync → `main` |
+
+A PowerSync instance has **one** Postgres connection — it cannot multiplex across N Neon branches. The local-dev and prod environments work because each is paired with a PowerSync instance reading the same branch the app writes to. Per-PR previews don't work today: the data axis is mismatched (per the per-environment table earlier in this section), AND the auth axis fails independently (preview JWTs rejected at PSYNC_S2105 — see the "Preview Deployment Sync Coverage" section). Both failures compound; fixing one wouldn't make previews sync.
+
+**Diagnostic recipe (cheapest first):** (`POWERSYNC_INSTANCE_ID` and `POWERSYNC_PROJECT_ID` are the same env vars used in the "Sync Config Deployment" section; `scripts/powersync.ts` maps them to the CLI's bare `INSTANCE_ID` / `PROJECT_ID` so the wrapper invocation below works.)
+
+1. `pnpm exec tsx scripts/powersync.ts fetch config --instance-id=$POWERSYNC_INSTANCE_ID --project-id=$POWERSYNC_PROJECT_ID` — read the deployed `replication.connections[].uri` / `hostname`. Compare against `.env.local`'s `DATABASE_URL` host.
+2. `pnpm exec tsx scripts/powersync.ts fetch status --instance-id=$POWERSYNC_INSTANCE_ID --project-id=$POWERSYNC_PROJECT_ID` — confirm `Status: connected` and read the slot name (`powersync_<instance>_<version>_<hash>`).
+3. Via Neon MCP (`mcp__neon__run_sql`) against the source branch: query the user's expected rows. If `SELECT COUNT(*) FROM items WHERE user_id = '<jwt-sub>'` returns 0, the bug is on the connection side.
+4. On the same branch: `SELECT slot_name, active, confirmed_flush_lsn FROM pg_replication_slots WHERE slot_name LIKE 'powersync_%'`. Absence of a slot for the instance ID confirms PowerSync isn't actually replicating from that branch.
+
+**Fix recipe:**
+
+`pnpm exec tsx scripts/powersync.ts` only works when the working directory is inside the repo (it walks up looking for `package.json`). The `pull instance` step has to run in `/tmp/ps-cfg/` so the CLI writes the pulled config there, so this block invokes the binary via an absolute path resolved from the repo root.
+
+```bash
+# 0. Resolve the repo root once so the powersync binary works from any cwd.
+REPO=$(git rev-parse --show-toplevel)
+
+# 1. Pull the (correct, fresh) deployed config out of band.
+mkdir -p /tmp/ps-cfg && cd /tmp/ps-cfg
+"$REPO/node_modules/.bin/powersync" pull instance \
+  --project-id="$POWERSYNC_PROJECT_ID" --instance-id="$POWERSYNC_INSTANCE_ID"
+
+# 2. Edit powersync/service.yaml — update BOTH `uri:` and `hostname:` under
+#    replication.connections[0] to the target Neon endpoint host.
+
+# 3. Full deploy — NOT `deploy service-config`. See the critical caveat that
+#    follows this block.
+"$REPO/node_modules/.bin/powersync" deploy
+```
+
+**Critical caveat — `deploy service-config` is insufficient for connection-string changes.** It updates connection metadata on the instance, but the existing logical replication slot stays orphaned on the old source branch (becomes `active=false`) and no new slot is created on the new branch. The instance then reports `Status: connected` but no buckets materialize — same symptom as the original bug, harder to diagnose. **Always use the full `powersync deploy`** for connection-DB changes; it forces slot recreation on the new source.
+
+**Verify the fix:**
+
+```bash
+# Run from the repo root so `pnpm exec` resolves powersync against node_modules.
+cd "$(git rev-parse --show-toplevel)"
+pnpm exec tsx scripts/powersync.ts fetch status --instance-id="$POWERSYNC_INSTANCE_ID" --project-id="$POWERSYNC_PROJECT_ID"
+# expect: Postgres URI shows new hostname, slot name has bumped version, "Initial replication done: true"
+```
+
+Then on the source branch: `SELECT slot_name, active FROM pg_replication_slots WHERE slot_name LIKE 'powersync_%';` — confirm a new active slot exists.
+
+**Neon branch reset hazard.** A `neon branches reset` on `dev/julien` invalidates the LSN positions PowerSync's slot tracks → reproduces this same symptom under a different mechanism. Use a wrapper script that always pairs reset with a `powersync deploy` re-bootstrap (tracked in #345).
+
+**Hygiene note.** `powersync fetch config` output includes the Postgres password in plaintext inside the `uri` field, even when `password.secret_ref` is set. Treat the YAML output as a credential; don't paste it into PRs / chat / etc. (PowerSync API hygiene — tracked in #346.)
 
 ### Branch protection contract
 
