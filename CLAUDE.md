@@ -161,6 +161,15 @@ The `authenticated` role is currently exercised only by the JWT-aware client pat
 
 ---
 
+## Execution Discipline
+
+- **Every changed line should trace to a stated requirement.** If you can't name the requirement that justifies a line, remove it — the test for surgical changes.
+- **Before declaring a non-trivial change ready, ask: would a senior engineer call this overcomplicated?** If yes, simplify. 200 lines that could be 50 is a rewrite, not a polish.
+- **For multi-step work, structure the plan as `N. <step> → verify: <check>`.** Strong stopping criteria let you loop independently; weak ones ("make it work") burn clarification rounds.
+- **For bug fixes, write a failing test that reproduces the issue before changing production code** (when feasible). The test pins the requirement and gives you a stopping criterion to loop against.
+
+---
+
 ## Commit & Push Discipline
 
 - **Never run any command that produces a commit, mutates remote state, or opens/modifies a PR without an explicit user-typed `/ship`.** This includes (non-exhaustive): `git commit`, `git push` (with or without `--tags` / `--force`), `gh pr create`, `gh pr merge`, `gh pr edit`, `gh pr close`, `gh pr review`, `gh release create`. Only the `/ship` skill is authorized to perform these actions.
