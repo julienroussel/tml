@@ -125,12 +125,12 @@ jobs:
     # permanently blocks merge for required checks. Mark the `validate` job
     # required instead (it runs for all PRs including forks). See the
     # symmetric note in `.claude/rules/sync-engine.md`.
+    # user.login = immutable PR author; github.actor would shift if a maintainer pushes to the Dependabot branch.
     if: >-
       github.event_name == 'push'
       || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
       || (github.event.pull_request.head.repo.full_name == github.repository
           && github.event.pull_request.user.login != 'dependabot[bot]')
-      # user.login = immutable PR author; github.actor would shift if a maintainer pushes to the Dependabot branch.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Bind the job to a GitHub Environment so deploys go through the
