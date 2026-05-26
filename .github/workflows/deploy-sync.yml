@@ -125,12 +125,12 @@ jobs:
     # permanently blocks merge for required checks. Mark the `validate` job
     # required instead (it runs for all PRs including forks). See the
     # symmetric note in `.claude/rules/sync-engine.md`.
+    # user.login = immutable PR author; github.actor would shift if a maintainer pushes to the Dependabot branch.
     if: >-
       github.event_name == 'push'
       || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
       || (github.event.pull_request.head.repo.full_name == github.repository
           && github.event.pull_request.user.login != 'dependabot[bot]')
-      # user.login = immutable PR author; github.actor would shift if a maintainer pushes to the Dependabot branch.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Bind the job to a GitHub Environment so deploys go through the
@@ -223,25 +223,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Deploy the PowerSync instance itself BEFORE attempting sync-config
-      # validation. The CLI fails sync-config validate with "Deploy the
-      # instance, with powersync deploy, before validating sync config." when
-      # the instance state has drifted. This step is the fix for that failure
-      # mode; it was silently missing from 2026-05-18 onward.
-      #
-      # CLI sub-commands (verified against @powersync/cli — re-verify on bump):
-      #   - `powersync deploy` (bare) → deploys instance config only.
-      #   - `powersync deploy sync-config` (run by `pnpm sync:deploy` below)
-      #     → publishes sync rules.
-      # If `sync:validate` fails between the two, the instance has new state
-      # but rules remain on the previous version — see sync-engine.md
-      # "Partial-state recovery" for the documented recovery procedure.
-      - name: Deploy PowerSync instance (${{ steps.target.outputs.label }})
-        run: pnpm exec tsx scripts/powersync.ts deploy
-        env:
-          POWERSYNC_INSTANCE_ID: ${{ steps.target.outputs.instance_id }}
-          POWERSYNC_ADMIN_TOKEN: ${{ secrets.POWERSYNC_ADMIN_TOKEN }}
-
+      # If sync:validate fails with "Deploy the instance, with powersync deploy,
+      # before validating sync config." the dev instance has drifted and requires
+      # an out-of-band manual recovery — see .claude/rules/sync-engine.md
+      # "Partial-state recovery". The bare `powersync deploy` step was removed
+      # because it requires service.yaml which is not present in CI (clean checkout).
       - name: Validate sync config (${{ steps.target.outputs.label }})
         run: pnpm sync:validate
         env:
