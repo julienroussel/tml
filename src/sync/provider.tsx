@@ -174,8 +174,8 @@ export function PowerSyncProvider({
     // dedupes via `connectingPromise`/`disconnectingPromise` and handles the
     // connect-while-disconnecting race via `pendingConnectionOptions` + a
     // sanity disconnect at the start of `connectInternal()` (see
-    // node_modules/@powersync/common/lib/client/ConnectionManager.js:64-153).
-    // Verified against @powersync/common@1.53.1. If you bump that package,
+    // node_modules/@powersync/common/lib/client/ConnectionManager.js:64-154).
+    // Verified against @powersync/common@1.53.2. If you bump that package,
     // re-verify ConnectionManager still serializes concurrent connect/disconnect
     // calls; if it doesn't, restore the module-level `connecting` guard.
     // Register a status listener BEFORE connecting so the first transition
@@ -240,7 +240,7 @@ export function PowerSyncProvider({
       // Cleanup is fire-and-forget; a wedged disconnect leaves the singleton in
       // indeterminate state until next mount or page reload. Acceptable today
       // (ConnectionManager dedupes via pendingConnectionOptions per
-      // @powersync/common 1.53.1).
+      // @powersync/common 1.53.2).
       powerSyncDb
         .disconnect()
         .catch((err: unknown) => {
