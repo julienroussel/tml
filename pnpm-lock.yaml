@@ -26,29 +26,29 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
       '@powersync/common':
-        specifier: 1.53.1
-        version: 1.53.1
+        specifier: 1.53.2
+        version: 1.53.2
       '@powersync/kysely-driver':
         specifier: 1.3.3
-        version: 1.3.3(@powersync/common@1.53.1)
+        version: 1.3.3(@powersync/common@1.53.2)
       '@powersync/react':
         specifier: 1.10.0
-        version: 1.10.0(@powersync/common@1.53.1)(react@19.2.6)
+        version: 1.10.0(@powersync/common@1.53.2)(react@19.2.6)
       '@powersync/web':
-        specifier: 1.38.1
-        version: 1.38.1(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.53.1)
+        specifier: 1.38.2
+        version: 1.38.2(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.53.2)
       '@react-email/render':
         specifier: 2.0.8
         version: 2.0.8(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@vercel/analytics':
         specifier: 2.0.1
-        version: 2.0.1(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))
+        version: 2.0.1(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))
       '@vercel/firewall':
         specifier: 1.2.1
         version: 1.2.1
       '@vercel/speed-insights':
         specifier: 2.0.0
-        version: 2.0.0(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))
+        version: 2.0.0(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -108,8 +108,8 @@ importers:
         version: 4.4.3
     devDependencies:
       '@biomejs/biome':
-        specifier: 2.4.15
-        version: 2.4.15
+        specifier: 2.4.16
+        version: 2.4.16
       '@playwright/test':
         specifier: 1.60.0
         version: 1.60.0
@@ -171,14 +171,14 @@ importers:
         specifier: 2.1.8
         version: 2.1.8
       powersync:
-        specifier: 0.9.5
-        version: 0.9.5(@types/json-schema@7.0.15)(@types/node@25.9.1)
+        specifier: 0.9.6
+        version: 0.9.6(@types/json-schema@7.0.15)(@types/node@25.9.1)
       react-email:
-        specifier: 6.3.3
-        version: 6.3.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 6.5.0
+        version: 6.5.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       shadcn:
-        specifier: 4.8.0
-        version: 4.8.0(@types/node@25.9.1)(typescript@6.0.3)
+        specifier: 4.8.2
+        version: 4.8.2(@types/node@25.9.1)(typescript@6.0.3)
       tailwindcss:
         specifier: 4.3.0
         version: 4.3.0
@@ -428,59 +428,59 @@ packages:
   '@better-fetch/fetch@1.1.21':
     resolution: {integrity: sha512-/ImESw0sskqlVR94jB+5+Pxjf+xBwDZF/N5+y2/q4EqD7IARUTSpPfIo8uf39SYpCxyOCtbyYpUrZ3F/k0zT4A==}
 
-  '@biomejs/biome@2.4.15':
-    resolution: {integrity: sha512-j5VH3a/h/HXTKBM50MDMxRCzkeLv9S2XJcW2WgnZT1+xyisi+0bISrXR82gCX+8S9lvK0skEvHJRN+3Ktr2hlw==}
+  '@biomejs/biome@2.4.16':
+    resolution: {integrity: sha512-x9ajFh1zChVybCiM3TN6OD4phAqLgtPZjFrZF+aTMYCPjwBO+k529TX7PPsAqtGNLeV4UgzwQnowEgS7bGmzcA==}
     engines: {node: '>=14.21.3'}
     hasBin: true
 
-  '@biomejs/cli-darwin-arm64@2.4.15':
-    resolution: {integrity: sha512-rF3PPqLq1yoST79zaQbDjVJwsuIeci/O+9bgNmC5QpgOqz6aqYuzA4abyAGx+mgyiDXn4A049xAN8gijbuR1Qg==}
+  '@biomejs/cli-darwin-arm64@2.4.16':
+    resolution: {integrity: sha512-wxPvu4XOA85YJk9ixSWUmq/QBHbid85BISbOAqqBM/5xQpPk9ayjk5375tOlSC0BeCwNSbPFafQBm+vBumXq0A==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [darwin]
 
-  '@biomejs/cli-darwin-x64@2.4.15':
-    resolution: {integrity: sha512-/5KHXYMfSJs1fNXiX30xFtI8JcCFV6zaVVLxOa0M2sfqBKHkpQhRTv94yxQWxeTY2lzo2OuTlNvPC+hDQt2wcQ==}
+  '@biomejs/cli-darwin-x64@2.4.16':
+    resolution: {integrity: sha512-xFCqGPwYusQJp4N4NJLi1XJiZqjwFdjhT+KqtNy+Ug3qgfczqnTa6MSDvxJF6TkuDLoYJItMapz6tAf7kCekFw==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [darwin]
 
-  '@biomejs/cli-linux-arm64-musl@2.4.15':
-    resolution: {integrity: sha512-ZPcxznxm0pogHBLZhYntyR3sR+MrZjqJIKEr7ZqVen0Rl+P/4upVmfYXjftizi9RoqZntg33fv/1fbdhbYXpEQ==}
+  '@biomejs/cli-linux-arm64-musl@2.4.16':
+    resolution: {integrity: sha512-oYxnW0ARfJkr72ezzF2OR8N/rtkgLUQeYtF8cFhVswbknHxtTcmzSsanVJP8yQKnGpGpc2ck6c5zLvHahL6Cbg==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@biomejs/cli-linux-arm64@2.4.15':
-    resolution: {integrity: sha512-owaAMZD/T4LrD0ELNCk0Km3qrRHuM0X6EAyVE1FSqGY0rbLoiDLrO4Us2tllm6cAeB2Ioa9C2C08NZPdr8+0Ug==}
+  '@biomejs/cli-linux-arm64@2.4.16':
+    resolution: {integrity: sha512-2kFb4//jxfZaP6D+Rj5VkHkxgyD9EoRAVBEQb8PKRv+s4NO2zYNJKXFaJmK1CmhufJOWEfpHKaRbOja7qjmdhQ==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@biomejs/cli-linux-x64-musl@2.4.15':
-    resolution: {integrity: sha512-CNq/9W38SYSH023lfcQ4KKU8K0YX8T//FZUhcgtMMRABDojx5XsMV7jlweAvGSl389wJQB29Qo6Zb/a+jdvt+w==}
+  '@biomejs/cli-linux-x64-musl@2.4.16':
+    resolution: {integrity: sha512-iHDS+MCM65DPqWGu+ECC3uoALyj2H7F4nVUPxIPjz/PIl94EUu+EDfGZDzFP+NY1EOPVt9NQvwFqq7HdMmowdg==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@biomejs/cli-linux-x64@2.4.15':
-    resolution: {integrity: sha512-0jj7THz12GbUOLmMibktK6DZjqz2zV64KFxyBtcFTKPiiOIY0a7vns1elpO1dERvxpsZ5ik0oFfz0oGwFde1+g==}
+  '@biomejs/cli-linux-x64@2.4.16':
+    resolution: {integrity: sha512-NbcBbi/nJqn5baae6wqRXdS7Gadf2uRpehSh6vMSYpG8OhkXl/Xg8aorWrJ+9VWqAT5ml90alLvorkpMW0nBwQ==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@biomejs/cli-win32-arm64@2.4.15':
-    resolution: {integrity: sha512-ouhkYdlhp/1GghEJPdWwD/Vi3gQ1nFxuSpMolWsbq3Lsq3QUR4jl6UdhhscdCugKU5vOEuMiJhvKj66O0OCq+w==}
+  '@biomejs/cli-win32-arm64@2.4.16':
+    resolution: {integrity: sha512-0rgImMsNb5v/chhkIFe3wu7PEFClS6RBAYUijGL9UsYN3PanSaoK24HSSuSJb1pYbYYVjzAyZTl3gtjJ84BM8A==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [win32]
 
-  '@biomejs/cli-win32-x64@2.4.15':
-    resolution: {integrity: sha512-zBrGq5mx5wwpnow4+2BxUvleDM+GNd4sLbPaMapsSLQLD0NGRCquqPBTgN+7XkUteHvj7M+BstuI8tmnV7+HgQ==}
+  '@biomejs/cli-win32-x64@2.4.16':
+    resolution: {integrity: sha512-Kp85jgoBHa05gix6UIRjfCDiUV3w/8VIdZ247VyyO2gEjaw12WEVhdIjlxp/AMzXxqxQwbxNTDVZ3Mwd2RG5rw==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
@@ -1842,9 +1842,6 @@ packages:
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
 
-  '@journeyapps-labs/common-sdk@1.0.2':
-    resolution: {integrity: sha512-bPFrrSGdVnaVFe6ymc/desjZk02gQ8f0EKggrU1/BQIeFJvGeQ804iOJsIYmUVU1fv4qNmJD0mD0GUjxu93Z8g==}
-
   '@journeyapps-labs/common-sdk@1.0.4':
     resolution: {integrity: sha512-KNzIuYftc8+7qHGWkUnhJKfIBGx7Stbmk66vdhuCkZyIGKrmaqTQzbVDHUyBS/SO+2+K5T2W2QfSVT5zHij99A==}
 
@@ -1859,9 +1856,6 @@ packages:
 
   '@journeyapps-labs/micro-schema@1.0.3':
     resolution: {integrity: sha512-3n8d64jgDc/XJwGD8QRarfZs+JqEmuIbT9hEyY8nZR0IKsBkZEe6G9QYKm0tur6tisKs0YIcDcWjfzYcxRfmag==}
-
-  '@journeyapps-labs/micro-streaming@1.0.1':
-    resolution: {integrity: sha512-woWFNtPwKZwTz5NQ4RUecGOPXXO/W/KLkx8YOx9mvZ7XY3Lx1bDRpI1i6ZSBPeix+IBbl+bs394R0qlFliI1cg==}
 
   '@journeyapps-labs/micro-streaming@1.0.2':
     resolution: {integrity: sha512-CdgWC817TmbTof7IL6Oy0hCF1KCa6RXogh2uEbOYRNz+XwC1q3KQeChp38qQXvaZZtqdIsiMlZGiGGa638eTFw==}
@@ -2743,35 +2737,35 @@ packages:
   '@poppinss/exception@1.2.3':
     resolution: {integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==}
 
-  '@powersync/cli-core@0.9.5':
-    resolution: {integrity: sha512-iwOgwlan3LqLz3KJrGksswO8V37XgrX1xWsGYRrCsu/31NqqkpUbwqdlAUVR4CI9tHGdWYRGTQklKOQaZ9UM/w==}
+  '@powersync/cli-core@0.9.6':
+    resolution: {integrity: sha512-iBqK0tNa4kpqovO2KoeSrYxAQD8WS2a8jOhZFvAq2XdUZrYHv9C4DxS6GKialyoXO2AeMfZVLRalV4HSuJdUCw==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/cli-plugin-config-edit@0.9.5':
-    resolution: {integrity: sha512-bOA+kqRpJz4ClL6U1gqGZbR49BIV5wcUFgHGJesn9sBz4LymiZZ6x0/bWqyX+CayrTMsDb9uRajw6Jjtjqfd3Q==}
+  '@powersync/cli-plugin-config-edit@0.9.6':
+    resolution: {integrity: sha512-g+XKp8kuc95102t8r/zk4kLJUI/WfIVQzqn8/qfXwk9rW2rz5bLhdkSiPA+ynA/XjdnOJTRs8NKDQoIr0jnK0A==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/cli-plugin-docker@0.9.5':
-    resolution: {integrity: sha512-Dfj5s74pSMqE5WmU7fyP5qKwGZhEqzyCE9DD/2T9X6EuJ1vCHVO/hCHJoZ87pRR4kvXz6QUULErn+aeEC7Gx7A==}
+  '@powersync/cli-plugin-docker@0.9.6':
+    resolution: {integrity: sha512-47PcHTT/T252cIrNZ/mnaSmHsC+MlNuR7a34tHLW47zfMSWRDJS5m7tekqB9mTr4Qz1280mMi1ezwhMzIHwcqA==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/cli-schemas@0.9.5':
-    resolution: {integrity: sha512-a4lLpKMs6TA5c/sDjHSZ0Sj6YNiQJjKlC1SqCjwhGOFahmlCFJ/Si1axYPsL+8yfyXjmcVO6Ty0cJpaKrt8cPQ==}
+  '@powersync/cli-schemas@0.9.6':
+    resolution: {integrity: sha512-uFAOyvQyy6HyCMtdr/o2B3CSOhiSMDvlayxOBO9SNi5Qs/oPh1k3F7fKHqI8/wabZOeeydy0upoKXJejNtb8cA==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/common@1.53.1':
-    resolution: {integrity: sha512-WAW/XQKpYPCBC66WIf9VjgLzA0YLpQg1TEMwzpCqKm6BuuLoHh6rLMb3PKJ84foFzUHcyF6thw7fB5VvwyguQw==}
+  '@powersync/common@1.53.2':
+    resolution: {integrity: sha512-y+GtaLL4imFIWOatErIAEozNZPcIkAcA24c2Mso124ZFStOEeP8LJTSMDxPhyK14mzSnBk2dSjrOAjNz7m2B8g==}
 
   '@powersync/kysely-driver@1.3.3':
     resolution: {integrity: sha512-ODktTJvPWjxYDPoyTDaK5n04d5aO8MGYR7QyKXohiHaRK47U1GKCcsT0Ay7nmDT1MOj7dn6pY9wUdKFosACLrA==}
     peerDependencies:
       '@powersync/common': ^1.47.0
 
-  '@powersync/management-client@0.0.6':
-    resolution: {integrity: sha512-s5tvk/3JUw9B1ry0X8YH30sMscqf5xkbGK0XNSZ4X6o0ATtJWxxe97Fgg1HoNTfN2W7lMSyTyZnBdf9jsVOluQ==}
+  '@powersync/management-client@0.1.1':
+    resolution: {integrity: sha512-/A/OLxIdVisC22IRdav//j6K5qENVhf2dDedVUKF7/lwAdcncZZnv2b8lVS+ZFjlpNoJ3RXngXaVwXooAFIffQ==}
 
-  '@powersync/management-types@0.0.5':
-    resolution: {integrity: sha512-sh1vRo1pq0D2oxijiyy0bHz1fIVkuiZkW+hTSyDSumNtbmT18ELe7+Mto29xlCzQ10oJ1YeyskUwpi+ZWzfuIQ==}
+  '@powersync/management-types@0.2.0':
+    resolution: {integrity: sha512-Snbx1ZC5WxieV6R20Ll/wBbJQx5Px5v6KqYWfewFT4w0jLw0NtZT8kkw2HTPcfiOO1L463JBOVcJNiiDxG9BzQ==}
 
   '@powersync/react@1.10.0':
     resolution: {integrity: sha512-orM29qocbF8zYTBM27j9nPNztyplpbNVaw8djpqxl8N2wESqHTbHOKpatg+Fa5aofgjzmrkiGwevJvCbiWYYWQ==}
@@ -2779,8 +2773,8 @@ packages:
       '@powersync/common': ^1.51.0
       react: '*'
 
-  '@powersync/service-client@0.0.3':
-    resolution: {integrity: sha512-K83tOFdjRyFh76c4CKViRFyGJfBH9wSvtOvF2PxtbajAIPMzZEeunpnFj3vphx8CQyrDFWkR8/1Qa0BiCo30xQ==}
+  '@powersync/service-client@0.0.6':
+    resolution: {integrity: sha512-7IDBDac4ePg9JNFtoL0aDrP5WmDWqw45/kGYl38pXkF6Km0VhVMEUjor/k2+oB05LiC0sfdHf5NXRDRUfK+maw==}
 
   '@powersync/service-jsonbig@0.17.13':
     resolution: {integrity: sha512-S90x8xgYYaiNBi6pnBbSxqiZlXUhEDb10HfTs5maLPVYIlDKXG5YlhP1DVv/csFNCuIuMC1F5ABXnN2rNjfajg==}
@@ -2788,11 +2782,8 @@ packages:
   '@powersync/service-schema@1.21.0':
     resolution: {integrity: sha512-m5QfEwOMk8Gu+6qNeWqS9RaNDNL8WQb3kaeMyo98egpasWPeQzD2BE1nhzJLpbsVSV9WchnNDDr1jRikvnRjLg==}
 
-  '@powersync/service-sync-rules@0.34.1':
-    resolution: {integrity: sha512-lHn4i3u5waEzGpbhx4A7AtOwXQ5e/Tuk5wS1/jmsbktl9a6mvKjB9UA2RY69/dUmBDbYzrdS+PGD9DBaHoFzCw==}
-
-  '@powersync/service-types@0.15.0':
-    resolution: {integrity: sha512-wIdHCT+vhwoJAMZ414/dwG8fd51+fEWnPbwShkwNE5XTwA0UGOT8aGyVZqzT8PT0sVos5famYYqG203Mjb7q6g==}
+  '@powersync/service-sync-rules@0.36.0':
+    resolution: {integrity: sha512-WlV4pOK1QwsM+6Bvy5Vkq04xmb0E1FcbWgqnQcbVJpKnSGul8osRDoIC/2JSNOauwxTqNXf0Ec8n6tzD9SSWOQ==}
 
   '@powersync/service-types@0.15.2':
     resolution: {integrity: sha512-GXQqCuTME+S1nV9CLbxtgYuAtMGFFLkDubm+DRTNGQqur8wBVzJp3haHCHFBVJ03Bhec+K7AIrB6CTii7b/HJg==}
@@ -2800,12 +2791,12 @@ packages:
   '@powersync/sync-config-tools@0.1.2':
     resolution: {integrity: sha512-/K/FgVRvOLPZgREKHHf4C9WZ7macygzVSuqW2GvLHaFjbRaEtSgENrCqF06+JdPP14UxkrPkLCyqXfpj9yNVAQ==}
 
-  '@powersync/web@1.38.1':
-    resolution: {integrity: sha512-mr5cd8CLgMJJ3QV5TvZyTSvr+ibc9ib6eU/5p9XQypxYG5fA/YrktSk2yTFzve4R0Y5xBLwRhPd61HeKYTjMjA==}
+  '@powersync/web@1.38.2':
+    resolution: {integrity: sha512-lAHpqTnywK/wy120HSS2O8IRSYYXDAVJV8opGGOcBQZwbCB1h8vHk4vJDyJ012iWq6onUJHnQOD95KHzGRR+pw==}
     hasBin: true
     peerDependencies:
       '@journeyapps/wa-sqlite': ^1.5.0
-      '@powersync/common': ^1.53.1
+      '@powersync/common': ^1.53.2
 
   '@radix-ui/number@1.1.1':
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
@@ -7713,8 +7704,8 @@ packages:
     resolution: {integrity: sha512-dM0jVuXJPsDN6DvRpea484tCUaMiXWjuCn++HGTqUWzGDjv5tZkEZldAJ/UMlqRYGFrD/etByo4/xOuC/snX2A==}
     engines: {node: '>=20'}
 
-  powersync@0.9.5:
-    resolution: {integrity: sha512-EWdmNi5qx+AF+XI6yy+orUxhUXXvTvmD27zuIBYlN12ZRZXqPSabCqc4pM0xdXOO+BHJ9zNTApWGYCCacGCFoQ==}
+  powersync@0.9.6:
+    resolution: {integrity: sha512-EoXlqOTKnhtenH45p3XL1s/PJKGzqH3ZGcbi1eLEgxfo/s0Yvy45/jRZrr3PoOiBCyer3CPdiSeJhccm2cdM3g==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -7838,8 +7829,8 @@ packages:
     peerDependencies:
       react: ^19.2.6
 
-  react-email@6.3.3:
-    resolution: {integrity: sha512-mkHgVfuoDLM1To/u0ZcdJy/3q1Z3SdOe1A5/GtsUqApP68RQOztBe+AOk3BIJC1POexnqwDZZwV+Pw+srVlH7Q==}
+  react-email@6.5.0:
+    resolution: {integrity: sha512-WrJ+XPW87O1dabF4RJNGnTr7VTGsNa+BlMiinAZdH5fg8Kepwk++ZzX+LEieTlk+a3r13TaTJ4DfI9gv++y02g==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -8154,8 +8145,8 @@ packages:
   setprototypeof@1.2.0:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
 
-  shadcn@4.8.0:
-    resolution: {integrity: sha512-LAm3I/1FdoU/zu5GVG8Hbna4X9zlzEG5TeeCPXqsopkjvGk8QUF9OFhqeRN8oM6Oh/ynUI/yQHZxQAO3Ymcqsg==}
+  shadcn@4.8.2:
+    resolution: {integrity: sha512-pt3KneOg6LGYKNAdoTVf/lpVcf7t2MlV+Ll2Xc3lIIYN3ph4ajrjU+CcG6OVSgO5ubbLZj+9j5oMA9Lqg7o8KA==}
     hasBin: true
 
   sharp@0.34.5:
@@ -8802,6 +8793,10 @@ packages:
 
   uuid@13.0.2:
     resolution: {integrity: sha512-vzi9uRZ926x4XV73S/4qQaTwPXM2JBj6/6lI/byHH1jOpCzb0zDbfytgA9LcN/hzb2l7WQSQnxITOVx5un/wGw==}
+    hasBin: true
+
+  uuid@14.0.0:
+    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
     hasBin: true
 
   validate-npm-package-name@5.0.1:
@@ -9513,6 +9508,17 @@ snapshots:
       nanostores: 1.2.0
       zod: 4.4.3
 
+  '@better-auth/core@1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)':
+    dependencies:
+      '@better-auth/utils': 0.3.0
+      '@better-fetch/fetch': 1.1.21
+      '@standard-schema/spec': 1.1.0
+      better-call: 1.1.7(zod@4.4.3)
+      jose: 6.2.3
+      kysely: 0.28.17
+      nanostores: 1.2.0
+      zod: 4.4.3
+
   '@better-auth/passkey@1.4.9(@better-auth/core@1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-auth@1.4.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)(vue@3.5.30(typescript@6.0.3)))(better-call@1.1.7(zod@4.4.3))(nanostores@1.2.0)':
     dependencies:
       '@better-auth/core': 1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0)
@@ -9541,39 +9547,39 @@ snapshots:
 
   '@better-fetch/fetch@1.1.21': {}
 
-  '@biomejs/biome@2.4.15':
+  '@biomejs/biome@2.4.16':
     optionalDependencies:
-      '@biomejs/cli-darwin-arm64': 2.4.15
-      '@biomejs/cli-darwin-x64': 2.4.15
-      '@biomejs/cli-linux-arm64': 2.4.15
-      '@biomejs/cli-linux-arm64-musl': 2.4.15
-      '@biomejs/cli-linux-x64': 2.4.15
-      '@biomejs/cli-linux-x64-musl': 2.4.15
-      '@biomejs/cli-win32-arm64': 2.4.15
-      '@biomejs/cli-win32-x64': 2.4.15
+      '@biomejs/cli-darwin-arm64': 2.4.16
+      '@biomejs/cli-darwin-x64': 2.4.16
+      '@biomejs/cli-linux-arm64': 2.4.16
+      '@biomejs/cli-linux-arm64-musl': 2.4.16
+      '@biomejs/cli-linux-x64': 2.4.16
+      '@biomejs/cli-linux-x64-musl': 2.4.16
+      '@biomejs/cli-win32-arm64': 2.4.16
+      '@biomejs/cli-win32-x64': 2.4.16
 
-  '@biomejs/cli-darwin-arm64@2.4.15':
+  '@biomejs/cli-darwin-arm64@2.4.16':
     optional: true
 
-  '@biomejs/cli-darwin-x64@2.4.15':
+  '@biomejs/cli-darwin-x64@2.4.16':
     optional: true
 
-  '@biomejs/cli-linux-arm64-musl@2.4.15':
+  '@biomejs/cli-linux-arm64-musl@2.4.16':
     optional: true
 
-  '@biomejs/cli-linux-arm64@2.4.15':
+  '@biomejs/cli-linux-arm64@2.4.16':
     optional: true
 
-  '@biomejs/cli-linux-x64-musl@2.4.15':
+  '@biomejs/cli-linux-x64-musl@2.4.16':
     optional: true
 
-  '@biomejs/cli-linux-x64@2.4.15':
+  '@biomejs/cli-linux-x64@2.4.16':
     optional: true
 
-  '@biomejs/cli-win32-arm64@2.4.15':
+  '@biomejs/cli-win32-arm64@2.4.16':
     optional: true
 
-  '@biomejs/cli-win32-x64@2.4.15':
+  '@biomejs/cli-win32-x64@2.4.16':
     optional: true
 
   '@bomb.sh/tab@0.0.15(cac@6.7.14)(citty@0.2.2)(commander@13.1.0)':
@@ -10514,18 +10520,6 @@ snapshots:
       minipass: 7.1.3
     optional: true
 
-  '@journeyapps-labs/common-sdk@1.0.2(@types/json-schema@7.0.15)':
-    dependencies:
-      '@journeyapps-labs/micro-errors': 1.0.1
-      '@journeyapps-labs/micro-streaming': 1.0.1(@types/json-schema@7.0.15)
-      '@types/node': 24.12.4
-      agentkeepalive: 4.6.0
-      bson: 6.10.4
-      lodash: 4.18.1
-      uuid: 13.0.2
-    transitivePeerDependencies:
-      - '@types/json-schema'
-
   '@journeyapps-labs/common-sdk@1.0.4(@types/json-schema@7.0.15)':
     dependencies:
       '@journeyapps-labs/micro-errors': 1.0.1
@@ -10560,15 +10554,6 @@ snapshots:
       bson: 6.10.4
       ts-codec: 1.3.0
       zod: 4.4.3
-    transitivePeerDependencies:
-      - '@types/json-schema'
-
-  '@journeyapps-labs/micro-streaming@1.0.1(@types/json-schema@7.0.15)':
-    dependencies:
-      '@journeyapps-labs/micro-errors': 1.0.1
-      '@journeyapps-labs/micro-schema': 1.0.3(@types/json-schema@7.0.15)
-      '@types/express': 5.0.6
-      bson: 6.10.4
     transitivePeerDependencies:
       - '@types/json-schema'
 
@@ -11025,7 +11010,7 @@ snapshots:
       - magicast
     optional: true
 
-  '@nuxt/nitro-server@4.3.1(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1))(srvx@0.11.15)(typescript@6.0.3)':
+  '@nuxt/nitro-server@4.3.1(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1))(srvx@0.11.15)(typescript@6.0.3)':
     dependencies:
       '@nuxt/devalue': 2.0.2
       '@nuxt/kit': 4.3.1(magicast@0.5.3)
@@ -11043,7 +11028,7 @@ snapshots:
       klona: 2.0.6
       mocked-exports: 0.1.1
       nitropack: 2.13.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1))(srvx@0.11.15)
-      nuxt: 4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
       ohash: 2.0.11
       pathe: 2.0.3
       pkg-types: 2.3.1
@@ -11113,7 +11098,7 @@ snapshots:
       std-env: 4.1.0
     optional: true
 
-  '@nuxt/vite-builder@4.3.1(@biomejs/biome@2.4.15)(@types/node@25.9.1)(lightningcss@1.32.0)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(rollup@4.60.4)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vue@3.5.30(typescript@6.0.3))(yaml@2.9.0)':
+  '@nuxt/vite-builder@4.3.1(@biomejs/biome@2.4.16)(@types/node@25.9.1)(lightningcss@1.32.0)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(rollup@4.60.4)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vue@3.5.30(typescript@6.0.3))(yaml@2.9.0)':
     dependencies:
       '@nuxt/kit': 4.3.1(magicast@0.5.3)
       '@rollup/plugin-replace': 6.0.3(rollup@4.60.4)
@@ -11132,7 +11117,7 @@ snapshots:
       magic-string: 0.30.21
       mlly: 1.8.2
       mocked-exports: 0.1.1
-      nuxt: 4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
       pathe: 2.0.3
       pkg-types: 2.3.1
       postcss: 8.5.15
@@ -11143,7 +11128,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       vite: 7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0)
       vite-node: 5.3.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0)
-      vite-plugin-checker: 0.12.0(@biomejs/biome@2.4.15)(typescript@6.0.3)(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))
+      vite-plugin-checker: 0.12.0(@biomejs/biome@2.4.16)(typescript@6.0.3)(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))
       vue: 3.5.30(typescript@6.0.3)
       vue-bundle-renderer: 2.2.0
     transitivePeerDependencies:
@@ -11649,25 +11634,25 @@ snapshots:
   '@poppinss/exception@1.2.3':
     optional: true
 
-  '@powersync/cli-core@0.9.5(@types/json-schema@7.0.15)':
+  '@powersync/cli-core@0.9.6(@types/json-schema@7.0.15)':
     dependencies:
-      '@journeyapps-labs/common-sdk': 1.0.2(@types/json-schema@7.0.15)
+      '@journeyapps-labs/common-sdk': 1.0.4(@types/json-schema@7.0.15)
       '@journeyapps-labs/micro-errors': 1.0.1
       '@oclif/core': 4.11.3
-      '@powersync/cli-schemas': 0.9.5
-      '@powersync/management-client': 0.0.6(@types/json-schema@7.0.15)
-      '@powersync/management-types': 0.0.5
-      '@powersync/service-client': 0.0.3(@types/json-schema@7.0.15)
+      '@powersync/cli-schemas': 0.9.6
+      '@powersync/management-client': 0.1.1(@types/json-schema@7.0.15)
+      '@powersync/management-types': 0.2.0
+      '@powersync/service-client': 0.0.6(@types/json-schema@7.0.15)
       keychain: 1.5.0
       yaml: 2.9.0
     transitivePeerDependencies:
       - '@types/json-schema'
       - babel-plugin-macros
 
-  '@powersync/cli-plugin-config-edit@0.9.5(@types/json-schema@7.0.15)':
+  '@powersync/cli-plugin-config-edit@0.9.6(@types/json-schema@7.0.15)':
     dependencies:
       '@oclif/core': 4.11.3
-      '@powersync/cli-core': 0.9.5(@types/json-schema@7.0.15)
+      '@powersync/cli-core': 0.9.6(@types/json-schema@7.0.15)
       open: 11.0.0
       wait-port: 1.1.0
     transitivePeerDependencies:
@@ -11675,12 +11660,12 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  '@powersync/cli-plugin-docker@0.9.5(@types/json-schema@7.0.15)(@types/node@25.9.1)':
+  '@powersync/cli-plugin-docker@0.9.6(@types/json-schema@7.0.15)(@types/node@25.9.1)':
     dependencies:
       '@inquirer/prompts': 7.10.1(@types/node@25.9.1)
       '@oclif/core': 4.11.3
-      '@powersync/cli-core': 0.9.5(@types/json-schema@7.0.15)
-      '@powersync/cli-schemas': 0.9.5
+      '@powersync/cli-core': 0.9.6(@types/json-schema@7.0.15)
+      '@powersync/cli-schemas': 0.9.6
       '@powersync/service-schema': 1.21.0
       '@powersync/service-types': 0.15.2
       yaml: 2.9.0
@@ -11689,9 +11674,9 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  '@powersync/cli-schemas@0.9.5':
+  '@powersync/cli-schemas@0.9.6':
     dependencies:
-      '@powersync/management-types': 0.0.5
+      '@powersync/management-types': 0.2.0
       '@powersync/service-schema': 1.21.0
       '@powersync/service-types': 0.15.2
       ajv: 8.20.0
@@ -11700,42 +11685,42 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/common@1.53.1':
+  '@powersync/common@1.53.2':
     dependencies:
       event-iterator: 2.0.0
       js-logger: 1.6.1
 
-  '@powersync/kysely-driver@1.3.3(@powersync/common@1.53.1)':
+  '@powersync/kysely-driver@1.3.3(@powersync/common@1.53.2)':
     dependencies:
-      '@powersync/common': 1.53.1
+      '@powersync/common': 1.53.2
       kysely: 0.28.17
 
-  '@powersync/management-client@0.0.6(@types/json-schema@7.0.15)':
+  '@powersync/management-client@0.1.1(@types/json-schema@7.0.15)':
     dependencies:
       '@journeyapps-labs/common-sdk': 1.0.4(@types/json-schema@7.0.15)
-      '@powersync/management-types': 0.0.5
+      '@powersync/management-types': 0.2.0
     transitivePeerDependencies:
       - '@types/json-schema'
       - babel-plugin-macros
 
-  '@powersync/management-types@0.0.5':
+  '@powersync/management-types@0.2.0':
     dependencies:
       '@journeyapps-labs/micro-codecs': 1.0.3
-      '@powersync/service-types': 0.15.0
+      '@powersync/service-types': 0.15.2
       bson: 6.10.4
       ts-codec: 1.3.0
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/react@1.10.0(@powersync/common@1.53.1)(react@19.2.6)':
+  '@powersync/react@1.10.0(@powersync/common@1.53.2)(react@19.2.6)':
     dependencies:
-      '@powersync/common': 1.53.1
+      '@powersync/common': 1.53.2
       react: 19.2.6
 
-  '@powersync/service-client@0.0.3(@types/json-schema@7.0.15)':
+  '@powersync/service-client@0.0.6(@types/json-schema@7.0.15)':
     dependencies:
-      '@journeyapps-labs/common-sdk': 1.0.2(@types/json-schema@7.0.15)
-      '@powersync/service-types': 0.15.0
+      '@journeyapps-labs/common-sdk': 1.0.4(@types/json-schema@7.0.15)
+      '@powersync/service-types': 0.15.2
     transitivePeerDependencies:
       - '@types/json-schema'
       - babel-plugin-macros
@@ -11746,22 +11731,14 @@ snapshots:
 
   '@powersync/service-schema@1.21.0': {}
 
-  '@powersync/service-sync-rules@0.34.1':
+  '@powersync/service-sync-rules@0.36.0':
     dependencies:
       '@powersync/service-jsonbig': 0.17.13
       '@syncpoint/wkx': 0.5.2
       ajv: 8.20.0
       pgsql-ast-parser: 11.2.0
-      uuid: 11.1.1
+      uuid: 14.0.0
       yaml: 2.9.0
-
-  '@powersync/service-types@0.15.0':
-    dependencies:
-      dedent: 1.7.2
-      ts-codec: 1.3.0
-      uri-js: 4.4.1
-    transitivePeerDependencies:
-      - babel-plugin-macros
 
   '@powersync/service-types@0.15.2':
     dependencies:
@@ -11773,10 +11750,10 @@ snapshots:
 
   '@powersync/sync-config-tools@0.1.2': {}
 
-  '@powersync/web@1.38.1(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.53.1)':
+  '@powersync/web@1.38.2(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.53.2)':
     dependencies:
       '@journeyapps/wa-sqlite': 1.7.0
-      '@powersync/common': 1.53.1
+      '@powersync/common': 1.53.2
       comlink: 4.4.2
       commander: 12.1.0
 
@@ -13323,10 +13300,10 @@ snapshots:
       vue: 3.5.30(typescript@6.0.3)
     optional: true
 
-  '@vercel/analytics@2.0.1(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))':
+  '@vercel/analytics@2.0.1(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))':
     optionalDependencies:
       next: 16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      nuxt: 4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
       react: 19.2.6
       vue: 3.5.30(typescript@6.0.3)
       vue-router: 4.6.4(vue@3.5.30(typescript@6.0.3))
@@ -13353,10 +13330,10 @@ snapshots:
       - supports-color
     optional: true
 
-  '@vercel/speed-insights@2.0.0(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))':
+  '@vercel/speed-insights@2.0.0(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(react@19.2.6)(vue-router@4.6.4(vue@3.5.30(typescript@6.0.3)))(vue@3.5.30(typescript@6.0.3))':
     optionalDependencies:
       next: 16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      nuxt: 4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0)
       react: 19.2.6
       vue: 3.5.30(typescript@6.0.3)
       vue-router: 4.6.4(vue@3.5.30(typescript@6.0.3))
@@ -13921,7 +13898,7 @@ snapshots:
 
   better-auth@1.4.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)(vue@3.5.30(typescript@6.0.3)):
     dependencies:
-      '@better-auth/core': 1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0)
+      '@better-auth/core': 1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)
       '@better-auth/telemetry': 1.4.9(@better-auth/core@1.4.9(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0))
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.21
@@ -13929,7 +13906,7 @@ snapshots:
       '@noble/hashes': 2.2.0
       better-call: 1.1.7(zod@4.4.3)
       defu: 6.1.7
-      jose: 6.1.2
+      jose: 6.2.3
       kysely: 0.28.17
       nanostores: 1.2.0
       zod: 4.4.3
@@ -16190,16 +16167,16 @@ snapshots:
       boolbase: 1.0.0
     optional: true
 
-  nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0):
+  nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0):
     dependencies:
       '@dxup/nuxt': 0.3.2(magicast@0.5.3)
       '@nuxt/cli': 3.35.2(@nuxt/schema@4.3.1)(cac@6.7.14)(commander@13.1.0)(magicast@0.5.3)
       '@nuxt/devtools': 3.2.4(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(vue@3.5.30(typescript@6.0.3))
       '@nuxt/kit': 4.3.1(magicast@0.5.3)
-      '@nuxt/nitro-server': 4.3.1(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1))(srvx@0.11.15)(typescript@6.0.3)
+      '@nuxt/nitro-server': 4.3.1(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1))(srvx@0.11.15)(typescript@6.0.3)
       '@nuxt/schema': 4.3.1
       '@nuxt/telemetry': 2.8.0(@nuxt/kit@4.3.1(magicast@0.5.3))
-      '@nuxt/vite-builder': 4.3.1(@biomejs/biome@2.4.15)(@types/node@25.9.1)(lightningcss@1.32.0)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(rollup@4.60.4)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vue@3.5.30(typescript@6.0.3))(yaml@2.9.0)
+      '@nuxt/vite-builder': 4.3.1(@biomejs/biome@2.4.16)(@types/node@25.9.1)(lightningcss@1.32.0)(magicast@0.5.3)(nuxt@4.3.1(@biomejs/biome@2.4.16)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@parcel/watcher@2.5.6)(@types/node@25.9.1)(@vue/compiler-sfc@3.5.34)(cac@6.7.14)(commander@13.1.0)(db0@0.3.4(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.3)(rollup@4.60.4)(srvx@0.11.15)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0))(yaml@2.9.0))(rollup@4.60.4)(terser@5.46.0)(tsx@4.22.3)(typescript@6.0.3)(vue@3.5.30(typescript@6.0.3))(yaml@2.9.0)
       '@unhead/vue': 2.1.15(vue@3.5.30(typescript@6.0.3))
       '@vue/shared': 3.5.34
       c12: 3.3.4(magicast@0.5.3)
@@ -16874,7 +16851,7 @@ snapshots:
 
   powershell-utils@0.1.0: {}
 
-  powersync@0.9.5(@types/json-schema@7.0.15)(@types/node@25.9.1):
+  powersync@0.9.6(@types/json-schema@7.0.15)(@types/node@25.9.1):
     dependencies:
       '@fastify/cors': 10.1.0
       '@inquirer/prompts': 7.10.1(@types/node@25.9.1)
@@ -16884,13 +16861,13 @@ snapshots:
       '@oclif/plugin-commands': 4.1.54
       '@oclif/plugin-help': 6.2.49
       '@oclif/plugin-plugins': 5.4.68
-      '@powersync/cli-core': 0.9.5(@types/json-schema@7.0.15)
-      '@powersync/cli-plugin-config-edit': 0.9.5(@types/json-schema@7.0.15)
-      '@powersync/cli-plugin-docker': 0.9.5(@types/json-schema@7.0.15)(@types/node@25.9.1)
-      '@powersync/cli-schemas': 0.9.5
-      '@powersync/management-client': 0.0.6(@types/json-schema@7.0.15)
-      '@powersync/management-types': 0.0.5
-      '@powersync/service-sync-rules': 0.34.1
+      '@powersync/cli-core': 0.9.6(@types/json-schema@7.0.15)
+      '@powersync/cli-plugin-config-edit': 0.9.6(@types/json-schema@7.0.15)
+      '@powersync/cli-plugin-docker': 0.9.6(@types/json-schema@7.0.15)(@types/node@25.9.1)
+      '@powersync/cli-schemas': 0.9.6
+      '@powersync/management-client': 0.1.1(@types/json-schema@7.0.15)
+      '@powersync/management-types': 0.2.0
+      '@powersync/service-sync-rules': 0.36.0
       '@powersync/service-types': 0.15.2
       '@powersync/sync-config-tools': 0.1.2
       bson: 7.2.0
@@ -17075,7 +17052,7 @@ snapshots:
       react: 19.2.6
       scheduler: 0.27.0
 
-  react-email@6.3.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+  react-email@6.5.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
     dependencies:
       '@babel/parser': 7.27.0
       '@babel/traverse': 7.27.0
@@ -17451,7 +17428,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  shadcn@4.8.0(@types/node@25.9.1)(typescript@6.0.3):
+  shadcn@4.8.2(@types/node@25.9.1)(typescript@6.0.3):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/parser': 7.29.3
@@ -18206,6 +18183,8 @@ snapshots:
 
   uuid@13.0.2: {}
 
+  uuid@14.0.0: {}
+
   validate-npm-package-name@5.0.1: {}
 
   validate-npm-package-name@7.0.2: {}
@@ -18254,7 +18233,7 @@ snapshots:
       - yaml
     optional: true
 
-  vite-plugin-checker@0.12.0(@biomejs/biome@2.4.15)(typescript@6.0.3)(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0)):
+  vite-plugin-checker@0.12.0(@biomejs/biome@2.4.16)(typescript@6.0.3)(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0)):
     dependencies:
       '@babel/code-frame': 7.29.0
       chokidar: 4.0.3
@@ -18266,7 +18245,7 @@ snapshots:
       vite: 7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.22.3)(yaml@2.9.0)
       vscode-uri: 3.1.0
     optionalDependencies:
-      '@biomejs/biome': 2.4.15
+      '@biomejs/biome': 2.4.16
       typescript: 6.0.3
     optional: true
 
