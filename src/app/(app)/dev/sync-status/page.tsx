@@ -16,6 +16,16 @@ export const dynamic = "force-dynamic";
 // which are either public or trivially derivable). If you want to verify
 // nothing sensitive leaks, grep `.next/static/chunks/` after `pnpm build`
 // for the strings you're concerned about.
+//
+// Verified 2026-05-28 (commit 8af1e82): `pnpm build` emits this chunk to
+// `.next/static/chunks/` as expected; a secret-marker grep of `.next/static/`
+// is clean (only non-secret PowerSync SDK table names + display-only JWT decode
+// ship), `__TEST_FORCE_BUCKET_HEALTH` is tree-shaken out, and `force-dynamic`
+// (above) means no prerendered HTML for this route. The
+// `scripts/check-bundle-secrets.ts` postbuild guard scans browser-shipped build
+// output (`.next/static/` + prerendered `.next/server/`) for known
+// secret-marker shapes on every build (a tripwire, not a complete secret
+// detector). (#341)
 export default async function SyncStatusDebugPage(): Promise<ReactElement> {
   // Defense-in-depth: 404 on both axes. `NODE_ENV === "production"` in every
   // Vercel build (prod AND preview), and `VERCEL_ENV` is set on every Vercel

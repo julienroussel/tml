@@ -23,6 +23,7 @@
     "predev": "tsx scripts/generate-llms-txt.ts",
     "build": "next build",
     "prebuild": "tsx scripts/generate-llms-txt.ts",
+    "postbuild": "tsx scripts/check-bundle-secrets.ts",
     "start": "next start",
     "lint": "ultracite check",
     "test": "vitest",
