@@ -102,6 +102,7 @@ pnpm test:e2e:ui      # Open Playwright UI mode
 pnpm db:generate      # Generate Drizzle migration from schema changes
 pnpm db:migrate       # Apply pending migrations to Neon
 pnpm db:studio        # Open Drizzle Studio GUI
+pnpm reset:dev-branch # Reset dev Neon branch from parent + recreate the PowerSync slot
 
 # PowerSync sync config (generated from Drizzle schema)
 pnpm sync:generate    # Regenerate client schema, column allowlist, and sync-config.yaml
