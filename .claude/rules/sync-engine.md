@@ -149,7 +149,7 @@ pnpm exec tsx scripts/powersync.ts fetch status --instance-id="$POWERSYNC_INSTAN
 
 Then on the source branch: `SELECT slot_name, active FROM pg_replication_slots WHERE slot_name LIKE 'powersync_%';` — confirm a new active slot exists.
 
-**Neon branch reset hazard.** A `neon branches reset` on `dev/julien` invalidates the LSN positions PowerSync's slot tracks → reproduces this same symptom under a different mechanism. Use a wrapper script that always pairs reset with a `powersync deploy` re-bootstrap (tracked in #345).
+**Neon branch reset hazard.** A `neon branches reset` on `dev/julien` invalidates the LSN positions PowerSync's slot tracks → reproduces this same symptom under a different mechanism. **Never reset the dev branch bare** — run `pnpm reset:dev-branch` (`scripts/reset-dev-branch.ts`, #345). It pairs the reset (`neonctl branches reset … --parent` — the `--parent` flag is required; Neon only supports reset-from-parent) with the PowerSync re-bootstrap (`pull instance` → full `powersync deploy`, never `deploy service-config`) so the slot is recreated on the freshly reset branch. It loads `POWERSYNC_*` from `.env.local`, reads `NEON_API_KEY` from your shell, refuses to run against the prod instance, and prompts before the destructive reset (`--yes` to skip).
 
 **Hygiene note.** `powersync fetch config` output includes the Postgres password in plaintext inside the `uri` field, even when `password.secret_ref` is set. Treat the YAML output as a credential; don't paste it into PRs / chat / etc. (PowerSync API hygiene — tracked in #346.)
 

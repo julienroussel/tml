@@ -27,7 +27,7 @@
       "style": {
         "useConsistentTypeDefinitions": "off"
       },
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noUnknownAtRules": "off"
       }
