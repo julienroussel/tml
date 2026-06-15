@@ -84,7 +84,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
+    "@biomejs/biome": "2.5.0",
     "@playwright/test": "1.60.0",
     "@react-email/preview-server": "5.2.10",
     "@tailwindcss/postcss": "4.3.1",
