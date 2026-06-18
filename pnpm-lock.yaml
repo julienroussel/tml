@@ -21,22 +21,22 @@ importers:
         version: 1.7.0
       '@neondatabase/auth':
         specifier: 0.4.2-beta
-        version: 0.4.2-beta(f4e38d0fc9ee77f40605121a951dfe69)
+        version: 0.4.2-beta(0e3a61cdc525d53826429d7b73d4c915)
       '@neondatabase/serverless':
         specifier: 1.1.0
         version: 1.1.0
       '@powersync/common':
-        specifier: 1.54.0
-        version: 1.54.0
+        specifier: 1.55.0
+        version: 1.55.0
       '@powersync/kysely-driver':
         specifier: 1.3.3
-        version: 1.3.3(@powersync/common@1.54.0)
+        version: 1.3.3(@powersync/common@1.55.0)
       '@powersync/react':
         specifier: 1.10.0
-        version: 1.10.0(@powersync/common@1.54.0)(react@19.2.7)
+        version: 1.10.0(@powersync/common@1.55.0)(react@19.2.7)
       '@powersync/web':
-        specifier: 1.38.3
-        version: 1.38.3(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.54.0)
+        specifier: 1.38.4
+        version: 1.38.4(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.55.0)
       '@react-email/render':
         specifier: 2.0.9
         version: 2.0.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -65,8 +65,8 @@ importers:
         specifier: 0.8.3
         version: 0.8.3(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(zod@4.4.3)
       lucide-react:
-        specifier: 1.20.0
-        version: 1.20.0(react@19.2.7)
+        specifier: 1.21.0
+        version: 1.21.0(react@19.2.7)
       next:
         specifier: 16.2.9
         version: 16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -89,8 +89,8 @@ importers:
         specifier: 7.79.0
         version: 7.79.0(react@19.2.7)
       resend:
-        specifier: 6.12.4
-        version: 6.12.4(@react-email/render@2.0.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
+        specifier: 6.14.0
+        version: 6.14.0(@react-email/render@2.0.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       server-only:
         specifier: 0.0.1
         version: 0.0.1
@@ -2906,8 +2906,8 @@ packages:
     resolution: {integrity: sha512-/eA5YhHx4Li80vctfpKfHRSPcHNf8D8HZU1YUIIACWVElhBxZUY5zmSKhVPSXLFUQy7jri43ubd3Diss+KaqKA==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/common@1.54.0':
-    resolution: {integrity: sha512-/gzitw4iQL4UI7ILf7TUzCy/cfbDJGU3/aiN/ciaLtDd2Uts3wYARVKclSW0OJhPPisKCX0E8Ev/iZGQPbTgDA==}
+  '@powersync/common@1.55.0':
+    resolution: {integrity: sha512-c9K2Gac9wOB4ijVnQT388g7Yeuh6VrfJZFXaL6Rag9Fp7F8JzAYcrWaULLTdMnzm7VW6b6XT5M2ip5yLS8oSBg==}
 
   '@powersync/kysely-driver@1.3.3':
     resolution: {integrity: sha512-ODktTJvPWjxYDPoyTDaK5n04d5aO8MGYR7QyKXohiHaRK47U1GKCcsT0Ay7nmDT1MOj7dn6pY9wUdKFosACLrA==}
@@ -2944,12 +2944,12 @@ packages:
   '@powersync/sync-config-tools@0.1.2':
     resolution: {integrity: sha512-/K/FgVRvOLPZgREKHHf4C9WZ7macygzVSuqW2GvLHaFjbRaEtSgENrCqF06+JdPP14UxkrPkLCyqXfpj9yNVAQ==}
 
-  '@powersync/web@1.38.3':
-    resolution: {integrity: sha512-rID0jWVhON68IxqfyomQzAK6kTKG6LH9PCjRovKDD3tuMRNiLrcZCS584JEbh7y6N+UHxIuDUckcUbi3ckeOmA==}
+  '@powersync/web@1.38.4':
+    resolution: {integrity: sha512-ok03ylEeq0VeTj0Ko2QkFjX/bacZMIuybtGQaRaDqHyWi4D60x5fO1amqRKiZw9NY6Je9fWGgXcr6Ti32TGUMQ==}
     hasBin: true
     peerDependencies:
       '@journeyapps/wa-sqlite': ^1.5.0
-      '@powersync/common': ^1.54.0
+      '@powersync/common': ^1.55.0
 
   '@radix-ui/number@1.1.2':
     resolution: {integrity: sha512-ceTwaxc4I5IOi97DgCotl3pqiyRGvffcc0oOsE2dQYaJOFIDsDt4VWG6xEbg1QePv9QWausCEIppud/tJ1wNig==}
@@ -6372,9 +6372,6 @@ packages:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
 
-  event-iterator@2.0.0:
-    resolution: {integrity: sha512-KGft0ldl31BZVV//jj+IAIGCxkvvUkkON+ScH6zfoX+l+omX6001ggyRSpI0Io2Hlro0ThXotswCtfzS8UkIiQ==}
-
   event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
     engines: {node: '>=6'}
@@ -7287,8 +7284,8 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  lucide-react@1.20.0:
-    resolution: {integrity: sha512-jhXLeC/7m0/tjL1nzMdKk6x256zWA6AtbhTVreHOiKPoeX2d6MK4FbyIQPpVq0E6iPWBisyy1TW+pEge/uMEuQ==}
+  lucide-react@1.21.0:
+    resolution: {integrity: sha512-reEZMXq8Qdd5jg5XYkQ5TR1fB/GiQ7ih4vcrthYDtgjSDwh0i6/YLiGjsWsIwgN49gpAnd4J2elSNzncMEEUUQ==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -8408,8 +8405,8 @@ packages:
     resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
     engines: {node: '>=0.10.0'}
 
-  resend@6.12.4:
-    resolution: {integrity: sha512-lRpJ2Hxd+ht+JPDm97juRcUp9HOMuZyxaRFRFmc9Tx8iNWiei94Dx9v6SWufgKk2667C/uCeKKspMotOHSpCSg==}
+  resend@6.14.0:
+    resolution: {integrity: sha512-jVdpUgOoWGLjaP64lo8KwzHT9gY4w6Dl8c36CIb2F+ayYOMLr3khqs8xrNjXM2k19b+lPoj0VWQFhVNLiToBjA==}
     engines: {node: '>=20'}
     peerDependencies:
       '@react-email/render': '*'
@@ -11168,7 +11165,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@neondatabase/auth-ui@0.2.1-beta(07586ac573c28614a5b683b8626d80b7)':
+  '@neondatabase/auth-ui@0.2.1-beta(83344291336a83cff8b26edbf764bb90)':
     dependencies:
       '@better-auth/passkey': 1.4.18(@better-auth/core@1.4.18(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.4.3))(jose@6.1.2)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-auth@1.4.18(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9)(vue@3.5.30(typescript@6.0.3)))(better-call@1.1.8(zod@4.4.3))(nanostores@1.2.0)
       '@captchafox/react': 1.11.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -11176,7 +11173,7 @@ snapshots:
       '@hcaptcha/react-hcaptcha': 1.17.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@hookform/resolvers': 5.4.0(react-hook-form@7.79.0(react@19.2.7))
       '@marsidev/react-turnstile': 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@neondatabase/auth': 0.4.2-beta(f4e38d0fc9ee77f40605121a951dfe69)
+      '@neondatabase/auth': 0.4.2-beta(0e3a61cdc525d53826429d7b73d4c915)
       '@radix-ui/react-avatar': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-checkbox': 1.3.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-context': 1.1.4(@types/react@19.2.17)(react@19.2.7)
@@ -11240,14 +11237,14 @@ snapshots:
       - vitest
       - vue
 
-  '@neondatabase/auth@0.4.2-beta(f4e38d0fc9ee77f40605121a951dfe69)':
+  '@neondatabase/auth@0.4.2-beta(0e3a61cdc525d53826429d7b73d4c915)':
     dependencies:
       '@better-fetch/fetch': 1.1.21
-      '@neondatabase/auth-ui': 0.2.1-beta(07586ac573c28614a5b683b8626d80b7)
+      '@neondatabase/auth-ui': 0.2.1-beta(83344291336a83cff8b26edbf764bb90)
       '@supabase/auth-js': 2.79.0
       better-auth: 1.4.18(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9)(vue@3.5.30(typescript@6.0.3))
       jose: 6.1.2
-      lucide-react: 1.20.0(react@19.2.7)
+      lucide-react: 1.21.0(react@19.2.7)
       zod: 4.4.3
     optionalDependencies:
       next: 16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -12196,14 +12193,13 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/common@1.54.0':
+  '@powersync/common@1.55.0':
     dependencies:
-      event-iterator: 2.0.0
       js-logger: 1.6.1
 
-  '@powersync/kysely-driver@1.3.3(@powersync/common@1.54.0)':
+  '@powersync/kysely-driver@1.3.3(@powersync/common@1.55.0)':
     dependencies:
-      '@powersync/common': 1.54.0
+      '@powersync/common': 1.55.0
       kysely: 0.28.17
 
   '@powersync/management-client@0.1.3(@types/json-schema@7.0.15)':
@@ -12223,9 +12219,9 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/react@1.10.0(@powersync/common@1.54.0)(react@19.2.7)':
+  '@powersync/react@1.10.0(@powersync/common@1.55.0)(react@19.2.7)':
     dependencies:
-      '@powersync/common': 1.54.0
+      '@powersync/common': 1.55.0
       react: 19.2.7
 
   '@powersync/service-client@0.0.6(@types/json-schema@7.0.15)':
@@ -12261,10 +12257,10 @@ snapshots:
 
   '@powersync/sync-config-tools@0.1.2': {}
 
-  '@powersync/web@1.38.3(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.54.0)':
+  '@powersync/web@1.38.4(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.55.0)':
     dependencies:
       '@journeyapps/wa-sqlite': 1.7.0
-      '@powersync/common': 1.54.0
+      '@powersync/common': 1.55.0
       comlink: 4.4.2
       commander: 12.1.0
 
@@ -15645,8 +15641,6 @@ snapshots:
 
   etag@1.8.1: {}
 
-  event-iterator@2.0.0: {}
-
   event-target-shim@5.0.1:
     optional: true
 
@@ -16622,7 +16616,7 @@ snapshots:
     dependencies:
       react: 19.2.7
 
-  lucide-react@1.20.0(react@19.2.7):
+  lucide-react@1.21.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
@@ -18093,7 +18087,7 @@ snapshots:
 
   require-from-string@2.0.2: {}
 
-  resend@6.12.4(@react-email/render@2.0.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7)):
+  resend@6.14.0(@react-email/render@2.0.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7)):
     dependencies:
       postal-mime: 2.7.4
       standardwebhooks: 1.0.0
