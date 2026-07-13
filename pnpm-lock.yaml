@@ -26,17 +26,17 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
       '@powersync/common':
-        specifier: 1.55.0
-        version: 1.55.0
+        specifier: 1.57.2
+        version: 1.57.2
       '@powersync/kysely-driver':
         specifier: 1.3.3
-        version: 1.3.3(@powersync/common@1.55.0)
+        version: 1.3.3(@powersync/common@1.57.2)
       '@powersync/react':
         specifier: 1.10.0
-        version: 1.10.0(@powersync/common@1.55.0)(react@19.2.7)
+        version: 1.10.0(@powersync/common@1.57.2)(react@19.2.7)
       '@powersync/web':
         specifier: 1.38.6
-        version: 1.38.6(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.55.0)
+        version: 1.38.6(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.57.2)
       '@react-email/render':
         specifier: 2.1.0
         version: 2.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -2908,8 +2908,8 @@ packages:
     resolution: {integrity: sha512-/eA5YhHx4Li80vctfpKfHRSPcHNf8D8HZU1YUIIACWVElhBxZUY5zmSKhVPSXLFUQy7jri43ubd3Diss+KaqKA==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/common@1.55.0':
-    resolution: {integrity: sha512-c9K2Gac9wOB4ijVnQT388g7Yeuh6VrfJZFXaL6Rag9Fp7F8JzAYcrWaULLTdMnzm7VW6b6XT5M2ip5yLS8oSBg==}
+  '@powersync/common@1.57.2':
+    resolution: {integrity: sha512-cOsmvBFBK0yvpwjaI46Lm3xCMRaTaydQQ4RolED3Upj6/kawGZHhkh4Guve3nmOSQ/0sGCuiFOcl4Gv9Mp6dOA==}
 
   '@powersync/kysely-driver@1.3.3':
     resolution: {integrity: sha512-ODktTJvPWjxYDPoyTDaK5n04d5aO8MGYR7QyKXohiHaRK47U1GKCcsT0Ay7nmDT1MOj7dn6pY9wUdKFosACLrA==}
@@ -12019,13 +12019,13 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/common@1.55.0':
+  '@powersync/common@1.57.2':
     dependencies:
       js-logger: 1.6.1
 
-  '@powersync/kysely-driver@1.3.3(@powersync/common@1.55.0)':
+  '@powersync/kysely-driver@1.3.3(@powersync/common@1.57.2)':
     dependencies:
-      '@powersync/common': 1.55.0
+      '@powersync/common': 1.57.2
       kysely: 0.28.17
 
   '@powersync/management-client@0.1.3(@types/json-schema@7.0.15)':
@@ -12045,9 +12045,9 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/react@1.10.0(@powersync/common@1.55.0)(react@19.2.7)':
+  '@powersync/react@1.10.0(@powersync/common@1.57.2)(react@19.2.7)':
     dependencies:
-      '@powersync/common': 1.55.0
+      '@powersync/common': 1.57.2
       react: 19.2.7
 
   '@powersync/service-client@0.0.6(@types/json-schema@7.0.15)':
@@ -12083,10 +12083,10 @@ snapshots:
 
   '@powersync/sync-config-tools@0.1.2': {}
 
-  '@powersync/web@1.38.6(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.55.0)':
+  '@powersync/web@1.38.6(@journeyapps/wa-sqlite@1.7.0)(@powersync/common@1.57.2)':
     dependencies:
       '@journeyapps/wa-sqlite': 1.7.0
-      '@powersync/common': 1.55.0
+      '@powersync/common': 1.57.2
       comlink: 4.4.2
       commander: 12.1.0
 
