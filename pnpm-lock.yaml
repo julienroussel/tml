@@ -35,8 +35,8 @@ importers:
         specifier: 1.10.0
         version: 1.10.0(@powersync/common@1.57.2)(react@19.2.7)
       '@powersync/web':
-        specifier: 1.38.6
-        version: 1.38.6(@journeyapps/wa-sqlite@1.7.2)(@powersync/common@1.57.2)
+        specifier: 1.39.0
+        version: 1.39.0(@journeyapps/wa-sqlite@1.7.2)(@powersync/common@1.57.2)
       '@react-email/render':
         specifier: 2.1.0
         version: 2.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -2946,12 +2946,12 @@ packages:
   '@powersync/sync-config-tools@0.1.2':
     resolution: {integrity: sha512-/K/FgVRvOLPZgREKHHf4C9WZ7macygzVSuqW2GvLHaFjbRaEtSgENrCqF06+JdPP14UxkrPkLCyqXfpj9yNVAQ==}
 
-  '@powersync/web@1.38.6':
-    resolution: {integrity: sha512-o1XAvLuJNEbcbVVCBc1ffe3GTIvVrN6vwO4KiyqsTpg1Qv6Lq9PuaBf1Kq3lbvLY222caxcEYcoGlhaLuHLvig==}
+  '@powersync/web@1.39.0':
+    resolution: {integrity: sha512-hl0V8wC4T44cLKG89/ePB97DsVboyVFkT5/WT9SxhIVQNs+zCaTg800UKQscNchUJyVjNHQwTdycjYsKBpqnOQ==}
     hasBin: true
     peerDependencies:
       '@journeyapps/wa-sqlite': ^1.5.0
-      '@powersync/common': ^1.57.0
+      '@powersync/common': ^1.57.2
 
   '@radix-ui/number@1.1.2':
     resolution: {integrity: sha512-ceTwaxc4I5IOi97DgCotl3pqiyRGvffcc0oOsE2dQYaJOFIDsDt4VWG6xEbg1QePv9QWausCEIppud/tJ1wNig==}
@@ -12204,7 +12204,7 @@ snapshots:
 
   '@powersync/sync-config-tools@0.1.2': {}
 
-  '@powersync/web@1.38.6(@journeyapps/wa-sqlite@1.7.2)(@powersync/common@1.57.2)':
+  '@powersync/web@1.39.0(@journeyapps/wa-sqlite@1.7.2)(@powersync/common@1.57.2)':
     dependencies:
       '@journeyapps/wa-sqlite': 1.7.2
       '@powersync/common': 1.57.2
