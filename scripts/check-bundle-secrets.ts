@@ -131,7 +131,7 @@ export function scanDirectory(
   let sourceMapCount = 0;
   for (const file of files) {
     if (file.endsWith(".map")) {
-      sourceMapCount++;
+      sourceMapCount += 1;
     }
     const matched = findSecretMarkers(readFileSync(file, "utf8"), patterns);
     if (matched.length > 0) {

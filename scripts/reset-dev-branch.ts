@@ -205,7 +205,8 @@ async function main(): Promise<void> {
     // Step 1 already reset the branch, so the slot is now orphaned. Re-running
     // the whole flow is safe — it is idempotent.
     throw new Error(
-      `PowerSync re-bootstrap failed, but the Neon branch was already reset — the replication slot is orphaned. Re-run \`pnpm reset:dev-branch\` to retry (idempotent). Cause: ${error instanceof Error ? error.message : String(error)}`
+      `PowerSync re-bootstrap failed, but the Neon branch was already reset — the replication slot is orphaned. Re-run \`pnpm reset:dev-branch\` to retry (idempotent). Cause: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
   } finally {
     rmSync(workDir, { recursive: true, force: true });

@@ -13,16 +13,17 @@ describe("TrickStatusBadge", () => {
     expect(screen.getByText(`repertoire.${expectedLabel}`)).toBeInTheDocument();
   });
 
-  it.each(
-    TRICK_STATUSES
-  )("applies the correct variant from STATUS_CONFIG for status: %s", (status) => {
-    render(<TrickStatusBadge status={status} />);
-    const expectedVariant = STATUS_CONFIG[status].variant;
-    // Badge renders a <span> with data-slot="badge" and data-variant set to the variant value
-    const badge = document.querySelector("[data-slot='badge']");
-    expect(badge).not.toBeNull();
-    expect(badge).toHaveAttribute("data-variant", expectedVariant);
-  });
+  it.each(TRICK_STATUSES)(
+    "applies the correct variant from STATUS_CONFIG for status: %s",
+    (status) => {
+      render(<TrickStatusBadge status={status} />);
+      const expectedVariant = STATUS_CONFIG[status].variant;
+      // Badge renders a <span> with data-slot="badge" and data-variant set to the variant value
+      const badge = document.querySelector("[data-slot='badge']");
+      expect(badge).not.toBeNull();
+      expect(badge).toHaveAttribute("data-variant", expectedVariant);
+    }
+  );
 
   it("renders exactly one badge element", () => {
     render(<TrickStatusBadge status="new" />);

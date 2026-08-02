@@ -59,17 +59,13 @@ export default async function globalSetup() {
   mkdirSync(dirname(BYPASS_STATE_PATH), { recursive: true });
   await context.storageState({ path: BYPASS_STATE_PATH });
 
-  // Pre-warm Vercel's edge CDN for PowerSync's large worker bundles so the
+  // Pre-warm Vercel's edge CDN for PowerSync's large worker bundle so the
   // first authenticated context doesn't pay the cold-fetch cost. Errors are
   // non-fatal but logged by `prewarm()` so a silently-broken pre-warm
   // (e.g., worker URL drift after a version bump) is visible in CI output.
-  await Promise.all([
-    prewarm(page.request, `${baseURL}/powersync/worker/WASQLiteDB.umd.js`),
-    prewarm(
-      page.request,
-      `${baseURL}/powersync/worker/SharedSyncImplementation.umd.js`
-    ),
-  ]);
+  // @powersync/web 2.0 collapsed the database and sync workers into this one
+  // file; keep the URL in step with POWERSYNC_WORKER in src/sync/system.ts.
+  await prewarm(page.request, `${baseURL}/powersync/worker.js`);
 
   await browser.close();
 

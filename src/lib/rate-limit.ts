@@ -38,7 +38,7 @@ function checkRateLimitInMemory(identifier: string): boolean {
     rateLimitsByUser.set(identifier, entry);
     cleanupExpiredRateLimits(identifier, now);
   }
-  entry.count++;
+  entry.count += 1;
   return entry.count > RATE_LIMIT_MAX;
 }
 

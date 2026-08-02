@@ -80,7 +80,7 @@ export function parseItemRow(row: ItemRow): ParsedItem | null {
 
   let type: ItemType;
   if (isItemType(row.type)) {
-    type = row.type;
+    ({ type } = row);
   } else {
     console.warn("[parseItemRow] Unknown type coerced to 'other'", {
       id: row.id,
@@ -92,7 +92,7 @@ export function parseItemRow(row: ItemRow): ParsedItem | null {
   let condition: ItemCondition | null = null;
   if (row.condition !== null) {
     if (isItemCondition(row.condition)) {
-      condition = row.condition;
+      ({ condition } = row);
     } else {
       console.warn("[parseItemRow] Unknown condition coerced to null", {
         id: row.id,

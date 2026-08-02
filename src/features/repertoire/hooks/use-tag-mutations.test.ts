@@ -50,7 +50,10 @@ vi.mock("@/lib/events/log", () => ({
 let uuidCounter = 0;
 vi.stubGlobal("crypto", {
   ...globalThis.crypto,
-  randomUUID: () => `uuid-${++uuidCounter}`,
+  randomUUID: () => {
+    uuidCounter += 1;
+    return `uuid-${uuidCounter}`;
+  },
 });
 
 // --- Test suite -------------------------------------------------------

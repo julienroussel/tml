@@ -22,7 +22,7 @@ import type { SyncedTableName } from "@/sync/synced-columns";
  * Auth: Vercel Cron sends an Authorization header with the CRON_SECRET.
  */
 
-const CRON_SECRET = process.env.CRON_SECRET;
+const { CRON_SECRET } = process.env;
 
 function verifySecret(header: string | null, secret: string): boolean {
   if (!header) {
@@ -80,7 +80,10 @@ const USER_OWNED_TABLES = [
 const RETENTION_DAYS = 30;
 
 interface CleanupClient {
-  query(sql: string, params?: unknown[]): Promise<{ rowCount: number | null }>;
+  query: (
+    sql: string,
+    params?: unknown[]
+  ) => Promise<{ rowCount: number | null }>;
 }
 
 /**

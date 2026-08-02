@@ -8,7 +8,13 @@ const trickId = (id: string) => id as TrickId;
 
 // --- Mocks -----------------------------------------------------------
 
-const mockExecute = vi.fn().mockResolvedValue({ rowsAffected: 1 });
+// A successful PowerSync view UPDATE reports rowsAffected 0 (changes() ignores
+// the INSTEAD OF trigger); existence is read from the RETURNING row in `array`.
+// A non-empty array is the success shape; rowsAffected: 1 here would let a
+// regression to the old `!rowsAffected` guard pass unnoticed.
+const mockExecute = vi
+  .fn()
+  .mockResolvedValue({ rowsAffected: 0, array: [{ id: "row-id" }] });
 const mockWriteTransaction = vi.fn(
   async (cb: (tx: { execute: typeof mockExecute }) => Promise<void>) => {
     await cb({ execute: mockExecute });
@@ -57,7 +63,10 @@ vi.mock("@/lib/events/log", () => ({
 let uuidCounter = 0;
 vi.stubGlobal("crypto", {
   ...globalThis.crypto,
-  randomUUID: () => `uuid-${++uuidCounter}`,
+  randomUUID: () => {
+    uuidCounter += 1;
+    return `uuid-${uuidCounter}`;
+  },
 });
 
 // --- Test suite -------------------------------------------------------
@@ -807,10 +816,14 @@ describe("use-item-mutations", () => {
     });
 
     it("restores soft-deleted tag association instead of inserting", async () => {
-      // When the restore UPDATE affects a row, no INSERT should follow
+      // When the restore UPDATE affects a row, no INSERT should follow.
+      // Faithful view-UPDATE shape: rowsAffected 0, existence via RETURNING row.
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 1 }); // restore UPDATE hits a row
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // item UPDATE
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          array: [{ id: "junction-1" }],
+        }); // restore UPDATE hits a row
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -837,7 +850,8 @@ describe("use-item-mutations", () => {
         []
       );
 
-      // 1 UPDATE item + 1 restore UPDATE (no INSERT because rowsAffected > 0)
+      // 1 UPDATE item + 1 restore UPDATE (no INSERT because the restore
+      // returned a row)
       expect(mockExecute).toHaveBeenCalledTimes(2);
       const restoreSql = mockExecute.mock.calls[1]?.[0] as string;
       expect(restoreSql).toContain("UPDATE item_tags SET deleted_at = NULL");
@@ -847,8 +861,8 @@ describe("use-item-mutations", () => {
 
     it("inserts new tag association when no soft-deleted row exists", async () => {
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 0 }); // restore UPDATE finds no row
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // item UPDATE
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }); // restore UPDATE finds no row
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -922,8 +936,11 @@ describe("use-item-mutations", () => {
 
     it("restores soft-deleted trick association instead of inserting", async () => {
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 1 }); // restore UPDATE hits a row
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // item UPDATE
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          array: [{ id: "junction-1" }],
+        }); // restore UPDATE hits a row
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -959,8 +976,8 @@ describe("use-item-mutations", () => {
 
     it("inserts new trick association when no soft-deleted row exists", async () => {
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 0 }); // restore UPDATE finds no row
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // item UPDATE
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }); // restore UPDATE finds no row
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -1090,8 +1107,45 @@ describe("use-item-mutations", () => {
       ).rejects.toThrow("Cannot mutate items without an authenticated user");
     });
 
+    it("succeeds when the item UPDATE returns a row via RETURNING despite rowsAffected 0", async () => {
+      // Faithful success shape for a PowerSync view UPDATE: changes() reports 0,
+      // but RETURNING id yields the matched row. A regression to `!rowsAffected`
+      // would throw ItemNotFoundError here.
+      mockExecute.mockResolvedValueOnce({
+        rowsAffected: 0,
+        array: [{ id: "item-1" }],
+      });
+      const { useItemMutations } = await getHookExports();
+      const { updateItem } = useItemMutations();
+
+      await expect(
+        updateItem(
+          itemId("item-1"),
+          {
+            name: "Item",
+            type: "prop",
+            description: "",
+            brand: "",
+            creator: "",
+            condition: null,
+            location: "",
+            quantity: 1,
+            purchaseDate: "",
+            purchasePrice: "",
+            url: "",
+            notes: "",
+          },
+          [],
+          [],
+          [],
+          []
+        )
+      ).resolves.toBeUndefined();
+    });
+
     it("throws when item not found or already deleted", async () => {
-      mockExecute.mockResolvedValueOnce({ rowsAffected: 0 });
+      // Not-found oracle: RETURNING id yields no rows (empty array).
+      mockExecute.mockResolvedValueOnce({ rowsAffected: 0, array: [] });
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
 
@@ -1122,13 +1176,13 @@ describe("use-item-mutations", () => {
 
     it("applies combined tag and trick add+remove diffs without cross-contamination", async () => {
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // 0: item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // 1: soft-delete tag-remove
-        .mockResolvedValueOnce({ rowsAffected: 0 }) // 2: restore tag-add (no row)
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // 3: INSERT tag-add
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // 4: soft-delete trick-remove
-        .mockResolvedValueOnce({ rowsAffected: 0 }) // 5: restore trick-add (no row)
-        .mockResolvedValueOnce({ rowsAffected: 1 }); // 6: INSERT trick-add
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // 0: item UPDATE (RETURNING id)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // 1: soft-delete tag-remove
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // 2: restore tag-add (no row)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // 3: INSERT tag-add
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // 4: soft-delete trick-remove
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // 5: restore trick-add (no row)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }); // 6: INSERT trick-add
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -1191,9 +1245,12 @@ describe("use-item-mutations", () => {
 
     it("handles same trick ID in both addTrickIds and removeTrickIds (soft-deletes then restores)", async () => {
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // soft-delete trick-a
-        .mockResolvedValueOnce({ rowsAffected: 1 }); // restore trick-a
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // item UPDATE (RETURNING id)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // soft-delete trick-a
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          array: [{ id: "junction-1" }],
+        }); // restore trick-a
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -1231,8 +1288,8 @@ describe("use-item-mutations", () => {
       expect(mockExecute.mock.calls[2]?.[1]).toContain("trick-a");
     });
 
-    it("short-circuits junction operations when item UPDATE rowsAffected is 0", async () => {
-      mockExecute.mockResolvedValueOnce({ rowsAffected: 0 });
+    it("short-circuits junction operations when the item UPDATE matches no rows", async () => {
+      mockExecute.mockResolvedValueOnce({ rowsAffected: 0, array: [] });
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -1268,9 +1325,12 @@ describe("use-item-mutations", () => {
 
     it("handles same tag ID in both addTagIds and removeTagIds (soft-deletes then restores)", async () => {
       mockExecute
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // item UPDATE
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // soft-delete tag-a
-        .mockResolvedValueOnce({ rowsAffected: 1 }); // restore tag-a (hits the just-deleted row)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // item UPDATE (RETURNING id)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // soft-delete tag-a
+        .mockResolvedValueOnce({
+          rowsAffected: 0,
+          array: [{ id: "junction-1" }],
+        }); // restore tag-a (hits the just-deleted row)
 
       const { useItemMutations } = await getHookExports();
       const { updateItem } = useItemMutations();
@@ -1539,12 +1599,16 @@ describe("use-item-mutations", () => {
 
   describe("deleteItem", () => {
     beforeEach(() => {
-      // Default: SELECT returns a name, UPDATEs return rowsAffected: 1.
+      // Ordered chain mirroring a real view write: the SELECT snapshots the
+      // name; the soft-delete UPDATE carries RETURNING id so its `array` is the
+      // existence oracle (rowsAffected 0), and the plain cascade UPDATEs report
+      // no rows. Tests needing a different sequence mockReset + override.
       mockExecute.mockReset();
-      mockExecute.mockResolvedValue({
-        rowsAffected: 1,
-        rows: { item: () => ({ name: "Snapshot Item" }), length: 1 },
-      });
+      mockExecute
+        .mockResolvedValueOnce({ array: [{ name: "Snapshot Item" }] }) // SELECT name
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // UPDATE items ... RETURNING id
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // UPDATE item_tags cascade
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }); // UPDATE item_tricks cascade
     });
 
     it("soft-deletes item, item_tags, and item_tricks in one transaction", async () => {
@@ -1621,14 +1685,24 @@ describe("use-item-mutations", () => {
       expect(itemSql).toContain("deleted_at IS NULL");
     });
 
+    it("succeeds when the soft-delete UPDATE returns a row via RETURNING despite rowsAffected 0", async () => {
+      // The beforeEach chain models the faithful success shape (item UPDATE:
+      // rowsAffected 0 + a RETURNING row). A regression to `!rowsAffected`
+      // would throw ItemNotFoundError here.
+      const { useItemMutations } = await getHookExports();
+      const { deleteItem } = useItemMutations();
+
+      await expect(deleteItem(itemId("item-1"))).resolves.toBeUndefined();
+    });
+
     it("throws when item not found or already deleted", async () => {
       mockExecute.mockReset();
       mockExecute
         .mockResolvedValueOnce({
           rowsAffected: 0,
-          rows: { item: () => undefined, length: 0 },
+          array: [],
         }) // SELECT
-        .mockResolvedValueOnce({ rowsAffected: 0 }); // UPDATE → 0 rows
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }); // UPDATE → 0 rows (RETURNING empty)
       const { useItemMutations } = await getHookExports();
       const { deleteItem } = useItemMutations();
 
@@ -1648,6 +1722,8 @@ describe("use-item-mutations", () => {
     });
 
     it("wraps execution errors with descriptive message", async () => {
+      // Reset the beforeEach chain so the rejection is the first call (SELECT).
+      mockExecute.mockReset();
       mockExecute.mockRejectedValueOnce(new Error("Connection lost"));
       const { useItemMutations } = await getHookExports();
       const { deleteItem } = useItemMutations();
@@ -1704,11 +1780,11 @@ describe("use-item-mutations", () => {
       mockExecute
         .mockResolvedValueOnce({
           rowsAffected: 0,
-          rows: { item: () => undefined, length: 0 },
+          array: [],
         }) // SELECT — no row
-        .mockResolvedValueOnce({ rowsAffected: 1 }) // UPDATE items
-        .mockResolvedValueOnce({ rowsAffected: 0 }) // UPDATE item_tags
-        .mockResolvedValueOnce({ rowsAffected: 0 }); // UPDATE item_tricks
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [{ id: "item-1" }] }) // UPDATE items ... RETURNING id (row still exists)
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }) // UPDATE item_tags
+        .mockResolvedValueOnce({ rowsAffected: 0, array: [] }); // UPDATE item_tricks
 
       const { useItemMutations } = await getHookExports();
       const { deleteItem } = useItemMutations();

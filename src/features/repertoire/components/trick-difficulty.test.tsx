@@ -39,7 +39,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={2} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[1];
+    const [, target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 2 radio elements");
     }
@@ -51,7 +51,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={2} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[4];
+    const [, , , , target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 5 radio elements");
     }
@@ -85,7 +85,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={2} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[1];
+    const [, target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 2 radio elements");
     }
@@ -97,7 +97,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={3} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[2];
+    const [, , target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 3 radio elements");
     }
@@ -109,7 +109,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={3} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[2];
+    const [, , target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 3 radio elements");
     }
@@ -121,7 +121,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={3} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[2];
+    const [, , target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 3 radio elements");
     }
@@ -133,7 +133,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={1} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[0];
+    const [target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 1 radio element");
     }
@@ -145,7 +145,7 @@ describe("TrickDifficulty", () => {
     const onChange = vi.fn();
     render(<TrickDifficulty onChange={onChange} value={null} />);
     const radios = screen.getAllByRole("radio");
-    const target = radios[0];
+    const [target] = radios;
     if (!(target instanceof HTMLElement)) {
       throw new Error("Expected at least 1 radio element");
     }

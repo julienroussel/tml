@@ -64,7 +64,7 @@ export function useTagMutations(): UseTagMutationsReturn {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error creating tag";
-      throw new Error(`Failed to create tag: ${message}`);
+      throw new Error(`Failed to create tag: ${message}`, { cause: error });
     }
   }
 

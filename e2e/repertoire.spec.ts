@@ -166,7 +166,7 @@ test.describe("Repertoire — form-sheet loading announcer (#295)", () => {
           if (record.type === "characterData") {
             target = record.target.parentElement;
           } else if (record.target instanceof Element) {
-            target = record.target;
+            ({ target } = record);
           }
           // Count only a status region INSIDE the dialog — a sonner toast is
           // also role="status" but renders in a body-level portal.

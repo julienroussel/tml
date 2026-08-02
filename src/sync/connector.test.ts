@@ -614,46 +614,49 @@ describe("createNeonConnector", () => {
         ["negative", -1],
         ["non-integer", 0.5],
         ["out of range (>= length)", 5],
-      ])("rejects %s failedIndex and logs failedIndex/failedTable as undefined", async (_label, badIndex) => {
-        const errorSpy = vi
-          .spyOn(console, "error")
-          .mockImplementation(() => undefined);
-        vi.spyOn(globalThis, "fetch").mockResolvedValue(
-          new Response(
-            JSON.stringify({
-              error: "Batch execution failed",
-              failedIndex: badIndex,
-              code: "42703",
-              results: [],
-            }),
-            { status: 500 }
-          )
-        );
-        const mod = await importWithEnv(VALID_ENV);
-        const connector = mod.createNeonConnector(async () => "my-token");
-        const db = createMockDatabase([
-          {
-            id: "trick-1",
-            op: "PUT",
-            table: "tricks",
-            opData: { name: "Test" },
-          },
-        ]);
+      ])(
+        "rejects %s failedIndex and logs failedIndex/failedTable as undefined",
+        async (_label, badIndex) => {
+          const errorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
+          vi.spyOn(globalThis, "fetch").mockResolvedValue(
+            new Response(
+              JSON.stringify({
+                error: "Batch execution failed",
+                failedIndex: badIndex,
+                code: "42703",
+                results: [],
+              }),
+              { status: 500 }
+            )
+          );
+          const mod = await importWithEnv(VALID_ENV);
+          const connector = mod.createNeonConnector(async () => "my-token");
+          const db = createMockDatabase([
+            {
+              id: "trick-1",
+              op: "PUT",
+              table: "tricks",
+              opData: { name: "Test" },
+            },
+          ]);
 
-        await expect(
-          connector.uploadData(
-            db as unknown as Parameters<typeof connector.uploadData>[0]
-          )
-        ).rejects.toThrow("Batch upload failed — will retry");
+          await expect(
+            connector.uploadData(
+              db as unknown as Parameters<typeof connector.uploadData>[0]
+            )
+          ).rejects.toThrow("Batch upload failed — will retry");
 
-        const logged = find500LogCall(errorSpy);
-        expect(logged).toMatchObject({
-          httpStatus: 500,
-          pgCode: "42703",
-          failedIndex: undefined,
-          failedTable: undefined,
-        });
-      });
+          const logged = find500LogCall(errorSpy);
+          expect(logged).toMatchObject({
+            httpStatus: 500,
+            pgCode: "42703",
+            failedIndex: undefined,
+            failedTable: undefined,
+          });
+        }
+      );
 
       it("logs pgCode/failedIndex/failedTable as undefined when 500 body is not JSON", async () => {
         const errorSpy = vi

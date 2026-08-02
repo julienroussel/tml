@@ -39,7 +39,7 @@ function scanDirectory(dir: string, basePath: string): RouteNode[] {
       ROUTE_FILE_RE.test(entry.name) &&
       !entry.name.includes(".test.")
     ) {
-      const type = entry.name.split(".")[0];
+      const [type] = entry.name.split(".");
       nodes.push({
         name: entry.name,
         path: join(basePath, entry.name),
@@ -60,7 +60,8 @@ function nodeToMermaid(
   lines: string[],
   idCounter: { value: number }
 ): void {
-  const id = `n${idCounter.value++}`;
+  const id = `n${idCounter.value}`;
+  idCounter.value += 1;
 
   if (node.children.length > 0) {
     const label = node.name;

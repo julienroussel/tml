@@ -225,7 +225,7 @@ export function CollectView(): React.ReactElement {
   const relationsLoading =
     editingItemId !== null &&
     (sheetMode.mode === "loading" ||
-      editingItemError != null ||
+      editingItemError !== null ||
       tagsSel.isHydrating ||
       tricksSel.isHydrating);
 

@@ -34,11 +34,9 @@ export function negotiateLocale(acceptLanguage: string): Locale | undefined {
       return tag;
     }
     // Base language match: "fr-FR" → "fr"
-    const base = tag.split("-")[0];
+    const [base] = tag.split("-");
     if (base && isLocale(base)) {
       return base;
     }
   }
-
-  return;
 }

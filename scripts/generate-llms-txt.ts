@@ -20,7 +20,9 @@ function collectMarkdownFiles(dir: string): string[] {
     }
   }
 
-  return files.sort();
+  // Code-unit ordering, matching the default sort. Do NOT use localeCompare:
+  // ICU collation reorders "/" and "-", which would change doc ordering.
+  return files.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function orderDocFiles(files: string[]): string[] {

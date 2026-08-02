@@ -319,7 +319,7 @@ async function executeBatch(
     // (constraint violations) can be caught and rolled back without aborting
     // the entire transaction. PostgreSQL puts the transaction in an aborted
     // state after any error — SAVEPOINTs allow recovery.
-    for (let i = 0; i < operations.length; i++) {
+    for (let i = 0; i < operations.length; i += 1) {
       const operation = operations[i];
       if (!operation) {
         continue;

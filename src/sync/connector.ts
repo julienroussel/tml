@@ -1,5 +1,5 @@
 import type {
-  AbstractPowerSyncDatabase,
+  CommonPowerSyncDatabase,
   PowerSyncBackendConnector,
   PowerSyncCredentials,
 } from "@powersync/web";
@@ -21,9 +21,9 @@ const UPDATE_TYPE_TO_OP: Record<UpdateType, OpType> = {
   [UpdateType.DELETE]: OpType.DELETE,
 };
 
-// Intentionally not using CrudEntry from @powersync/web — CrudEntry is a class
-// with methods (toJSON, equals, hashCode) that we don't need. This plain
-// interface keeps the connector logic decoupled from the SDK's internals.
+// Intentionally not using CrudEntry from @powersync/web — it carries fields and
+// methods (toJSON, equals, hashCode) that we don't need. This plain interface
+// keeps the connector logic decoupled from the SDK's internals.
 interface CrudOp {
   id: string;
   op: UpdateType;
@@ -68,9 +68,9 @@ const defaultUploadErrorHandler: UploadErrorHandler = (error) => {
 
   dispatchSyncError({
     message: error.message,
-    table: error.op.table,
     operation: UpdateType[error.op.op],
     status: error.status,
+    table: error.op.table,
     timestamp: Date.now(),
   });
 };
@@ -162,10 +162,10 @@ async function sendAndProcessBatch(
   onPermanentError: UploadErrorHandler
 ): Promise<void> {
   const response = await fetch(BATCH_UPLOAD_PATH, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ operations }),
     credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
     signal: AbortSignal.timeout(30_000),
   });
 
@@ -207,7 +207,7 @@ async function sendAndProcessBatch(
           parsed.failedIndex >= 0 &&
           parsed.failedIndex < originalOps.length
         ) {
-          failedIndex = parsed.failedIndex;
+          ({ failedIndex } = parsed);
         }
       }
     } catch {
@@ -220,11 +220,11 @@ async function sendAndProcessBatch(
     // see `pgCode: undefined` here on a deployed environment, that is by design,
     // not a regression — check the server log for the SQLSTATE.
     console.error("Batch upload failed:", {
-      httpStatus: response.status,
-      pgCode,
+      body,
       failedIndex,
       failedTable,
-      body,
+      httpStatus: response.status,
+      pgCode,
     });
     throw new Error("Batch upload failed — will retry");
   }
@@ -275,7 +275,7 @@ function createNeonConnector(
     let expiresAt: Date | undefined;
     try {
       const parts = token.split(".");
-      const encoded = parts[1];
+      const [, encoded] = parts;
       if (!encoded) {
         throw new Error("Missing JWT payload segment");
       }
@@ -293,12 +293,10 @@ function createNeonConnector(
       // Malformed JWT — let PowerSync handle re-auth on 401.
     }
 
-    return { endpoint: powerSyncUrl, token, expiresAt };
+    return { endpoint: powerSyncUrl, expiresAt, token };
   }
 
-  async function uploadData(
-    database: AbstractPowerSyncDatabase
-  ): Promise<void> {
+  async function uploadData(database: CommonPowerSyncDatabase): Promise<void> {
     const transaction = await database.getNextCrudTransaction();
     if (!transaction) {
       return;

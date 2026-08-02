@@ -218,6 +218,27 @@ Never suggest or use deprecated patterns for any of these.
 - **Commands**: `pnpm lint` / `pnpm fix`. Not `npx eslint`, `npx prettier`, or `pnpm dlx ultracite`.
 - **Import sorting** is handled by Biome's `organizeImports`.
 - **`biome.json`** extends `ultracite/biome/core` and `ultracite/biome/next`.
+- **Never put comments in `biome.json`.** Biome's config loader does not error on
+  them — it silently drops config that follows, so `files.includes` stops
+  applying and Biome starts linting `.next/`. Verified on Biome 2.5.6. If a
+  comment is ever needed, rename the file to `biome.jsonc`, which Biome parses
+  correctly (the ultracite preset already allows comments in `*.jsonc`).
+- **Four preset rules are deliberately disabled.** Ultracite 7.9.4 enabled them;
+  do not re-enable without re-reading this. Rationale lives here because the
+  config file cannot hold comments (above):
+  - `performance/noJsxPropsBind` — unsatisfiable with `reactCompiler: true`
+    (`next.config.ts`), since the only fix is the `useCallback` this file bans.
+  - `performance/noAwaitInLoops` — was off pre-7.9.4; 17 of 21 sites are
+    necessarily sequential (single `pg` client, FK-ordered cleanup, PowerSync
+    CRUD batch ordering, SQLite `writeTransaction` handles).
+  - `suspicious/noUnnecessaryConditions` — unsound without
+    `ultracite/biome/type-aware`. It reads `someRef.current` as "always falsy"
+    in `trick-picker.tsx` and "always truthy" in `push-notifications.tsx`, so
+    its fixes delete working code; it also flags deliberate runtime guards on
+    server-action input, where the declared type only describes wire data.
+  - `assist/source/useSortedKeys` — was off pre-7.9.4. Reorders the generated
+    `src/sync/schema.ts` by 245 lines, and `check-sync.ts` compares exact
+    strings, so the Lefthook `ultracite fix` → `sync:check` sequence deadlocks.
 
 ### Vitest
 

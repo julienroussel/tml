@@ -236,7 +236,7 @@ export function RepertoireView(): React.ReactElement {
     editingTrickId !== null &&
     (sheetMode.mode === "loading" ||
       tagsSel.isHydrating ||
-      editingTrickError != null);
+      editingTrickError !== null);
 
   // ---------------------------------------------------------------------------
   // Trick-items join query (build a Map<trickId, LinkedItem[]>)

@@ -47,17 +47,16 @@ function deriveSyncKey(
 ): SyncKey {
   // Check upload status first — pending local changes take priority over
   // download errors so the user knows their writes haven't synced yet.
-  if (status.connected && status.dataFlowStatus.uploading) {
+  if (status.connected && status.uploading) {
     return "pendingChanges";
   }
 
-  const syncError =
-    status.dataFlowStatus.downloadError ?? status.dataFlowStatus.uploadError;
+  const syncError = status.downloadError ?? status.uploadError;
 
   if (syncError) {
     return "error";
   }
-  if (status.connected && status.dataFlowStatus.downloading) {
+  if (status.connected && status.downloading) {
     return "syncing";
   }
   if (status.connected) {

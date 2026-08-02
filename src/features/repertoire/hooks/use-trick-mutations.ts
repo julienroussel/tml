@@ -194,6 +194,7 @@ const TRICK_UPDATE_SQL = `
     video_url = ?,
     updated_at = ?
   WHERE id = ? AND user_id = ? AND deleted_at IS NULL
+  RETURNING id
 `;
 
 /**
@@ -239,16 +240,16 @@ export function useTrickMutations(): UseTrickMutationsReturn {
         }
 
         await safeLogEvent(tx, {
-          userId,
-          type: "trick.created",
-          entityType: "trick",
           entityId: id,
+          entityType: "trick",
+          now,
           payload: {
+            category: emptyToNull(data.category),
             name: data.name,
             status: data.status,
-            category: emptyToNull(data.category),
           },
-          now,
+          type: "trick.created",
+          userId,
         });
       });
 
@@ -305,7 +306,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
         ];
 
         const updateResult = await tx.execute(TRICK_UPDATE_SQL, updateParams);
-        if (!updateResult.rowsAffected) {
+        if (updateResult.array.length === 0) {
           throw new TrickNotFoundError();
         }
 
@@ -314,10 +315,10 @@ export function useTrickMutations(): UseTrickMutationsReturn {
         // if one exists, otherwise inserts a new junction row.
         async function linkTag(tagId: TagId): Promise<void> {
           const restored = await tx.execute(
-            "UPDATE trick_tags SET deleted_at = NULL, updated_at = ? WHERE trick_id = ? AND tag_id = ? AND user_id = ? AND deleted_at IS NOT NULL",
+            "UPDATE trick_tags SET deleted_at = NULL, updated_at = ? WHERE trick_id = ? AND tag_id = ? AND user_id = ? AND deleted_at IS NOT NULL RETURNING id",
             [now, id, tagId, userId]
           );
-          if (!restored.rowsAffected) {
+          if (restored.array.length === 0) {
             const junctionId = crypto.randomUUID();
             await tx.execute(
               "INSERT INTO trick_tags (id, user_id, trick_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -340,12 +341,12 @@ export function useTrickMutations(): UseTrickMutationsReturn {
         }
 
         await safeLogEvent(tx, {
-          userId,
-          type: "trick.updated",
-          entityType: "trick",
           entityId: id,
-          payload: { name: data.name },
+          entityType: "trick",
           now,
+          payload: { name: data.name },
+          type: "trick.updated",
+          userId,
         });
       });
 
@@ -369,18 +370,17 @@ export function useTrickMutations(): UseTrickMutationsReturn {
       await db.writeTransaction(async (tx) => {
         // Snapshot the name BEFORE soft-delete so the activity feed can show
         // the user a meaningful label after the row is gone.
-        const nameRow = await tx.execute(
+        const nameRow = await tx.execute<{ name: string }>(
           "SELECT name FROM tricks WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
           [id, userId]
         );
-        const snapshotName =
-          (nameRow.rows?.item(0)?.name as string | undefined) ?? "";
+        const snapshotName = nameRow.array[0]?.name ?? "";
 
         const result = await tx.execute(
-          "UPDATE tricks SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+          "UPDATE tricks SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL RETURNING id",
           [now, now, id, userId]
         );
-        if (!result.rowsAffected) {
+        if (result.array.length === 0) {
           throw new TrickNotFoundError();
         }
         await tx.execute(
@@ -393,12 +393,12 @@ export function useTrickMutations(): UseTrickMutationsReturn {
         );
 
         await safeLogEvent(tx, {
-          userId,
-          type: "trick.deleted",
-          entityType: "trick",
           entityId: id,
-          payload: { name: snapshotName },
+          entityType: "trick",
           now,
+          payload: { name: snapshotName },
+          type: "trick.deleted",
+          userId,
         });
       });
 

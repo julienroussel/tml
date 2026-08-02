@@ -100,7 +100,7 @@ function SidebarProvider({
   // biome-ignore lint/correctness/useExhaustiveDependencies: shadcn vendor code
   const toggleSidebar = useCallback(
     () =>
-      isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open),
+      isMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev),
     [isMobile, setOpen, setOpenMobile]
   );
 

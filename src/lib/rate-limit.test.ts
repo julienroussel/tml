@@ -16,7 +16,7 @@ describe("checkRateLimit", () => {
       try {
         const { checkRateLimit } = await import("./rate-limit");
 
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 10; i += 1) {
           expect(await checkRateLimit("user-1")).toBe(false);
         }
 
@@ -32,7 +32,7 @@ describe("checkRateLimit", () => {
       try {
         const { checkRateLimit } = await import("./rate-limit");
 
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 10; i += 1) {
           await checkRateLimit("user-1");
         }
         expect(await checkRateLimit("user-1")).toBe(true);
@@ -52,7 +52,7 @@ describe("checkRateLimit", () => {
       try {
         const { checkRateLimit } = await import("./rate-limit");
 
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 10; i += 1) {
           await checkRateLimit("user-1");
         }
         expect(await checkRateLimit("user-1")).toBe(true);
@@ -150,7 +150,7 @@ describe("checkRateLimit", () => {
         const { checkRateLimit } = await import("./rate-limit");
 
         // Create 101 users to trigger cleanup threshold
-        for (let i = 0; i < 101; i++) {
+        for (let i = 0; i < 101; i += 1) {
           await checkRateLimit(`user-${i}`);
         }
 

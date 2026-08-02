@@ -250,7 +250,7 @@ describe("buildQuery", () => {
         "user-1"
       );
 
-      const onConflictPart = result.query.split("DO UPDATE SET")[1];
+      const [, onConflictPart] = result.query.split("DO UPDATE SET");
       expect(onConflictPart).not.toContain('"id"');
     });
 
@@ -275,7 +275,7 @@ describe("buildQuery", () => {
         "user-1"
       );
 
-      const onConflictPart = result.query.split("DO UPDATE SET")[1];
+      const [, onConflictPart] = result.query.split("DO UPDATE SET");
       expect(onConflictPart).toContain('"updated_at" = NOW()');
       expect(onConflictPart).not.toContain('EXCLUDED."updated_at"');
     });

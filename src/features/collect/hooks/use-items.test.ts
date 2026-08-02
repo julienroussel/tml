@@ -75,7 +75,7 @@ describe("useItems hook", () => {
     const { result } = renderHook(() => useItems());
 
     expect(result.current.items).toHaveLength(1);
-    const item = result.current.items[0];
+    const [item] = result.current.items;
     expect(item).toBeDefined();
     expect(item?.id).toBe("00000000-0000-4000-8000-0000000000ab");
     expect(item?.name).toBe("Invisible Deck");

@@ -452,8 +452,8 @@ function TrickForm({
             />
 
             <LanguagesField
-              onChange={(languages) =>
-                form.setValue("languages", languages, { shouldDirty: true })
+              onChange={(next) =>
+                form.setValue("languages", next, { shouldDirty: true })
               }
               value={languages}
             />

@@ -79,9 +79,9 @@ type TypedMutationErrorTag = TypedMutationError["tag"];
  * without updating this map fails `tsc`.
  */
 const MUTATION_ERROR_I18N_KEYS = {
+  ITEM_NOT_FOUND: "errors.itemMissing",
   MAX_TAGS: "validation.tooManyTags",
   MAX_TRICKS: "validation.tooManyTricks",
-  ITEM_NOT_FOUND: "errors.itemMissing",
 } as const satisfies Record<TypedMutationErrorTag, string>;
 
 /**
@@ -162,15 +162,22 @@ function buildItemParams(
  *
  * PowerSync's `Transaction` (from `@powersync/common`) extends `LockContext`
  * which extends `SqlExecutor`. `SqlExecutor.execute` uses `params?: any[]`
- * and returns `Promise<QueryResult>`, which includes `rowsAffected` plus
- * extra fields (insertId, rows) we don't need here. Using the PowerSync
+ * and returns `Promise<QueryResult>`. We surface only `array` (the rows a
+ * `RETURNING` clause yields); `insertId`, `rows`, and `rowsAffected` stay
+ * hidden. Using the PowerSync
  * `Transaction` type directly would work, but it also exposes `commit()`,
  * `rollback()`, `getAll()`, `getOptional()`, `get()`, `executeBatch()`, and
  * `executeRaw()` — none of which junction diffs should call. This minimal
  * interface keeps the contract narrow on purpose.
+ *
+ * Existence is read from `array`, not `rowsAffected`. PowerSync client tables
+ * are SQLite views, and `sqlite3_changes()` (which backs `rowsAffected`) does
+ * not count rows their `INSTEAD OF` triggers rewrite, so `rowsAffected` is `0`
+ * for every view `UPDATE`/`DELETE`, matched or not. A `RETURNING id` clause
+ * does flow through the triggers, so `array.length` is the reliable oracle.
  */
 interface JunctionTransaction {
-  execute(sql: string, params: unknown[]): Promise<{ rowsAffected: number }>;
+  execute: (sql: string, params: unknown[]) => Promise<{ array: unknown[] }>;
 }
 
 /** Discriminated config for type-safe junction table diffs. */
@@ -207,10 +214,10 @@ async function applyJunctionDiff(
 
   for (const fkId of addIds) {
     const restored = await tx.execute(
-      `UPDATE ${table} SET deleted_at = NULL, updated_at = ? WHERE item_id = ? AND ${fkColumn} = ? AND user_id = ? AND deleted_at IS NOT NULL`,
+      `UPDATE ${table} SET deleted_at = NULL, updated_at = ? WHERE item_id = ? AND ${fkColumn} = ? AND user_id = ? AND deleted_at IS NOT NULL RETURNING id`,
       [now, itemId, fkId, userId]
     );
-    if (!restored.rowsAffected) {
+    if (restored.array.length === 0) {
       const junctionId = crypto.randomUUID();
       await tx.execute(
         `INSERT INTO ${table} (id, user_id, item_id, ${fkColumn}, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -255,6 +262,7 @@ const ITEM_UPDATE_SQL = `
   UPDATE items SET
     ${ITEM_UPDATE_COLUMNS.map((col) => `${col} = ?`).join(",\n    ")}
   WHERE id = ? AND user_id = ? AND deleted_at IS NULL
+  RETURNING id
 `;
 
 /**
@@ -316,12 +324,12 @@ export function useItemMutations(): UseItemMutationsReturn {
         }
 
         await safeLogEvent(tx, {
-          userId,
-          type: "item.created",
-          entityType: "item",
           entityId: id,
-          payload: { name: data.name, type: data.type },
+          entityType: "item",
           now,
+          payload: { name: data.name, type: data.type },
+          type: "item.created",
+          userId,
         });
       });
 
@@ -378,17 +386,17 @@ export function useItemMutations(): UseItemMutationsReturn {
         ];
 
         const result = await tx.execute(ITEM_UPDATE_SQL, updateParams);
-        if (!result.rowsAffected) {
+        if (result.array.length === 0) {
           throw new ItemNotFoundError();
         }
 
         await applyJunctionDiff(
           tx,
           {
-            table: "item_tags",
-            fkColumn: "tag_id",
             addIds: addTagIds,
+            fkColumn: "tag_id",
             removeIds: removeTagIds,
+            table: "item_tags",
           },
           id,
           userId,
@@ -397,10 +405,10 @@ export function useItemMutations(): UseItemMutationsReturn {
         await applyJunctionDiff(
           tx,
           {
-            table: "item_tricks",
-            fkColumn: "trick_id",
             addIds: addTrickIds,
+            fkColumn: "trick_id",
             removeIds: removeTrickIds,
+            table: "item_tricks",
           },
           id,
           userId,
@@ -408,12 +416,12 @@ export function useItemMutations(): UseItemMutationsReturn {
         );
 
         await safeLogEvent(tx, {
-          userId,
-          type: "item.updated",
-          entityType: "item",
           entityId: id,
-          payload: { name: data.name },
+          entityType: "item",
           now,
+          payload: { name: data.name },
+          type: "item.updated",
+          userId,
         });
       });
 
@@ -436,18 +444,17 @@ export function useItemMutations(): UseItemMutationsReturn {
       await db.writeTransaction(async (tx) => {
         // Snapshot the name BEFORE soft-delete so the activity feed can show
         // the user a meaningful label after the row is gone.
-        const nameRow = await tx.execute(
+        const nameRow = await tx.execute<{ name: string }>(
           "SELECT name FROM items WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
           [id, userId]
         );
-        const snapshotName =
-          (nameRow.rows?.item(0)?.name as string | undefined) ?? "";
+        const snapshotName = nameRow.array[0]?.name ?? "";
 
         const result = await tx.execute(
-          "UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+          "UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL RETURNING id",
           [now, now, id, userId]
         );
-        if (!result.rowsAffected) {
+        if (result.array.length === 0) {
           throw new ItemNotFoundError();
         }
         await tx.execute(
@@ -460,12 +467,12 @@ export function useItemMutations(): UseItemMutationsReturn {
         );
 
         await safeLogEvent(tx, {
-          userId,
-          type: "item.deleted",
-          entityType: "item",
           entityId: id,
-          payload: { name: snapshotName },
+          entityType: "item",
           now,
+          payload: { name: snapshotName },
+          type: "item.deleted",
+          userId,
         });
       });
 
