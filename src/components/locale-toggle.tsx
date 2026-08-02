@@ -23,7 +23,7 @@ import { trackEvent } from "@/lib/analytics";
  * Returns the locale segment if found, otherwise null.
  */
 function extractPathLocale(pathname: string): Locale | null {
-  const firstSegment = pathname.split("/")[1];
+  const [, firstSegment] = pathname.split("/");
   if (firstSegment && isLocale(firstSegment)) {
     return firstSegment;
   }

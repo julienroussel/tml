@@ -52,7 +52,7 @@ afterEach(() => {
 
 // Top-level regex constants — Biome/Ultracite forbids defining regexes
 // inside test bodies that may run on the hot path (performance/useTopLevelRegex).
-const BASE64URL_TRAILING_EQ = /=+$/;
+const BASE64URL_TRAILING_EQ = /[=]+$/;
 const ENV_POWERSYNC_URL =
   /"NEXT_PUBLIC_POWERSYNC_URL":\s*"https:\/\/ps\.example\.com"|"NEXT_PUBLIC_POWERSYNC_URL":\s*null/;
 const ENV_NODE_ENV = /"NODE_ENV":/;

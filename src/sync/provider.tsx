@@ -34,12 +34,18 @@ interface SyncStatusSnapshot {
 }
 
 // Derived from the SDK type rather than redeclared so a future
-// rename or removal of `connected`, `dataFlowStatus`, or `lastSyncedAt` in
+// rename or removal of `connected`, the `downloading`/`uploading`/
+// `downloadError`/`uploadError` getters, or `lastSyncedAt` in
 // @powersync/common surfaces as a type error here. New fields ADDED to
 // SyncStatus are not surfaced — this `Pick` narrows by construction.
 export type ObservedStatus = Pick<
   SyncStatus,
-  "connected" | "dataFlowStatus" | "lastSyncedAt"
+  | "connected"
+  | "downloading"
+  | "uploading"
+  | "downloadError"
+  | "uploadError"
+  | "lastSyncedAt"
 >;
 
 /**
@@ -54,8 +60,8 @@ function logStatusTransitions(
   prev: SyncStatusSnapshot,
   status: ObservedStatus
 ): SyncStatusSnapshot {
-  const downloadErrorPresent = Boolean(status.dataFlowStatus.downloadError);
-  const uploadErrorPresent = Boolean(status.dataFlowStatus.uploadError);
+  const downloadErrorPresent = Boolean(status.downloadError);
+  const uploadErrorPresent = Boolean(status.uploadError);
   const hasSyncedOnce = status.lastSyncedAt !== undefined;
 
   if (status.connected && prev.connected !== true) {
@@ -64,16 +70,10 @@ function logStatusTransitions(
     console.info("[powersync] disconnected");
   }
   if (downloadErrorPresent && !prev.downloadErrorPresent) {
-    console.error(
-      "[powersync] download error",
-      status.dataFlowStatus.downloadError
-    );
+    console.error("[powersync] download error", status.downloadError);
   }
   if (uploadErrorPresent && !prev.uploadErrorPresent) {
-    console.error(
-      "[powersync] upload error",
-      status.dataFlowStatus.uploadError
-    );
+    console.error("[powersync] upload error", status.uploadError);
   }
   if (hasSyncedOnce && !prev.hasSyncedOnce) {
     console.info("[powersync] first sync complete", {
@@ -170,12 +170,13 @@ export function PowerSyncProvider({
 
     // Connect/disconnect on each mount; StrictMode double-mount is intentional.
     // The previous code held a module-level `connecting` guard to serialize
-    // mounts — removed because `@powersync/common`'s ConnectionManager already
+    // mounts, removed because the PowerSync SDK's ConnectionManager already
     // dedupes via `connectingPromise`/`disconnectingPromise` and handles the
     // connect-while-disconnecting race via `pendingConnectionOptions` + a
     // sanity disconnect at the start of `connectInternal()` (see
-    // node_modules/@powersync/common/lib/client/ConnectionManager.js:64-154).
-    // Verified against @powersync/common@1.53.2. If you bump that package,
+    // node_modules/@powersync/shared-internals/lib/client/ConnectionManager.js:67-197).
+    // Verified against @powersync/shared-internals@1.0.1 (serialization logic
+    // diffed against @powersync/common@1.57.2, unchanged). If you bump the SDK,
     // re-verify ConnectionManager still serializes concurrent connect/disconnect
     // calls; if it doesn't, restore the module-level `connecting` guard.
     // Register a status listener BEFORE connecting so the first transition
@@ -202,6 +203,12 @@ export function PowerSyncProvider({
         if (cancelled) {
           return;
         }
+        // No SyncOptions passed: we intentionally take the SDK default, which
+        // @powersync/web 2.0 changed from WebSocket to HTTP (upstream calls
+        // HTTP the preferred implementation). CSP already allows both https://
+        // and wss:// for *.powersync.journeyapps.com, so no CSP change was
+        // needed. To revert to the pre-2.0 transport, pass
+        // `{ connectionMethod: SyncStreamConnectionMethod.WEB_SOCKET }` here.
         await powerSyncDb.connect(connector);
       } catch (error: unknown) {
         if (!cancelled) {
@@ -240,7 +247,7 @@ export function PowerSyncProvider({
       // Cleanup is fire-and-forget; a wedged disconnect leaves the singleton in
       // indeterminate state until next mount or page reload. Acceptable today
       // (ConnectionManager dedupes via pendingConnectionOptions per
-      // @powersync/common 1.53.2).
+      // @powersync/shared-internals 1.0.1).
       powerSyncDb
         .disconnect()
         .catch((err: unknown) => {

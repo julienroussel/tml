@@ -375,7 +375,7 @@ describe("proxy", () => {
       const { config } = await import("./proxy");
 
       expect(config.matcher).toHaveLength(1);
-      const pattern = config.matcher[0];
+      const [pattern] = config.matcher;
 
       // Should be a negative lookahead regex
       expect(pattern).toContain("_next/static");
@@ -386,7 +386,7 @@ describe("proxy", () => {
 
     it("excludes static file extensions", async () => {
       const { config } = await import("./proxy");
-      const pattern = config.matcher[0];
+      const [pattern] = config.matcher;
 
       expect(pattern).toContain("svg");
       expect(pattern).toContain("png");

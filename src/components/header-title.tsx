@@ -22,7 +22,7 @@ function isNavKey(key: string): key is NavKey {
 export function HeaderTitle(): ReactElement | null {
   const pathname = usePathname();
   const t = useTranslations("nav");
-  const segment = pathname.split("/")[1];
+  const [, segment] = pathname.split("/");
 
   if (!(segment && isNavKey(segment))) {
     return null;

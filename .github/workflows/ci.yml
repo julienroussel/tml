@@ -95,7 +95,10 @@ jobs:
 
       - name: Get Playwright version
         id: pw-version
-        run: echo "version=$(pnpm exec playwright --version)" >> "$GITHUB_OUTPUT"
+        # pnpm writes deprecation warnings to stdout, so take the last line only
+        # and strip the "Version " prefix — otherwise $GITHUB_OUTPUT gets a
+        # second, non key=value line and the step fails with "Invalid format".
+        run: echo "version=$(pnpm exec playwright --version | tail -n1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: playwright-cache

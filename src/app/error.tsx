@@ -104,7 +104,7 @@ export default function ErrorPage({
     if (typeof document === "undefined") {
       return defaultLocale;
     }
-    const lang = document.documentElement.lang;
+    const { lang } = document.documentElement;
     return isLocale(lang) ? lang : defaultLocale;
   });
 

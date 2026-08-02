@@ -28,8 +28,13 @@
         "useConsistentTypeDefinitions": "off"
       },
       "preset": "recommended",
+      "performance": {
+        "noJsxPropsBind": "off",
+        "noAwaitInLoops": "off"
+      },
       "suspicious": {
-        "noUnknownAtRules": "off"
+        "noUnknownAtRules": "off",
+        "noUnnecessaryConditions": "off"
       }
     },
     "domains": {
@@ -45,7 +50,8 @@
   "assist": {
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": "on",
+        "useSortedKeys": "off"
       }
     }
   },

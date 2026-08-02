@@ -28,8 +28,8 @@ const { tClientCache, tServerCache, getClientT, getServerT } = vi.hoisted(
     };
 
     type CachedTranslator = ReturnType<typeof makeT>;
-    const tClientCache = new Map<string, CachedTranslator>();
-    const tServerCache = new Map<string, CachedTranslator>();
+    const clientCache = new Map<string, CachedTranslator>();
+    const serverCache = new Map<string, CachedTranslator>();
 
     const cached = (
       cache: Map<string, CachedTranslator>,
@@ -46,10 +46,10 @@ const { tClientCache, tServerCache, getClientT, getServerT } = vi.hoisted(
     };
 
     return {
-      tClientCache,
-      tServerCache,
-      getClientT: (namespace?: string) => cached(tClientCache, namespace),
-      getServerT: (namespace?: string) => cached(tServerCache, namespace),
+      tClientCache: clientCache,
+      tServerCache: serverCache,
+      getClientT: (namespace?: string) => cached(clientCache, namespace),
+      getServerT: (namespace?: string) => cached(serverCache, namespace),
     };
   }
 );

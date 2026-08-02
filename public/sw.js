@@ -10,7 +10,7 @@ async function trimCache(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
   if (keys.length > maxEntries) {
-    for (let i = 0; i < keys.length - maxEntries; i++) {
+    for (let i = 0; i < keys.length - maxEntries; i += 1) {
       await cache.delete(keys[i]);
     }
   }
@@ -90,6 +90,77 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Fetch a static asset and cache it when the server marks it immutable.
+async function fetchAndCacheStatic(cache, request, url) {
+  try {
+    const response = await fetch(request);
+    if (response.ok && isSafeToCacheForever(url, response)) {
+      cache.put(request, response.clone());
+      trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
+    }
+    return response;
+  } catch {
+    return new Response("", { status: 503, statusText: "Offline" });
+  }
+}
+
+// Stale non-immutable entry (e.g. from Turbopack dev): try the network first,
+// fall back to the stale cache entry when offline.
+async function revalidateStaticEntry(cache, request, url, cached) {
+  try {
+    const response = await fetch(request);
+    if (response.ok && isSafeToCacheForever(url, response)) {
+      cache.put(request, response.clone());
+      trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
+    } else if (response.ok) {
+      cache.delete(request);
+    }
+    return response;
+  } catch {
+    return cached;
+  }
+}
+
+// Cache-first for immutable static assets. Only serve from cache if the entry
+// is a PowerSync asset (always cached) or the original response was immutable
+// (production Next.js content-hashed bundles). Stale non-immutable entries are
+// bypassed and cleaned up.
+async function handleStaticAsset(request, url) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cached = await cache.match(request);
+  if (!cached) {
+    return fetchAndCacheStatic(cache, request, url);
+  }
+  const isPowerSync = url.pathname.startsWith("/powersync/");
+  const isImmutable = (cached.headers.get("cache-control") || "").includes(
+    "immutable"
+  );
+  if (isPowerSync || isImmutable) {
+    return cached;
+  }
+  if (self.location.hostname !== "localhost") {
+    console.warn("[SW] Non-immutable cache hit:", url.pathname);
+  }
+  return revalidateStaticEntry(cache, request, url, cached);
+}
+
+// Network-first for same-origin images: serve fresh when online, fall back to
+// the cached version when offline.
+async function handleImageRequest(request) {
+  const cache = await caches.open(ASSETS_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+      trimCache(ASSETS_CACHE, MAX_ASSET_ENTRIES);
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    return cached || new Response("", { status: 503, statusText: "Offline" });
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
@@ -113,53 +184,10 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/powersync/")
   ) {
-    event.respondWith(
-      caches.open(STATIC_CACHE).then((cache) =>
-        cache.match(event.request).then((cached) => {
-          // Only serve from cache if the entry is a PowerSync asset
-          // (always cached) or the original response was immutable
-          // (production Next.js content-hashed bundles). Stale
-          // non-immutable entries (e.g. from Turbopack dev) are
-          // bypassed and cleaned up.
-          if (cached) {
-            const isPowerSync = url.pathname.startsWith("/powersync/");
-            const isImmutable = (
-              cached.headers.get("cache-control") || ""
-            ).includes("immutable");
-            if (isPowerSync || isImmutable) {
-              return cached;
-            }
-            // Stale non-immutable entry (e.g. from Turbopack dev):
-            // try network first, fall back to stale cache if offline.
-            if (self.location.hostname !== "localhost") {
-              console.warn("[SW] Non-immutable cache hit:", url.pathname);
-            }
-            return fetch(event.request)
-              .then((response) => {
-                if (response.ok && isSafeToCacheForever(url, response)) {
-                  cache.put(event.request, response.clone());
-                  trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
-                } else if (response.ok) {
-                  cache.delete(event.request);
-                }
-                return response;
-              })
-              .catch(() => cached);
-          }
-          return fetch(event.request)
-            .then((response) => {
-              if (response.ok && isSafeToCacheForever(url, response)) {
-                cache.put(event.request, response.clone());
-                trimCache(STATIC_CACHE, MAX_STATIC_ENTRIES);
-              }
-              return response;
-            })
-            .catch(
-              () => new Response("", { status: 503, statusText: "Offline" })
-            );
-        })
-      )
-    );
+    // respondWith is called synchronously with the promise the handler returns.
+    // Awaiting before respondWith would let the browser detach the event and
+    // stop intercepting.
+    event.respondWith(handleStaticAsset(event.request, url));
     return;
   }
 
@@ -167,27 +195,7 @@ self.addEventListener("fetch", (event) => {
   // fall back to cached version when offline. Images in /public/ lack
   // content hashes so cache-first could serve stale versions after deploy.
   if (isImageRequest(url)) {
-    event.respondWith(
-      caches.open(ASSETS_CACHE).then((cache) =>
-        fetch(event.request)
-          .then((response) => {
-            if (response.ok) {
-              cache.put(event.request, response.clone());
-              trimCache(ASSETS_CACHE, MAX_ASSET_ENTRIES);
-            }
-            return response;
-          })
-          .catch(() =>
-            cache
-              .match(event.request)
-              .then(
-                (cached) =>
-                  cached ||
-                  new Response("", { status: 503, statusText: "Offline" })
-              )
-          )
-      )
-    );
+    event.respondWith(handleImageRequest(event.request));
     return;
   }
 
@@ -211,7 +219,6 @@ self.addEventListener("fetch", (event) => {
           .catch(() => cache.match(event.request))
       )
     );
-    return;
   }
 });
 

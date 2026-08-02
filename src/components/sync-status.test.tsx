@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ObservedStatus } from "@/sync/provider";
 import { SyncStatus } from "./sync-status";
 
-// Derive the mock shape from `ObservedStatus` (the production narrowed type
-// — `Pick<SyncStatus, "connected" | "dataFlowStatus" | "lastSyncedAt">`)
-// instead of duplicating the key list. If `ObservedStatus` grows in
+// Derive the mock shape from `ObservedStatus` (the production narrowed
+// `Pick` over `SyncStatus`) instead of duplicating the key list. If
+// `ObservedStatus` grows in
 // provider.tsx, the test surface tracks automatically. The mapped
 // `-readonly` modifier strips SyncStatus's readonly getters so tests can
 // mutate fields between cases.
@@ -14,12 +14,10 @@ type MockStatus = { -readonly [K in keyof ObservedStatus]: ObservedStatus[K] };
 const mockStatus: MockStatus = {
   connected: false,
   lastSyncedAt: undefined,
-  dataFlowStatus: {
-    uploading: false,
-    downloading: false,
-    downloadError: undefined,
-    uploadError: undefined,
-  },
+  uploading: false,
+  downloading: false,
+  downloadError: undefined,
+  uploadError: undefined,
 };
 
 // Bucket-health stub. Default to "healthy" (has server buckets) so existing
@@ -62,10 +60,10 @@ vi.mock("@/sync/use-bucket-health", () => ({
 function resetStatus(): void {
   mockStatus.connected = false;
   mockStatus.lastSyncedAt = undefined;
-  mockStatus.dataFlowStatus.uploading = false;
-  mockStatus.dataFlowStatus.downloading = false;
-  mockStatus.dataFlowStatus.downloadError = undefined;
-  mockStatus.dataFlowStatus.uploadError = undefined;
+  mockStatus.uploading = false;
+  mockStatus.downloading = false;
+  mockStatus.downloadError = undefined;
+  mockStatus.uploadError = undefined;
   Object.assign(mockBucketHealth, DEFAULT_BUCKET_HEALTH);
   useStatusShouldThrow = false;
 }
@@ -107,7 +105,7 @@ describe("SyncStatus", () => {
 
   it("renders syncing status when connected and downloading", () => {
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.downloading = true;
+    mockStatus.downloading = true;
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.syncing")).toBeInTheDocument();
@@ -116,7 +114,7 @@ describe("SyncStatus", () => {
 
   it("renders pendingChanges status when connected and uploading", () => {
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.uploading = true;
+    mockStatus.uploading = true;
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.pendingChanges")).toBeInTheDocument();
@@ -125,7 +123,7 @@ describe("SyncStatus", () => {
 
   it("renders error status when there is a download error", () => {
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.downloadError = new Error("download failed");
+    mockStatus.downloadError = new Error("download failed");
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.error")).toBeInTheDocument();
@@ -134,7 +132,7 @@ describe("SyncStatus", () => {
 
   it("renders error status when there is an upload error", () => {
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.uploadError = new Error("upload failed");
+    mockStatus.uploadError = new Error("upload failed");
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.error")).toBeInTheDocument();
@@ -143,8 +141,8 @@ describe("SyncStatus", () => {
 
   it("prioritizes error over syncing status", () => {
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.downloading = true;
-    mockStatus.dataFlowStatus.downloadError = new Error("fail");
+    mockStatus.downloading = true;
+    mockStatus.downloadError = new Error("fail");
     render(<SyncStatus />);
 
     expect(screen.getByText("sync.error")).toBeInTheDocument();
@@ -190,7 +188,7 @@ describe("SyncStatus", () => {
   it("prioritizes error over degraded status", () => {
     mockStatus.connected = true;
     mockStatus.lastSyncedAt = new Date();
-    mockStatus.dataFlowStatus.downloadError = new Error("down fail");
+    mockStatus.downloadError = new Error("down fail");
     mockBucketHealth.hasServerBuckets = false;
     render(<SyncStatus />);
 
@@ -230,7 +228,7 @@ describe("SyncStatus", () => {
     // which is more relevant than the stale-instance hint.
     mockStatus.connected = true;
     mockStatus.lastSyncedAt = new Date();
-    mockStatus.dataFlowStatus.uploading = true;
+    mockStatus.uploading = true;
     mockBucketHealth.hasServerBuckets = false;
     render(<SyncStatus />);
 
@@ -239,8 +237,8 @@ describe("SyncStatus", () => {
 
   it("prioritizes pendingChanges over a download error", () => {
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.uploading = true;
-    mockStatus.dataFlowStatus.downloadError = new Error("download failed");
+    mockStatus.uploading = true;
+    mockStatus.downloadError = new Error("download failed");
     render(<SyncStatus />);
 
     expect(getPill()).toHaveAttribute("data-sync-state", "pendingChanges");
@@ -251,10 +249,8 @@ describe("SyncStatus", () => {
     // pill should reflect that another write is in flight, not stay stuck
     // on the most recent failure.
     mockStatus.connected = true;
-    mockStatus.dataFlowStatus.uploading = true;
-    mockStatus.dataFlowStatus.uploadError = new Error(
-      "previous attempt failed"
-    );
+    mockStatus.uploading = true;
+    mockStatus.uploadError = new Error("previous attempt failed");
     render(<SyncStatus />);
 
     expect(getPill()).toHaveAttribute("data-sync-state", "pendingChanges");
@@ -266,7 +262,7 @@ describe("SyncStatus", () => {
   it("prioritizes syncing over degraded when downloading with no server buckets", () => {
     mockStatus.connected = true;
     mockStatus.lastSyncedAt = new Date();
-    mockStatus.dataFlowStatus.downloading = true;
+    mockStatus.downloading = true;
     mockBucketHealth.hasServerBuckets = false;
     render(<SyncStatus />);
 
@@ -285,7 +281,7 @@ describe("SyncStatus", () => {
   it("prioritizes sync error over a bucket-health error (error tier > degraded)", () => {
     mockStatus.connected = true;
     mockStatus.lastSyncedAt = new Date();
-    mockStatus.dataFlowStatus.downloadError = new Error("download failed");
+    mockStatus.downloadError = new Error("download failed");
     mockBucketHealth.hasServerBuckets = false;
     mockBucketHealth.error = new Error("ps_buckets renamed");
     render(<SyncStatus />);

@@ -21,7 +21,7 @@ export function LocaleSelector({
   const [selected, setSelected] = useState<Locale>(currentLocale);
 
   function handleChange(event: React.ChangeEvent<HTMLSelectElement>): void {
-    const value = event.target.value;
+    const { value } = event.target;
     if (!isLocale(value)) {
       return;
     }

@@ -68,7 +68,7 @@ export function useTrick(id: TrickId | null): UseTrickResult {
   // window. The return value below mirrors the same guard, so `trick` and
   // `hasSettled` agree on what counts as "the value for id". Empty data is a
   // valid settle (row not found / deleted).
-  const firstRow = data[0];
+  const [firstRow] = data;
   if (
     id !== null &&
     !isLoading &&

@@ -53,10 +53,10 @@ vi.mock("./system", () => ({
   powerSyncDb: {
     connect: () => mockConnect(),
     disconnect: () => mockDisconnect(),
-    waitForReady: () => mockWaitForReady(),
     registerListener: (listener: {
       statusChanged?: (status: ObservedStatus) => void;
     }) => mockRegisterListener(listener),
+    waitForReady: () => mockWaitForReady(),
   },
 }));
 
@@ -71,12 +71,12 @@ vi.mock("./connector", () => ({
 const mockToastError = vi.fn();
 vi.mock("sonner", () => ({
   toast: {
+    dismiss: vi.fn(),
     error: (msg: string) => mockToastError(msg),
-    success: vi.fn(),
-    warning: vi.fn(),
     info: vi.fn(),
     loading: vi.fn(),
-    dismiss: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
   },
 }));
 
@@ -95,7 +95,7 @@ describe("PowerSyncProvider", () => {
     vi.resetModules();
     vi.stubEnv("NEXT_PUBLIC_POWERSYNC_URL", "https://ps.example.com");
     const mod = await import("./provider");
-    PowerSyncProvider = mod.PowerSyncProvider;
+    ({ PowerSyncProvider } = mod);
   });
 
   afterEach(() => {
@@ -219,7 +219,7 @@ describe("PowerSyncProvider", () => {
     await vi.waitFor(() => {
       expect(mockRegisterListener).toHaveBeenCalledOnce();
     });
-    const listener = registeredListeners[0];
+    const [listener] = registeredListeners;
     expect(listener).toBeDefined();
     expect(typeof listener?.statusChanged).toBe("function");
   });
@@ -237,8 +237,8 @@ describe("PowerSyncProvider", () => {
       expect(mockRegisterListener).toHaveBeenCalled();
       expect(mockConnect).toHaveBeenCalled();
     });
-    const listenerOrder = mockRegisterListener.mock.invocationCallOrder[0];
-    const connectOrder = mockConnect.mock.invocationCallOrder[0];
+    const [listenerOrder] = mockRegisterListener.mock.invocationCallOrder;
+    const [connectOrder] = mockConnect.mock.invocationCallOrder;
     expect(listenerOrder).toBeDefined();
     expect(connectOrder).toBeDefined();
     expect(listenerOrder).toBeLessThan(connectOrder as number);
@@ -286,8 +286,11 @@ describe("PowerSyncProvider", () => {
     // false → true: should log "connected".
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     expect(infoSpy).toHaveBeenCalledWith(`${LOG_PREFIX} connected`);
     infoSpy.mockClear();
@@ -295,8 +298,11 @@ describe("PowerSyncProvider", () => {
     // Identical state: must not re-log.
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     expect(infoSpy).not.toHaveBeenCalled();
 
@@ -304,8 +310,11 @@ describe("PowerSyncProvider", () => {
     const syncedAt = new Date("2026-05-23T12:00:00Z");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: syncedAt,
-      dataFlowStatus: {},
     });
     expect(infoSpy).toHaveBeenCalledWith(
       `${LOG_PREFIX} first sync complete`,
@@ -316,8 +325,11 @@ describe("PowerSyncProvider", () => {
     // Same lastSyncedAt repeated: must not re-log.
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: syncedAt,
-      dataFlowStatus: {},
     });
     expect(infoSpy).not.toHaveBeenCalled();
   });
@@ -344,16 +356,22 @@ describe("PowerSyncProvider", () => {
     // Drive false → true so the next false transition is a real edge.
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     infoSpy.mockClear();
 
     // true → false: should log "disconnected".
     fireStatusChange({
       connected: false,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     expect(infoSpy).toHaveBeenCalledWith(`${LOG_PREFIX} disconnected`);
     infoSpy.mockClear();
@@ -361,8 +379,11 @@ describe("PowerSyncProvider", () => {
     // Still disconnected: must not re-log.
     fireStatusChange({
       connected: false,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     expect(infoSpy).not.toHaveBeenCalled();
   });
@@ -391,8 +412,11 @@ describe("PowerSyncProvider", () => {
     // !== false. The gate requires prev.connected === true to log disconnect.
     fireStatusChange({
       connected: false,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     expect(infoSpy).not.toHaveBeenCalled();
   });
@@ -446,8 +470,11 @@ describe("PowerSyncProvider", () => {
     const uploadErr = new Error("upload failed");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: uploadErr,
       lastSyncedAt: undefined,
-      dataFlowStatus: { uploadError: uploadErr },
     });
     expect(errorSpy).toHaveBeenCalledWith(
       `${LOG_PREFIX} upload error`,
@@ -457,8 +484,11 @@ describe("PowerSyncProvider", () => {
 
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: uploadErr,
       lastSyncedAt: undefined,
-      dataFlowStatus: { uploadError: uploadErr },
     });
     expect(errorSpy).not.toHaveBeenCalled();
   });
@@ -485,8 +515,11 @@ describe("PowerSyncProvider", () => {
     const downloadErr = new Error("download failed");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: downloadErr,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: { downloadError: downloadErr },
     });
     expect(errorSpy).toHaveBeenCalledWith(
       `${LOG_PREFIX} download error`,
@@ -497,8 +530,11 @@ describe("PowerSyncProvider", () => {
     // Same error still present: must not spam the console.
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: downloadErr,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: { downloadError: downloadErr },
     });
     expect(errorSpy).not.toHaveBeenCalled();
   });
@@ -525,21 +561,30 @@ describe("PowerSyncProvider", () => {
     const first = new Error("first");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: first,
       lastSyncedAt: undefined,
-      dataFlowStatus: { uploadError: first },
     });
     // Clear the error.
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     // New error appears.
     const second = new Error("second");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: second,
       lastSyncedAt: undefined,
-      dataFlowStatus: { uploadError: second },
     });
     expect(errorSpy).toHaveBeenCalledWith(`${LOG_PREFIX} upload error`, first);
     expect(errorSpy).toHaveBeenCalledWith(`${LOG_PREFIX} upload error`, second);
@@ -568,19 +613,28 @@ describe("PowerSyncProvider", () => {
     const first = new Error("first");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: first,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: { downloadError: first },
     });
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: undefined,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: {},
     });
     const second = new Error("second");
     fireStatusChange({
       connected: true,
+      downloading: false,
+      uploading: false,
+      downloadError: second,
+      uploadError: undefined,
       lastSyncedAt: undefined,
-      dataFlowStatus: { downloadError: second },
     });
     expect(errorSpy).toHaveBeenCalledTimes(2);
   });
@@ -671,8 +725,8 @@ describe("PowerSyncProvider", () => {
 
       const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
         new Response(JSON.stringify({ token: "test-jwt-token" }), {
-          status: 200,
           headers: { "Content-Type": "application/json" },
+          status: 200,
         })
       );
 
@@ -699,8 +753,8 @@ describe("PowerSyncProvider", () => {
 
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
         new Response(JSON.stringify({ session: "something-else" }), {
-          status: 200,
           headers: { "Content-Type": "application/json" },
+          status: 200,
         })
       );
 
@@ -714,8 +768,8 @@ describe("PowerSyncProvider", () => {
 
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
         new Response(JSON.stringify({ token: 12_345 }), {
-          status: 200,
           headers: { "Content-Type": "application/json" },
+          status: 200,
         })
       );
 
@@ -791,8 +845,8 @@ describe("PowerSyncProvider", () => {
 
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
         new Response("not json", {
-          status: 200,
           headers: { "Content-Type": "text/plain" },
+          status: 200,
         })
       );
       // response.json() throws SyntaxError, caught by the outer try/catch in

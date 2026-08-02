@@ -13,14 +13,10 @@ describe("isTheme", () => {
     expect(isTheme(value)).toBe(true);
   });
 
-  it.each([
-    "",
-    "auto",
-    "sepia",
-    "LIGHT",
-    "Dark",
-    "SYSTEM",
-  ])("returns false for '%s'", (value) => {
-    expect(isTheme(value)).toBe(false);
-  });
+  it.each(["", "auto", "sepia", "LIGHT", "Dark", "SYSTEM"])(
+    "returns false for '%s'",
+    (value) => {
+      expect(isTheme(value)).toBe(false);
+    }
+  );
 });

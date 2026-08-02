@@ -28,7 +28,7 @@ describe("manifest", () => {
   });
 
   it("includes required icon sizes", () => {
-    const icons = manifest().icons;
+    const { icons } = manifest();
     expect(icons).toBeDefined();
     expect(icons).toHaveLength(3);
     expect(icons).toEqual(

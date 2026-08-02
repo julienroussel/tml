@@ -23,16 +23,15 @@ describe("/dev/sync-status route", () => {
   // string value pins the gate as deny-list — a regression that flipped to
   // `=== "production"` would expose the page on previews and pass an
   // explicit-prod-only test.
-  it.each([
-    "production",
-    "preview",
-    "test",
-  ])("returns notFound() when NODE_ENV is %s", async (env) => {
-    vi.stubEnv("NODE_ENV", env);
-    vi.resetModules();
-    const { default: Page } = await import("./page");
-    await expect(Page()).rejects.toThrow(notFoundError);
-  });
+  it.each(["production", "preview", "test"])(
+    "returns notFound() when NODE_ENV is %s",
+    async (env) => {
+      vi.stubEnv("NODE_ENV", env);
+      vi.resetModules();
+      const { default: Page } = await import("./page");
+      await expect(Page()).rejects.toThrow(notFoundError);
+    }
+  );
 
   // Note: a true `process.env.NODE_ENV = undefined` case cannot be reproduced
   // from a test: Node's typings mark it read-only and Vitest's runtime forces
@@ -47,17 +46,16 @@ describe("/dev/sync-status route", () => {
   // that somehow ran with NODE_ENV=development. A regression that drops the
   // `|| process.env.VERCEL_ENV` clause would pass every NODE_ENV-only case
   // above; this case is the one that catches it.
-  it.each([
-    "production",
-    "preview",
-    "development",
-  ])("returns notFound() when NODE_ENV=development but VERCEL_ENV=%s", async (vercelEnv) => {
-    vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("VERCEL_ENV", vercelEnv);
-    vi.resetModules();
-    const { default: Page } = await import("./page");
-    await expect(Page()).rejects.toThrow(notFoundError);
-  });
+  it.each(["production", "preview", "development"])(
+    "returns notFound() when NODE_ENV=development but VERCEL_ENV=%s",
+    async (vercelEnv) => {
+      vi.stubEnv("NODE_ENV", "development");
+      vi.stubEnv("VERCEL_ENV", vercelEnv);
+      vi.resetModules();
+      const { default: Page } = await import("./page");
+      await expect(Page()).rejects.toThrow(notFoundError);
+    }
+  );
 
   it("renders the diagnostic dump when NODE_ENV === development", async () => {
     vi.stubEnv("NODE_ENV", "development");

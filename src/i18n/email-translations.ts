@@ -47,7 +47,7 @@ async function loadEmailNamespace(
     const imported: { default: Record<string, unknown> } = await import(
       `./messages/${locale}.json`
     );
-    const email = imported.default.email;
+    const { email } = imported.default;
     if (email && typeof email === "object") {
       return email as Record<string, unknown>;
     }

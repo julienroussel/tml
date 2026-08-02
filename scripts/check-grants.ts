@@ -103,7 +103,7 @@ function findCreatedSyncedTables(
 ): ReadonlySet<string> {
   const created = new Set<string>();
   for (const match of sql.matchAll(CREATE_TABLE_RE)) {
-    const name = match[1];
+    const [, name] = match;
     if (name && syncedTables.has(name)) {
       created.add(name);
     }
@@ -138,7 +138,7 @@ function findGrantedToAuthenticated(sql: string): ReadonlySet<string> {
 function findSecurityDefinerFunctionNames(sql: string): readonly string[] {
   const matches = [...sql.matchAll(CREATE_FUNCTION_NAME_RE)];
   const names: string[] = [];
-  for (let i = 0; i < matches.length; i++) {
+  for (let i = 0; i < matches.length; i += 1) {
     const match = matches[i];
     const schema = match?.[1];
     const name = match?.[2];
@@ -174,8 +174,8 @@ function analyzeRevokeExecute(sql: string): RevokeCoverage {
   }
   const named = new Map<string, Set<string>>();
   for (const match of sql.matchAll(REVOKE_NAMED_FUNCTION_RE)) {
-    const schema = match[1];
-    const name = match[2];
+    const [, schema] = match;
+    const [, , name] = match;
     if (!(name && isPublicSchema(schema))) {
       continue;
     }
@@ -263,11 +263,11 @@ function splitTopLevelStatements(sql: string): readonly string[] {
       if (sql[i] === ";") {
         statements.push(`${current};`);
         current = "";
-        i++;
+        i += 1;
         continue;
       }
       current += sql[i];
-      i++;
+      i += 1;
     } else {
       const close = `$${dollarTag}$`;
       if (sql.startsWith(close, i)) {
@@ -277,7 +277,7 @@ function splitTopLevelStatements(sql: string): readonly string[] {
         continue;
       }
       current += sql[i];
-      i++;
+      i += 1;
     }
   }
   if (current.trim() !== "") {
@@ -401,7 +401,10 @@ function listEnforcedMigrations(
       matches.push(file);
     }
   }
-  return matches.sort();
+  // Code-unit ordering, matching the default sort. Do NOT use localeCompare:
+  // ICU collation reorders "_" and digits, which would change the order
+  // migrations are enforced in.
+  return matches.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 type CheckOptions = {

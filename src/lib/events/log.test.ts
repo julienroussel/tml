@@ -24,7 +24,7 @@ describe("logEvent", () => {
     });
 
     expect(tx.execute).toHaveBeenCalledOnce();
-    const call = vi.mocked(tx.execute).mock.calls[0];
+    const [call] = vi.mocked(tx.execute).mock.calls;
     expect(call?.[0]).toContain("INSERT INTO event_log");
     const params = call?.[1] as unknown[];
     expect(params).toHaveLength(9);

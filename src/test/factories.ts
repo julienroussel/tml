@@ -22,7 +22,7 @@ import type {
 let counter = 0;
 
 function nextId(): string {
-  counter++;
+  counter += 1;
   return `00000000-0000-0000-0000-${String(counter).padStart(12, "0")}`;
 }
 

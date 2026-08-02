@@ -93,7 +93,7 @@ async function fetchJwtClaims(): Promise<FetchJwtResult> {
 // would be exploitable by anyone able to influence /api/auth/token's response.
 function decodeJwtPayload(token: string): DecodedJwt {
   const parts = token.split(".");
-  const segment = parts[1];
+  const [, segment] = parts;
   if (!segment) {
     return { kind: "error", message: "JWT missing payload segment" };
   }
@@ -114,12 +114,12 @@ function decodeJwtPayload(token: string): DecodedJwt {
     // mismatch — the exact use case this page exists for.
     let aud: string | readonly string[] | undefined;
     if (typeof record.aud === "string") {
-      aud = record.aud;
+      ({ aud } = record);
     } else if (
       Array.isArray(record.aud) &&
       record.aud.every((v): v is string => typeof v === "string")
     ) {
-      aud = record.aud;
+      ({ aud } = record);
     }
     return {
       kind: "claims",

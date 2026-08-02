@@ -356,41 +356,44 @@ describe("POST /api/powersync/batch", () => {
       ["created_at", { created_at: "1970-01-01T00:00:00.000Z" }],
       ["user_id", { user_id: "another-user-id" }],
       ["id", { id: "different-event-id" }],
-    ])("rejects PATCH on event_log mutating disallowed column %s", async (_label, opData) => {
-      authenticatedSession();
-      vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
-      mockClientQuery.mockResolvedValue({ rowCount: 0 });
-      const { POST } = await import("./route");
+    ])(
+      "rejects PATCH on event_log mutating disallowed column %s",
+      async (_label, opData) => {
+        authenticatedSession();
+        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+        mockClientQuery.mockResolvedValue({ rowCount: 0 });
+        const { POST } = await import("./route");
 
-      const response = await POST(
-        createRequest({
-          operations: [patchOp("event_log", "evt-1", opData)],
-        })
-      );
+        const response = await POST(
+          createRequest({
+            operations: [patchOp("event_log", "evt-1", opData)],
+          })
+        );
 
-      expect(response.status).toBe(200);
-      const body = await response.json();
-      expect(body.results[0]).toMatchObject({
-        index: 0,
-        status: 422,
-        error: "Validation error",
-      });
+        expect(response.status).toBe(200);
+        const body = await response.json();
+        expect(body.results[0]).toMatchObject({
+          index: 0,
+          status: 422,
+          error: "Validation error",
+        });
 
-      // Belt-and-braces: validation throws before any SQL is built, so no UPDATE
-      // against event_log should hit the wire. Without this, a refactor that
-      // issues the UPDATE *then* returns 422 would silently violate the invariant.
-      const calls = mockClientQuery.mock.calls.map(
-        (call: unknown[]) => call[0]
-      );
-      expect(
-        calls.some(
-          (q) =>
-            typeof q === "string" &&
-            q.includes("UPDATE") &&
-            q.includes('"event_log"')
-        )
-      ).toBe(false);
-    });
+        // Belt-and-braces: validation throws before any SQL is built, so no UPDATE
+        // against event_log should hit the wire. Without this, a refactor that
+        // issues the UPDATE *then* returns 422 would silently violate the invariant.
+        const calls = mockClientQuery.mock.calls.map(
+          (call: unknown[]) => call[0]
+        );
+        expect(
+          calls.some(
+            (q) =>
+              typeof q === "string" &&
+              q.includes("UPDATE") &&
+              q.includes('"event_log"')
+          )
+        ).toBe(false);
+      }
+    );
 
     it("rejects PATCH on event_log mixing allowed + disallowed columns (no partial apply)", async () => {
       // Guards against a "be liberal in what you accept" refactor that would
@@ -1100,50 +1103,50 @@ describe("POST /api/powersync/batch", () => {
         });
       });
 
-      it.each([
-        ["production"],
-        ["preview"],
-      ])("omits the SQLSTATE from the response body when VERCEL_ENV=%s (server log retains it)", async (env) => {
-        // Both production AND preview must omit `code` to limit information
-        // disclosure to authenticated users — preview URLs are routinely
-        // shared (PR comments, link previews) and any authenticated user
-        // reaching them could enumerate schema state via SQLSTATE classes.
-        // The SQLSTATE remains in the server log for operators with Vercel
-        // log access. Non-production environments still expose `code` for
-        // fast browser-side debugging during the issue #220 soak.
-        authenticatedSession();
-        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
-        vi.stubEnv("VERCEL_ENV", env);
-        const undefinedColumnError = new Error(
-          'column "user_id" of relation "item_tricks" does not exist'
-        ) as Error & { code: string };
-        undefinedColumnError.code = "42703";
-        mockClientQuery
-          .mockResolvedValueOnce({ rowCount: 0 }) // BEGIN
-          .mockResolvedValueOnce({ rowCount: 0 }) // SAVEPOINT sp_0
-          .mockRejectedValueOnce(undefinedColumnError)
-          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK
-        const { POST } = await import("./route");
+      it.each([["production"], ["preview"]])(
+        "omits the SQLSTATE from the response body when VERCEL_ENV=%s (server log retains it)",
+        async (env) => {
+          // Both production AND preview must omit `code` to limit information
+          // disclosure to authenticated users — preview URLs are routinely
+          // shared (PR comments, link previews) and any authenticated user
+          // reaching them could enumerate schema state via SQLSTATE classes.
+          // The SQLSTATE remains in the server log for operators with Vercel
+          // log access. Non-production environments still expose `code` for
+          // fast browser-side debugging during the issue #220 soak.
+          authenticatedSession();
+          vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+          vi.stubEnv("VERCEL_ENV", env);
+          const undefinedColumnError = new Error(
+            'column "user_id" of relation "item_tricks" does not exist'
+          ) as Error & { code: string };
+          undefinedColumnError.code = "42703";
+          mockClientQuery
+            .mockResolvedValueOnce({ rowCount: 0 }) // BEGIN
+            .mockResolvedValueOnce({ rowCount: 0 }) // SAVEPOINT sp_0
+            .mockRejectedValueOnce(undefinedColumnError)
+            .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK
+          const { POST } = await import("./route");
 
-        const response = await POST(
-          createRequest({
-            operations: [
-              putOp("item_tricks", "it-1", {
-                item_id: "i-1",
-                trick_id: "t-1",
-              }),
-            ],
-          })
-        );
+          const response = await POST(
+            createRequest({
+              operations: [
+                putOp("item_tricks", "it-1", {
+                  item_id: "i-1",
+                  trick_id: "t-1",
+                }),
+              ],
+            })
+          );
 
-        expect(response.status).toBe(500);
-        const body = await response.json();
-        expect(body).not.toHaveProperty("code");
-        expect(body).toMatchObject({
-          error: "Batch execution failed",
-          failedIndex: 0,
-        });
-      });
+          expect(response.status).toBe(500);
+          const body = await response.json();
+          expect(body).not.toHaveProperty("code");
+          expect(body).toMatchObject({
+            error: "Batch execution failed",
+            failedIndex: 0,
+          });
+        }
+      );
 
       it("omits the code field when the transient error has no SQLSTATE", async () => {
         authenticatedSession();
@@ -1208,33 +1211,33 @@ describe("POST /api/powersync/batch", () => {
         });
       });
 
-      it.each([
-        ["production"],
-        ["preview"],
-      ])("omits the SQLSTATE from the 500 body when VERCEL_ENV=%s", async (env) => {
-        authenticatedSession();
-        vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
-        vi.stubEnv("VERCEL_ENV", env);
-        const beginError = new Error(
-          "connection terminated unexpectedly"
-        ) as Error & { code: string };
-        beginError.code = "08006";
-        mockClientQuery
-          .mockRejectedValueOnce(beginError) // BEGIN
-          .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK in catch
-        const { POST } = await import("./route");
+      it.each([["production"], ["preview"]])(
+        "omits the SQLSTATE from the 500 body when VERCEL_ENV=%s",
+        async (env) => {
+          authenticatedSession();
+          vi.stubEnv("DATABASE_URL", "postgres://localhost/test");
+          vi.stubEnv("VERCEL_ENV", env);
+          const beginError = new Error(
+            "connection terminated unexpectedly"
+          ) as Error & { code: string };
+          beginError.code = "08006";
+          mockClientQuery
+            .mockRejectedValueOnce(beginError) // BEGIN
+            .mockResolvedValueOnce({ rowCount: 0 }); // ROLLBACK in catch
+          const { POST } = await import("./route");
 
-        const response = await POST(
-          createRequest({
-            operations: [putOp("tricks", "t-1", { name: "A" })],
-          })
-        );
+          const response = await POST(
+            createRequest({
+              operations: [putOp("tricks", "t-1", { name: "A" })],
+            })
+          );
 
-        expect(response.status).toBe(500);
-        const body = await response.json();
-        expect(body).not.toHaveProperty("code");
-        expect(body).toMatchObject({ error: "Internal server error" });
-      });
+          expect(response.status).toBe(500);
+          const body = await response.json();
+          expect(body).not.toHaveProperty("code");
+          expect(body).toMatchObject({ error: "Internal server error" });
+        }
+      );
     });
   });
 });

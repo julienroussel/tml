@@ -19,7 +19,7 @@ export function urlBase64ToUint8Array(
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = globalThis.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) {
+  for (let i = 0; i < rawData.length; i += 1) {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
@@ -199,7 +199,7 @@ function PushNotificationManager(): ReactElement {
 }
 
 interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<{ outcome: "accepted" | "dismissed" }>;
+  prompt: () => Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 const IOS_REGEX = /iPad|iPhone|iPod/;

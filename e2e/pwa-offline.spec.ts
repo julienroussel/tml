@@ -90,7 +90,7 @@ test.describe("PWA offline resilience", () => {
     // Verify the SW claimed the page as controller
     await waitForController(page);
     const hasController = await page.evaluate(
-      () => navigator.serviceWorker.controller != null
+      () => navigator.serviceWorker.controller !== null
     );
     expect(hasController).toBe(true);
   });

@@ -145,7 +145,7 @@ export async function ensureUserExists(
     throw new Error("Failed to initialize user profile", { cause: error });
   }
 
-  const row = result[0];
+  const [row] = result;
   if (!row) {
     return null;
   }

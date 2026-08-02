@@ -337,7 +337,7 @@ describe("GET /api/cron/cleanup", () => {
       const { GET } = await import("./route");
 
       // pre-pass UPDATEs succeed, first main DELETE fails, rest succeed
-      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i++) {
+      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i += 1) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 }); // pre-pass
       }
       mockQuery
@@ -366,7 +366,7 @@ describe("GET /api/cron/cleanup", () => {
       const { GET } = await import("./route");
 
       // pre-pass UPDATEs succeed, then first main DELETE throws a string
-      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i++) {
+      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i += 1) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery
@@ -404,7 +404,7 @@ describe("GET /api/cron/cleanup", () => {
       const { GET } = await import("./route");
 
       // pre-pass UPDATEs succeed, then first main DELETE fails
-      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i++) {
+      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i += 1) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery
@@ -457,7 +457,7 @@ describe("GET /api/cron/cleanup", () => {
       const { GET } = await import("./route");
 
       // All pre-pass + main DELETEs succeed, user DELETE fails
-      for (let i = 0; i < PRE_PASS_TABLE_COUNT + MAIN_TABLE_COUNT; i++) {
+      for (let i = 0; i < PRE_PASS_TABLE_COUNT + MAIN_TABLE_COUNT; i += 1) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery.mockRejectedValueOnce(new Error("FK violation"));
@@ -494,7 +494,7 @@ describe("GET /api/cron/cleanup", () => {
 
       // pre-pass UPDATEs succeed, first main DELETE succeeds,
       // second fails, rest succeed
-      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i++) {
+      for (let i = 0; i < PRE_PASS_TABLE_COUNT; i += 1) {
         mockQuery.mockResolvedValueOnce({ rowCount: 0 });
       }
       mockQuery
