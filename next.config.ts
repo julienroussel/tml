@@ -4,6 +4,12 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // TypeScript 7 is the native Go port: it ships the tsc CLI but not the JS
+  // compiler API `next build` uses for its typecheck. This routes Next.js
+  // through the CLI instead.
+  experimental: {
+    useTypeScriptCli: true,
+  },
   devIndicators: {
     position: "bottom-right",
   },
