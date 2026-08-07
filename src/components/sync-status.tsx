@@ -53,7 +53,11 @@ function deriveSyncKey(
 
   const syncError = status.downloadError ?? status.uploadError;
 
-  if (syncError) {
+  // Gate on `connected`: a disconnected client still carries the error from
+  // the request that dropped the connection, and reporting that as "error"
+  // hides the more relevant, more actionable fact that the device is offline
+  // (#418). Offline is normal operation here, not a fault.
+  if (status.connected && syncError) {
     return "error";
   }
   if (status.connected && status.downloading) {
