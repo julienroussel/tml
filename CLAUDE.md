@@ -193,7 +193,8 @@ Never suggest or use deprecated patterns for any of these.
 - **React Compiler** — `reactCompiler: true` at top level in `next.config.ts` (NOT under `experimental`). Never write `useMemo`, `useCallback`, or `React.memo` — the compiler handles it.
 - **Metadata API** — `export const metadata` / `generateMetadata`. Never `next/head` (doesn't exist in App Router).
 - **Caching** — `fetch()` is not cached by default. Use `{ cache: 'force-cache' }` or the `"use cache"` directive. `unstable_cache` is deprecated.
-- **Config** — `reactCompiler`, `devIndicators`, `serverActions` are top-level, not under `experimental`.
+- **Config** — `reactCompiler`, `devIndicators`, `serverActions` are top-level, not under `experimental`. This names those three keys specifically; it is not a blanket ban on the `experimental` block, which still holds genuinely experimental flags.
+  - **`experimental.useTypeScriptCli: true` is deliberate and load-bearing** (PR #416). TypeScript 7 is the native Go port: it ships the `tsc` CLI but not the JS compiler API that `next build` uses for its build-time typecheck, so without this flag the build fails with "TypeScript 7.x does not provide the compiler API required by Next.js". Do not hoist it to top-level (it is not a valid top-level key) and do not delete it while `package.json` pins `typescript` 7.x. Revisit only when Next.js supports the TS 7 compiler natively, and verify with a real `pnpm build` before removing.
 
 ### React 19
 

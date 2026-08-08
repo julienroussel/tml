@@ -278,6 +278,27 @@ describe("SyncStatus", () => {
     expect(getPill()).toHaveAttribute("data-sync-state", "offline");
   });
 
+  it("prioritizes offline over a stale download error when disconnected", () => {
+    // Regression guard for #418. Losing connectivity leaves the error from
+    // the request that failed on the way down, so a genuinely offline user
+    // would otherwise see a red "Sync error" pill instead of "Offline".
+    // Offline is expected operation for an offline-first app; the error tier
+    // is reserved for faults the user might act on while connected.
+    mockStatus.connected = false;
+    mockStatus.downloadError = new Error("failed to fetch");
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "offline");
+  });
+
+  it("prioritizes offline over a stale upload error when disconnected", () => {
+    mockStatus.connected = false;
+    mockStatus.uploadError = new Error("failed to fetch");
+    render(<SyncStatus />);
+
+    expect(getPill()).toHaveAttribute("data-sync-state", "offline");
+  });
+
   it("prioritizes sync error over a bucket-health error (error tier > degraded)", () => {
     mockStatus.connected = true;
     mockStatus.lastSyncedAt = new Date();
