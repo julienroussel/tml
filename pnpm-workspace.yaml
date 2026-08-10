@@ -4,7 +4,10 @@ allowBuilds:
   '@swc/core': true
   core-js: true
   esbuild: true
-  lefthook: true
+  # false, not true: lefthook's postinstall runs `lefthook install -f`, which
+  # would write hook stubs into the global core.hooksPath dir. See
+  # .claude/rules/git-hooks.md. The `prepare` script installs hooks instead.
+  lefthook: false
   msw: false
   sharp: false
   yarn: false
