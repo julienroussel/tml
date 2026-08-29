@@ -22,6 +22,9 @@ vi.mock("@/auth/client", () => ({
       data: { user: { id: "user-123" } },
       isPending: false,
     })),
+    getSession: vi.fn(() =>
+      Promise.resolve({ data: { user: { id: "user-123" } } })
+    ),
   },
 }));
 
@@ -70,6 +73,11 @@ describe("use-tag-mutations", () => {
       data: { user: { id: "user-123" } },
       isPending: false,
     } as ReturnType<typeof authClient.useSession>);
+    // vi.clearAllMocks() clears calls but keeps implementations, so a
+    // rejecting/null override from a previous test would leak into this one.
+    vi.mocked(authClient.getSession).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    } as Awaited<ReturnType<typeof authClient.getSession>>);
   });
 
   afterEach(() => {
@@ -179,6 +187,30 @@ describe("use-tag-mutations", () => {
       await expect(createTag("opener")).rejects.toThrow(
         "Cannot mutate tags without an authenticated user"
       );
+
+      // A settled-null session must fail fast, with no round trip.
+      expect(authClient.getSession).not.toHaveBeenCalled();
+    });
+
+    it("resolves the pending session instead of dropping the write", async () => {
+      const { authClient } = await import("@/auth/client");
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: null,
+        isPending: true,
+      } as ReturnType<typeof authClient.useSession>);
+      vi.mocked(authClient.getSession).mockResolvedValue({
+        data: { user: { id: "user-456" } },
+      } as Awaited<ReturnType<typeof authClient.getSession>>);
+
+      const { useTagMutations } = await getHookExports();
+      const { createTag } = useTagMutations();
+
+      await expect(createTag("opener")).resolves.toBeDefined();
+      expect(mockWriteTransaction).toHaveBeenCalled();
+      // The id must come from the resolved session: a row written under the
+      // wrong user_id syncs into nobody's PowerSync bucket.
+      const insertParams = mockExecute.mock.calls[0]?.[1] as unknown[];
+      expect(insertParams[1]).toBe("user-456");
     });
 
     it("emits a tag.created event with the normalized name", async () => {

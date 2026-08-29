@@ -2,9 +2,9 @@
 
 import { usePowerSync } from "@powersync/react";
 import { authClient } from "@/auth/client";
+import { resolveUserId } from "@/auth/session-user";
 import {
   asItemId,
-  asUserId,
   type ItemId,
   type TagId,
   type TrickId,
@@ -274,14 +274,14 @@ const ITEM_UPDATE_SQL = `
  */
 export function useItemMutations(): UseItemMutationsReturn {
   const db = usePowerSync();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
 
-  function getUserId(): UserId {
-    const userId = session?.user?.id;
-    if (!userId) {
-      throw new Error("Cannot mutate items without an authenticated user");
-    }
-    return asUserId(userId);
+  function getUserId(): Promise<UserId> {
+    return resolveUserId(
+      session,
+      sessionPending,
+      "Cannot mutate items without an authenticated user"
+    );
   }
 
   async function createItem(
@@ -296,7 +296,7 @@ export function useItemMutations(): UseItemMutationsReturn {
       throw new MaxTricksError();
     }
 
-    const userId = getUserId();
+    const userId = await getUserId();
     const id = asItemId(crypto.randomUUID());
     const now = new Date().toISOString();
 
@@ -361,7 +361,7 @@ export function useItemMutations(): UseItemMutationsReturn {
       throw new MaxTricksError();
     }
 
-    const userId = getUserId();
+    const userId = await getUserId();
     const now = new Date().toISOString();
 
     try {
@@ -437,7 +437,7 @@ export function useItemMutations(): UseItemMutationsReturn {
   }
 
   async function deleteItem(id: ItemId): Promise<void> {
-    const userId = getUserId();
+    const userId = await getUserId();
     const now = new Date().toISOString();
 
     try {
