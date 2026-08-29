@@ -34,6 +34,9 @@ vi.mock("@/auth/client", () => ({
       data: { user: { id: "user-123" } },
       isPending: false,
     })),
+    getSession: vi.fn(() =>
+      Promise.resolve({ data: { user: { id: "user-123" } } })
+    ),
   },
 }));
 
@@ -83,6 +86,11 @@ describe("use-trick-mutations", () => {
       data: { user: { id: "user-123" } },
       isPending: false,
     } as ReturnType<typeof authClient.useSession>);
+    // vi.clearAllMocks() clears calls but keeps implementations, so a
+    // rejecting/null override from a previous test would leak into this one.
+    vi.mocked(authClient.getSession).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    } as Awaited<ReturnType<typeof authClient.getSession>>);
 
     // Restore default writeTransaction behavior
     mockWriteTransaction.mockImplementation(
@@ -578,6 +586,89 @@ describe("use-trick-mutations", () => {
           []
         )
       ).rejects.toThrow("Cannot mutate tricks without an authenticated user");
+    });
+
+    it("resolves the pending session instead of dropping the write", async () => {
+      const { authClient } = await import("@/auth/client");
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: null,
+        isPending: true,
+      } as ReturnType<typeof authClient.useSession>);
+      vi.mocked(authClient.getSession).mockResolvedValue({
+        data: { user: { id: "user-456" } },
+      } as Awaited<ReturnType<typeof authClient.getSession>>);
+
+      const { useTrickMutations } = await getHookExports();
+      const { createTrick } = useTrickMutations();
+
+      await expect(
+        createTrick(
+          {
+            name: "Trick",
+            description: "",
+            category: "",
+            effectType: "",
+            difficulty: null,
+            status: "new",
+            duration: null,
+            performanceType: null,
+            angleSensitivity: null,
+            props: "",
+            music: "",
+            languages: [],
+            isCameraFriendly: null,
+            isSilent: null,
+            notes: "",
+            source: "",
+            videoUrl: "",
+          },
+          []
+        )
+      ).resolves.toBeDefined();
+
+      expect(mockWriteTransaction).toHaveBeenCalled();
+      // The id must come from the resolved session: a row written under the
+      // wrong user_id syncs into nobody's PowerSync bucket.
+      const insertParams = mockExecute.mock.calls[0]?.[1] as unknown[];
+      expect(insertParams[1]).toBe("user-456");
+    });
+
+    it("does not wait on the session once it has settled to null", async () => {
+      const { authClient } = await import("@/auth/client");
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: null,
+        isPending: false,
+      } as ReturnType<typeof authClient.useSession>);
+
+      const { useTrickMutations } = await getHookExports();
+      const { createTrick } = useTrickMutations();
+
+      await expect(
+        createTrick(
+          {
+            name: "Trick",
+            description: "",
+            category: "",
+            effectType: "",
+            difficulty: null,
+            status: "new",
+            duration: null,
+            performanceType: null,
+            angleSensitivity: null,
+            props: "",
+            music: "",
+            languages: [],
+            isCameraFriendly: null,
+            isSilent: null,
+            notes: "",
+            source: "",
+            videoUrl: "",
+          },
+          []
+        )
+      ).rejects.toThrow("Cannot mutate tricks without an authenticated user");
+
+      expect(authClient.getSession).not.toHaveBeenCalled();
     });
 
     it("emits a trick.created event with name/status/category payload", async () => {

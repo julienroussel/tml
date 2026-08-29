@@ -2,7 +2,8 @@
 
 import { usePowerSync } from "@powersync/react";
 import { authClient } from "@/auth/client";
-import { asTagId, asUserId, type TagId, type UserId } from "@/db/types";
+import { resolveUserId } from "@/auth/session-user";
+import { asTagId, type TagId, type UserId } from "@/db/types";
 import { trackEvent } from "@/lib/analytics";
 import { safeLogEvent } from "@/lib/events/log";
 
@@ -19,21 +20,21 @@ interface UseTagMutationsReturn {
  */
 export function useTagMutations(): UseTagMutationsReturn {
   const db = usePowerSync();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
 
-  function getUserId(): UserId {
-    const userId = session?.user?.id;
-    if (!userId) {
-      throw new Error("Cannot mutate tags without an authenticated user");
-    }
-    return asUserId(userId);
+  function getUserId(): Promise<UserId> {
+    return resolveUserId(
+      session,
+      sessionPending,
+      "Cannot mutate tags without an authenticated user"
+    );
   }
 
   async function createTag(
     name: string,
     color?: string | null
   ): Promise<TagId> {
-    const userId = getUserId();
+    const userId = await getUserId();
     const id = asTagId(crypto.randomUUID());
     const now = new Date().toISOString();
     const normalizedName = name.trim().toLowerCase();

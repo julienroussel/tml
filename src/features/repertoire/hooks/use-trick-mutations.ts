@@ -2,13 +2,8 @@
 
 import { usePowerSync } from "@powersync/react";
 import { authClient } from "@/auth/client";
-import {
-  asTrickId,
-  asUserId,
-  type TagId,
-  type TrickId,
-  type UserId,
-} from "@/db/types";
+import { resolveUserId } from "@/auth/session-user";
+import { asTrickId, type TagId, type TrickId, type UserId } from "@/db/types";
 import { trackEvent } from "@/lib/analytics";
 import { safeLogEvent } from "@/lib/events/log";
 import type { TrickFormValues } from "../schema";
@@ -206,21 +201,21 @@ const TRICK_UPDATE_SQL = `
  */
 export function useTrickMutations(): UseTrickMutationsReturn {
   const db = usePowerSync();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
 
-  function getUserId(): UserId {
-    const userId = session?.user?.id;
-    if (!userId) {
-      throw new Error("Cannot mutate tricks without an authenticated user");
-    }
-    return asUserId(userId);
+  function getUserId(): Promise<UserId> {
+    return resolveUserId(
+      session,
+      sessionPending,
+      "Cannot mutate tricks without an authenticated user"
+    );
   }
 
   async function createTrick(
     data: TrickFormValues,
     tagIds: TagId[]
   ): Promise<TrickId> {
-    const userId = getUserId();
+    const userId = await getUserId();
     const id = asTrickId(crypto.randomUUID());
     const now = new Date().toISOString();
 
@@ -272,7 +267,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
     addTagIds: TagId[],
     removeTagIds: TagId[]
   ): Promise<void> {
-    const userId = getUserId();
+    const userId = await getUserId();
     const now = new Date().toISOString();
 
     try {
@@ -363,7 +358,7 @@ export function useTrickMutations(): UseTrickMutationsReturn {
   }
 
   async function deleteTrick(id: TrickId): Promise<void> {
-    const userId = getUserId();
+    const userId = await getUserId();
     const now = new Date().toISOString();
 
     try {
