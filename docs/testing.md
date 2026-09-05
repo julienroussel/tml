@@ -4,7 +4,7 @@ The Magic Lab uses Vitest for testing with a focus on high-value, maintainable t
 
 ## Test Framework
 
-- **Runner**: Vitest 4.x
+- **Runner**: Vitest 5.x
 - **Environment**: jsdom (for DOM/React testing)
 - **React testing**: @testing-library/react + @testing-library/user-event
 - **Assertions**: Vitest built-in + @testing-library/jest-dom matchers
@@ -14,10 +14,98 @@ The Magic Lab uses Vitest for testing with a focus on high-value, maintainable t
 
 Test configuration lives in `vitest.config.mts`:
 
-- Path aliases via `vite-tsconfig-paths` (matches `@/*` from tsconfig)
+- Path aliases via Vite's native `resolve.tsconfigPaths` (matches `@/*` from tsconfig)
 - React plugin via `@vitejs/plugin-react`
 - Setup file: `vitest.setup.ts` (jest-dom matchers, global mocks)
 - Coverage thresholds: 80% statements, branches, functions, lines
+- Pool: `vmThreads`, with per-file isolation preserved (see below)
+
+## Pool and Isolation
+
+Creating a jsdom environment costs roughly 200-500ms, and under the default
+`forks` pool that happens once per test file. With 143 files it dominates the
+run, so the pool choice is the single biggest lever on wall-clock time.
+
+The suite runs on **`pool: 'vmThreads'`**: jsdom is built once per worker, and
+each test file still gets a fresh VM context and window. Isolation is preserved
+(files do not share a module registry, a `document`, or mock state), so this is
+a pure startup saving, not a trade against test independence.
+
+Wall-clock figures are from `pnpm exec vitest doctor` on a dev Mac. They are
+indicative, not a CI benchmark; re-run it locally rather than trusting the
+absolute numbers.
+
+| Configuration | Result |
+|---|---|
+| `pool: 'forks'` (Vitest default) | 20.13s |
+| `pool: 'threads'` | 16.34s |
+| **`pool: 'vmThreads'` (current)** | **4.22s** |
+| `pool: 'vmForks'` | 5.17s |
+| `isolate: false` | fails and hangs (see below) |
+| `fsModuleCache: true` | 3.93s (-7%), not enabled (see below) |
+
+Two things to know before changing this:
+
+- **Memory reclamation is less reliable in the vm pools** than with forked
+  workers, which get a fresh process heap each. This has not been validated on
+  CI hardware (`ubuntu-latest`, 4 vCPU), and CI's only test step is
+  `pnpm test:coverage`. If it ever OOMs there, `pool: 'threads'` is the fallback
+  and the suite passes under it unchanged.
+- **Do not pin `maxWorkers`.** Capping it measured slower than the default in
+  every run, and the default already scales to the host's core count.
+
+`fsModuleCache: true` persists transformed modules to disk between runs. It
+measured -7%, below the threshold worth taking, and Vitest documents its
+invalidation tracking as incomplete (plugins reading files outside the tracked
+config can serve stale output). Not worth a class of cache-staleness bug for
+0.3s.
+
+### Test code that depends on the pool
+
+Three files were adapted to run under a VM context. Do not revert these without
+re-reading this section. Each one passes under `forks`/`threads` either way, so
+the breakage only shows up when the pool changes.
+
+- `src/lib/lang-script.test.ts` navigates with `history.replaceState` instead of
+  redefining `window.location`. `location` carries WebIDL's `[Unforgeable]`
+  flag, so it is non-configurable whenever the real jsdom window is the global,
+  as it is in the vm pools. (Under `forks`/`threads` Vitest copies jsdom globals
+  onto Node's `globalThis` as ordinary configurable properties, which is why
+  redefining it happened to work.) `LANG_SCRIPT` reads only `location.pathname`,
+  so it now sees a real `Location` rather than a `{ pathname }` stub.
+- `src/features/settings/locale-cookie.https.test.ts` exists because
+  `location.protocol` is a non-configurable own property of the jsdom `Location`
+  in *every* pool, so the `secure`-flag branch has to get HTTPS from the
+  environment's URL via a `@vitest-environment-options` docblock. The plain-HTTP
+  branch stays in `locale-cookie.test.ts` and needs no stub at all, since jsdom
+  serves `http://localhost:3000/` by default.
+- `src/sync/provider.test.tsx` matches a thrown `SyntaxError` by `name` rather
+  than `expect.any(SyntaxError)`. An error thrown inside the VM comes from a
+  different realm, so it is not `instanceof` the constructor in the test's
+  scope. This is the documented cross-realm caveat of the vm pools.
+
+### Why `isolate: false` is not an option
+
+Sharing one environment across files is faster still, but this suite does not
+tolerate it. Failures are order-dependent and diffuse rather than traceable to a
+few files: across five runs the set varied (2, 3 and 8 failures, plus two hangs
+that never terminated). The dominant cause is a shared module registry:
+`src/auth/session-user.test.ts` passes alone and passes alongside all seven
+other files that mock `@/auth/client`, but fails in a full run, receiving the
+mock factory's default instead of its own per-test override.
+
+Two concrete leaks are confirmed and worth fixing on their own merits, even
+though the current pool hides them:
+
+- `settings-restorer.test.tsx` and `locale-selector.test.tsx` call
+  `Object.defineProperty(document, "cookie", { writable: true, value })` without
+  `configurable: true`, so the property becomes permanently non-configurable and
+  any later `vi.spyOn(document, "cookie", …)` throws. The `afterEach` guard meant
+  to restore it is dead code: `document.cookie` lives on `Document.prototype`,
+  so the module-level `Object.getOwnPropertyDescriptor(document, "cookie")` is
+  `undefined` and the restore never runs.
+- `src/auth/session-user.test.ts` ("gives up waiting when the pending fetch never
+  settles") leaves a never-settling promise that hangs a shared worker.
 
 ## Co-Located Test Files
 
