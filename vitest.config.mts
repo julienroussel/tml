@@ -8,6 +8,11 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // Builds the jsdom environment once per worker and gives each test file a
+    // fresh VM context and window, instead of standing up jsdom from scratch
+    // per file. Isolation is preserved; measured ~17.3s -> ~4.0s.
+    // See docs/testing.md before changing this: three test files depend on it.
+    pool: "vmThreads",
     setupFiles: ["./vitest.setup.ts"],
     exclude: ["node_modules", "e2e"],
     coverage: {
