@@ -13,14 +13,16 @@ function clearCookies(): void {
 /**
  * Runs the lang-detection script in jsdom with a controlled URL and cookies.
  * Each cookie must be set via a separate assignment (browser API constraint).
+ *
+ * The path is set by navigating jsdom rather than by redefining
+ * `window.location`: `location` carries WebIDL's `[Unforgeable]` flag, so it is
+ * non-configurable in the `vmThreads` pool where the real jsdom window is the
+ * VM global. `replaceState` also leaves `LANG_SCRIPT` reading a real `Location`
+ * instead of a bare `{ pathname }` stub.
  */
 function runScript(pathname: string, cookies: string[] = []): string {
   document.documentElement.lang = "en";
-  Object.defineProperty(window, "location", {
-    value: { pathname },
-    writable: true,
-    configurable: true,
-  });
+  window.history.replaceState(null, "", pathname);
   clearCookies();
   for (const cookie of cookies) {
     // biome-ignore lint/suspicious/noDocumentCookie: testing requires direct cookie manipulation

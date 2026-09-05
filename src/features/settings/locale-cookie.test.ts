@@ -45,11 +45,10 @@ describe("setLocaleCookie", () => {
     vi.restoreAllMocks();
   });
 
+  // jsdom's default document URL is http://localhost:3000/, so the plain-HTTP
+  // branch needs no stubbing. The HTTPS branch lives in
+  // `locale-cookie.https.test.ts` (see the note there).
   it("sets cookie with correct format", () => {
-    vi.spyOn(globalThis, "location", "get").mockReturnValue({
-      protocol: "http:",
-    } as Location);
-
     setLocaleCookie("en");
 
     expect(cookieSetter).toHaveBeenCalledWith(
@@ -60,17 +59,5 @@ describe("setLocaleCookie", () => {
   it("is a no-op for invalid locale", () => {
     setLocaleCookie("xx");
     expect(cookieSetter).not.toHaveBeenCalled();
-  });
-
-  it("adds secure flag on HTTPS", () => {
-    vi.spyOn(globalThis, "location", "get").mockReturnValue({
-      protocol: "https:",
-    } as Location);
-
-    setLocaleCookie("fr");
-
-    expect(cookieSetter).toHaveBeenCalledWith(
-      `NEXT_LOCALE=fr;path=/;max-age=${COOKIE_MAX_AGE};samesite=lax;secure`
-    );
   });
 });

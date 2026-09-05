@@ -852,6 +852,10 @@ describe("PowerSyncProvider", () => {
       // response.json() throws SyntaxError, caught by the outer try/catch in
       // provider.tsx and logged as `[powersync] token fetch threw:`. Asserting
       // the log distinguishes this failure mode from a silent return-null.
+      //
+      // The error is matched by `name` rather than `expect.any(SyntaxError)`:
+      // under the `vmThreads` pool the throw originates in the VM realm, so its
+      // constructor is a different `SyntaxError` than the one in scope here.
       const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
         // suppress
       });
@@ -859,10 +863,10 @@ describe("PowerSyncProvider", () => {
       const result = await getToken();
 
       expect(result).toBeNull();
-      expect(errorSpy).toHaveBeenCalledWith(
-        `${LOG_PREFIX} token fetch threw:`,
-        expect.any(SyntaxError)
-      );
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      const [message, thrown] = errorSpy.mock.calls[0] ?? [];
+      expect(message).toBe(`${LOG_PREFIX} token fetch threw:`);
+      expect(thrown).toHaveProperty("name", "SyntaxError");
       errorSpy.mockRestore();
     });
 
