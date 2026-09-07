@@ -921,11 +921,18 @@ describe("PowerSyncProvider — missing NEXT_PUBLIC_POWERSYNC_URL", () => {
     // Wait for the env-warn to fire — vi.waitFor polls until the assertion
     // passes, replacing a flake-prone fixed-duration setTimeout. The warn is
     // the deterministic signal that the gated connect-effect has executed.
-    await vi.waitFor(() => {
-      expect(warnSpy).toHaveBeenCalledWith(
-        `${LOG_PREFIX} NEXT_PUBLIC_POWERSYNC_URL is not set — sync disabled`
-      );
-    });
+    // Default timeout (1000ms) is too tight here: this test also pays for
+    // vi.resetModules() + a fresh dynamic import before the effect can even
+    // run, which under CI's full-suite vmThreads load reliably exceeded it
+    // (observed as a deterministic failure on two consecutive CI runs).
+    await vi.waitFor(
+      () => {
+        expect(warnSpy).toHaveBeenCalledWith(
+          `${LOG_PREFIX} NEXT_PUBLIC_POWERSYNC_URL is not set — sync disabled`
+        );
+      },
+      { timeout: 5000 }
+    );
 
     // mockConnect is still referenced by the re-created mock factory closure
     expect(mockConnect).not.toHaveBeenCalled();
