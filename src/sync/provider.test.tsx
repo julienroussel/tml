@@ -84,6 +84,8 @@ vi.mock("sonner", () => ({
 // already set and avoids top-level await test isolation issues.
 type ProviderModule = typeof import("./provider");
 let PowerSyncProvider: Awaited<ProviderModule>["PowerSyncProvider"];
+// PROBE (temporary, CI diagnostics only)
+let probeLastMod: unknown;
 
 describe("PowerSyncProvider", () => {
   beforeEach(async () => {
@@ -95,6 +97,7 @@ describe("PowerSyncProvider", () => {
     vi.resetModules();
     vi.stubEnv("NEXT_PUBLIC_POWERSYNC_URL", "https://ps.example.com");
     const mod = await import("./provider");
+    probeLastMod = mod;
     ({ PowerSyncProvider } = mod);
   });
 
@@ -909,6 +912,7 @@ describe("PowerSyncProvider — missing NEXT_PUBLIC_POWERSYNC_URL", () => {
       // suppress
     });
 
+    const envAtImport = process.env.NEXT_PUBLIC_POWERSYNC_URL ?? null;
     const mod = await import("./provider");
     const ProviderWithoutUrl = mod.PowerSyncProvider;
 
@@ -918,25 +922,39 @@ describe("PowerSyncProvider — missing NEXT_PUBLIC_POWERSYNC_URL", () => {
       </ProviderWithoutUrl>
     );
 
-    // Wait for the env-warn to fire — vi.waitFor polls until the assertion
-    // passes, replacing a flake-prone fixed-duration setTimeout. The warn is
-    // the deterministic signal that the gated connect-effect has executed.
-    // Default timeout (1000ms) is too tight here: this test also pays for
-    // vi.resetModules() + a fresh dynamic import before the effect can even
-    // run, which under CI's full-suite vmThreads load reliably exceeded it
-    // (observed as a deterministic failure on two consecutive CI runs).
-    await vi.waitFor(
-      () => {
-        expect(warnSpy).toHaveBeenCalledWith(
-          `${LOG_PREFIX} NEXT_PUBLIC_POWERSYNC_URL is not set — sync disabled`
-        );
-      },
-      { timeout: 5000 }
+    const warnCallsImmediate = warnSpy.mock.calls.map((c) => String(c[0]));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const warnCallsAfterDelay = warnSpy.mock.calls.map((c) => String(c[0]));
+    const connectCalls = mockConnect.mock.calls.length;
+    const registerListenerCalls = mockRegisterListener.mock.calls.length;
+
+    // Fix-validation in the same run: force the env to empty and re-import.
+    vi.stubEnv("NEXT_PUBLIC_POWERSYNC_URL", "");
+    vi.resetModules();
+    const mod2 = await import("./provider");
+    const Provider2 = mod2.PowerSyncProvider;
+    render(
+      <Provider2>
+        <span>test2</span>
+      </Provider2>
+    );
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const warnCallsAfterForcedEmpty = warnSpy.mock.calls.map((c) =>
+      String(c[0])
     );
 
-    // mockConnect is still referenced by the re-created mock factory closure
-    expect(mockConnect).not.toHaveBeenCalled();
-    expect(screen.getByText("test")).toBeInTheDocument();
-    warnSpy.mockRestore();
+    throw new Error(
+      `PROBE ${JSON.stringify({
+        envAtImport,
+        envNow: process.env.NEXT_PUBLIC_POWERSYNC_URL ?? null,
+        sameModuleAsDescribe1: mod === probeLastMod,
+        sameModuleAsSecondImport: mod === mod2,
+        warnCallsImmediate,
+        warnCallsAfterDelay,
+        warnCallsAfterForcedEmpty,
+        connectCalls,
+        registerListenerCalls,
+      })}`
+    );
   });
 });
