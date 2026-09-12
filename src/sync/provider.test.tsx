@@ -893,7 +893,11 @@ describe("PowerSyncProvider", () => {
 // only resets the module cache so each test gets a fresh provider import.
 describe("PowerSyncProvider — missing NEXT_PUBLIC_POWERSYNC_URL", () => {
   beforeAll(() => {
-    vi.unstubAllEnvs();
+    // Stub the absence explicitly rather than calling vi.unstubAllEnvs():
+    // under `pool: "vmThreads"` process.env is shared across test files in a
+    // worker, so a stub another file left set becomes the "original" value
+    // recorded here and unstubAllEnvs() would restore a URL, not absence.
+    vi.stubEnv("NEXT_PUBLIC_POWERSYNC_URL", undefined);
   });
 
   beforeEach(() => {
