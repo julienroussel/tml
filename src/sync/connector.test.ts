@@ -24,6 +24,9 @@ describe("createNeonConnector", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    // importWithEnv() stubs NEXT_PUBLIC_POWERSYNC_URL; unstub it so the value
+    // does not outlive this file (vmThreads shares process.env across files).
+    vi.unstubAllEnvs();
   });
 
   it("throws when NEXT_PUBLIC_POWERSYNC_URL is missing", async () => {
