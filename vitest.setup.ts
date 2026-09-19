@@ -54,7 +54,24 @@ const { tClientCache, tServerCache, getClientT, getServerT } = vi.hoisted(
   }
 );
 
-afterEach(cleanup);
+// jsdom 30.1.0 sets the last-focused element to the *document* when the focused
+// element is removed (Node-impl.js `_removingSteps`); 30.0.1 set it to null. The
+// next focus() then fires a `blur` at `window`, which Radix menus treat as
+// "window lost focus" and close on. So the first test that unmounts an open menu
+// breaks every later test in the file. Focusing and blurring a throwaway element
+// after cleanup returns jsdom's focus state to null.
+function resetJsdomFocus(): void {
+  const probe = document.createElement("button");
+  document.body.append(probe);
+  probe.focus();
+  probe.blur();
+  probe.remove();
+}
+
+afterEach(() => {
+  cleanup();
+  resetJsdomFocus();
+});
 
 // Drop memoized translators so each test starts with fresh `t` references.
 afterEach(() => {
