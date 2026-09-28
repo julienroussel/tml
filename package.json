@@ -52,7 +52,7 @@
     "@journeyapps/wa-sqlite": "2.0.6",
     "@neondatabase/auth": "0.4.2-beta",
     "@neondatabase/serverless": "1.1.0",
-    "@powersync/common": "2.2.1",
+    "@powersync/common": "2.3.0",
     "@powersync/kysely-driver": "2.0.2",
     "@powersync/react": "2.0.1",
     "@powersync/web": "2.3.1",
