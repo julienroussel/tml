@@ -15,8 +15,23 @@ const LIGHT_PATTERN = /light/i;
 const SYSTEM_PATTERN = /system/i;
 
 test.describe("Settings — Theme change", () => {
-  test.beforeEach(() => {
+  test.beforeEach(async ({ page }) => {
     test.skip(!hasAuthSession(), "No authenticated session available");
+
+    // The selector renders the DB theme, which an earlier test's
+    // fire-and-forget "Reset" may not have written back before its context
+    // closed. Start every test (and retry) from "system" in the DB.
+    await page.goto("/settings");
+    const systemRadio = page.getByRole("radio", { name: SYSTEM_PATTERN });
+    if (!(await systemRadio.isChecked())) {
+      const persisted = page.waitForResponse(
+        (response) =>
+          response.request().method() === "POST" &&
+          (response.request().postData() ?? "").includes('"system"')
+      );
+      await systemRadio.check({ force: true });
+      await persisted;
+    }
   });
 
   test("user can change theme to dark mode", async ({ page }) => {

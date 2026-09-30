@@ -92,6 +92,12 @@ setup("authenticate", async ({ page }) => {
     ).toBe(true);
   }
 
+  // Pin the UI to English: with no NEXT_LOCALE cookie, SettingsRestorer copies
+  // the DB locale, which settings-locale.spec.ts can leave as fr/es/it.
+  await page
+    .context()
+    .addCookies([{ name: "NEXT_LOCALE", value: "en", url: BASE_URL }]);
+
   // Navigate to the app to ensure cookies are properly set in the browser context
   await page.goto("/dashboard");
   await page.waitForURL("**/dashboard**");
