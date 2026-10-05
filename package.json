@@ -51,7 +51,7 @@
     "@hookform/resolvers": "5.9.1",
     "@journeyapps/wa-sqlite": "2.0.6",
     "@neondatabase/auth": "0.5.0-beta",
-    "@neondatabase/serverless": "1.1.0",
+    "@neondatabase/serverless": "1.2.0",
     "@powersync/common": "2.3.1",
     "@powersync/kysely-driver": "2.0.2",
     "@powersync/react": "2.0.2",
