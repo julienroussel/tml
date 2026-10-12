@@ -179,10 +179,10 @@ importers:
         version: 2.0.7
       '@neondatabase/auth':
         specifier: 0.5.0-beta
-        version: 0.5.0-beta(a4200fce4a11f968fd39a45e542baf4c)
+        version: 0.5.0-beta(6f9c913ebd5ac92e678d755af2e3ae85)
       '@neondatabase/serverless':
-        specifier: 1.1.0
-        version: 1.1.0
+        specifier: 1.2.0
+        version: 1.2.0
       '@powersync/common':
         specifier: 2.3.1
         version: 2.3.1
@@ -200,13 +200,13 @@ importers:
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@vercel/analytics':
         specifier: 2.0.1
-        version: 2.0.1(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))
+        version: 2.0.1(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))
       '@vercel/firewall':
         specifier: 1.2.6
         version: 1.2.6
       '@vercel/speed-insights':
         specifier: 2.0.0
-        version: 2.0.0(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))
+        version: 2.0.0(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -218,10 +218,10 @@ importers:
         version: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)
+        version: 0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)
       drizzle-zod:
         specifier: 0.8.3
-        version: 0.8.3(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(zod@4.6.5)
+        version: 0.8.3(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(zod@4.6.5)
       lucide-react:
         specifier: 1.48.0
         version: 1.48.0(react@19.3.0)
@@ -2428,8 +2428,8 @@ packages:
       react-dom:
         optional: true
 
-  '@neondatabase/serverless@1.1.0':
-    resolution: {integrity: sha512-r3ZZhRjEcfEdKIZnoB1RusNgvHuaBRqfCzV4Gi+5A9yUX0S4HTws/ASWqt13wL4y4I+0rqsWGdA2w7EQXHi3+Q==}
+  '@neondatabase/serverless@1.2.0':
+    resolution: {integrity: sha512-tnaqgixUengZQNd9ZrS3ytQfamJzLKY8QxgqWQTNHHtB+KrFQWk77JTbbpg4RD+J3qE4eO2lVytvGDX5Kj6FdQ==}
     engines: {node: '>=19.0.0'}
 
   '@next/env@16.1.7':
@@ -10263,11 +10263,11 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@better-auth/api-key@1.7.6(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@2.0.2(zod@4.6.5))':
+  '@better-auth/api-key@1.7.6(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@2.0.2(zod@4.6.5))':
     dependencies:
       '@better-auth/core': 1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)
       '@better-auth/utils': 0.4.2
-      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
+      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
       better-call: 2.0.2(zod@4.6.5)
       zod: 4.6.5
 
@@ -10295,12 +10295,12 @@ snapshots:
       nanostores: 1.2.0
       zod: 4.6.5
 
-  '@better-auth/drizzle-adapter@1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))':
+  '@better-auth/drizzle-adapter@1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))':
     dependencies:
       '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)
       '@better-auth/utils': 0.4.2
     optionalDependencies:
-      drizzle-orm: 0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)
+      drizzle-orm: 0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)
 
   '@better-auth/kysely-adapter@1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(kysely@0.28.17)':
     dependencies:
@@ -10319,14 +10319,14 @@ snapshots:
       '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)
       '@better-auth/utils': 0.4.2
 
-  '@better-auth/passkey@1.6.23(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@1.3.7(zod@4.6.5))(nanostores@1.2.0)':
+  '@better-auth/passkey@1.6.23(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@1.3.7(zod@4.6.5))(nanostores@1.2.0)':
     dependencies:
       '@better-auth/core': 1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.1
       '@simplewebauthn/browser': 13.3.0
       '@simplewebauthn/server': 13.3.0
-      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
+      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
       better-call: 1.3.7(zod@4.6.5)
       nanostores: 1.2.0
       zod: 4.6.5
@@ -10452,21 +10452,21 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.2': {}
 
-  '@daveyplate/better-auth-tanstack@1.3.6(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.3.0))(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@daveyplate/better-auth-tanstack@1.3.6(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.3.0))(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/query-core': 5.90.20
       '@tanstack/react-query': 5.90.21(react@19.3.0)
-      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
+      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@daveyplate/better-auth-ui@3.4.0(5dd777ceb9ab8ef5af16362fd62f94fc)':
+  '@daveyplate/better-auth-ui@3.4.0(b71a648bd39957f349f548be8ec734d2)':
     dependencies:
-      '@better-auth/api-key': 1.7.6(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@2.0.2(zod@4.6.5))
-      '@better-auth/passkey': 1.6.23(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@1.3.7(zod@4.6.5))(nanostores@1.2.0)
+      '@better-auth/api-key': 1.7.6(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@2.0.2(zod@4.6.5))
+      '@better-auth/passkey': 1.6.23(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@1.3.7(zod@4.6.5))(nanostores@1.2.0)
       '@better-fetch/fetch': 1.1.21
       '@captchafox/react': 1.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@daveyplate/better-auth-tanstack': 1.3.6(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.3.0))(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@daveyplate/better-auth-tanstack': 1.3.6(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.3.0))(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@hcaptcha/react-hcaptcha': 2.2.0
       '@hookform/resolvers': 5.9.1(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.5)
       '@instantdb/react': 0.22.158(react@19.3.0)
@@ -10491,7 +10491,7 @@ snapshots:
       '@triplit/client': 1.0.50(typescript@7.0.2)
       '@triplit/react': 1.0.51(react@19.3.0)(typescript@7.0.2)
       '@wojtekmaj/react-recaptcha-v3': 0.1.4(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
+      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
       better-call: 2.0.2(zod@4.6.5)
       bowser: 2.14.1
       class-variance-authority: 0.7.1
@@ -11599,15 +11599,15 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@neondatabase/auth-ui@0.3.0-beta(22b5e30db730e39c230a18b3f56f88ec)':
+  '@neondatabase/auth-ui@0.3.0-beta(3927e439f961aed8b19847936b415cff)':
     dependencies:
-      '@better-auth/passkey': 1.6.23(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@1.3.7(zod@4.6.5))(nanostores@1.2.0)
+      '@better-auth/passkey': 1.6.23(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@2.0.2(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)))(better-call@1.3.7(zod@4.6.5))(nanostores@1.2.0)
       '@captchafox/react': 1.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@daveyplate/better-auth-ui': 3.4.0(5dd777ceb9ab8ef5af16362fd62f94fc)
+      '@daveyplate/better-auth-ui': 3.4.0(b71a648bd39957f349f548be8ec734d2)
       '@hcaptcha/react-hcaptcha': 1.17.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@hookform/resolvers': 5.9.1(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.5)
       '@marsidev/react-turnstile': 1.4.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@neondatabase/auth': 0.5.0-beta(a4200fce4a11f968fd39a45e542baf4c)
+      '@neondatabase/auth': 0.5.0-beta(6f9c913ebd5ac92e678d755af2e3ae85)
       '@radix-ui/react-avatar': 1.2.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-checkbox': 1.3.11(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-context': 1.2.2(@types/react@19.3.0)(react@19.3.0)
@@ -11622,7 +11622,7 @@ snapshots:
       '@radix-ui/react-use-callback-ref': 1.1.4(@types/react@19.3.0)(react@19.3.0)
       '@radix-ui/react-use-layout-effect': 1.1.4(@types/react@19.3.0)(react@19.3.0)
       '@wojtekmaj/react-recaptcha-v3': 0.1.4(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
+      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
       better-call: 1.3.7(zod@4.6.5)
       class-variance-authority: 0.7.1
       clsx: 2.1.1
@@ -11697,12 +11697,12 @@ snapshots:
       - vue
       - yup
 
-  '@neondatabase/auth@0.5.0-beta(a4200fce4a11f968fd39a45e542baf4c)':
+  '@neondatabase/auth@0.5.0-beta(6f9c913ebd5ac92e678d755af2e3ae85)':
     dependencies:
       '@better-fetch/fetch': 1.3.1
-      '@neondatabase/auth-ui': 0.3.0-beta(22b5e30db730e39c230a18b3f56f88ec)
+      '@neondatabase/auth-ui': 0.3.0-beta(3927e439f961aed8b19847936b415cff)
       '@supabase/auth-js': 2.79.0
-      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
+      better-auth: 1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2))
       jose: 6.2.5
       lucide-react: 1.48.0(react@19.3.0)
       zod: 4.6.5
@@ -11764,7 +11764,7 @@ snapshots:
       - vue
       - yup
 
-  '@neondatabase/serverless@1.1.0': {}
+  '@neondatabase/serverless@1.2.0': {}
 
   '@next/env@16.1.7': {}
 
@@ -11906,7 +11906,7 @@ snapshots:
       semver: 7.8.5
     optional: true
 
-  '@nuxt/devtools@3.3.1(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(vue@3.5.30(typescript@7.0.2))':
+  '@nuxt/devtools@3.3.1(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(vue@3.5.30(typescript@7.0.2))':
     dependencies:
       '@nuxt/devtools-kit': 3.3.1(magicast@0.5.5)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))
       '@nuxt/devtools-wizard': 3.3.1
@@ -11936,7 +11936,7 @@ snapshots:
       sirv: 3.0.2
       structured-clone-es: 2.0.0
       tinyglobby: 0.2.17
-      unstorage: 1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))
+      unstorage: 1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))
       vite: 8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0)
       vite-plugin-inspect: 11.4.1(@nuxt/kit@4.4.8(magicast@0.5.5))(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))
       vite-plugin-vue-tracer: 1.4.0(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(vue@3.5.30(typescript@7.0.2))
@@ -12020,7 +12020,7 @@ snapshots:
       - magicast
     optional: true
 
-  '@nuxt/nitro-server@4.3.1(984298916a9e970fce5f2a28b8cc1add)':
+  '@nuxt/nitro-server@4.3.1(c005192076eaffd47e19f78c229da031)':
     dependencies:
       '@nuxt/devalue': 2.0.2
       '@nuxt/kit': 4.3.1(magicast@0.5.5)
@@ -12037,8 +12037,8 @@ snapshots:
       impound: 1.1.6(esbuild@0.27.7)(rollup@4.62.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))
       klona: 2.0.6
       mocked-exports: 0.1.1
-      nitropack: 2.13.4(@parcel/watcher@2.5.6)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3))(srvx@0.11.22)(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))
-      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
+      nitropack: 2.13.4(@parcel/watcher@2.5.6)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3))(srvx@0.11.22)(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))
+      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
       ohash: 2.0.11
       pathe: 2.0.3
       pkg-types: 2.3.1
@@ -12046,7 +12046,7 @@ snapshots:
       std-env: 3.10.0
       ufo: 1.6.4
       unctx: 2.5.0
-      unstorage: 1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))
+      unstorage: 1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))
       vue: 3.5.30(typescript@7.0.2)
       vue-bundle-renderer: 2.3.1
       vue-devtools-stub: 0.1.0
@@ -12117,7 +12117,7 @@ snapshots:
       std-env: 4.2.0
     optional: true
 
-  '@nuxt/vite-builder@4.3.1(@biomejs/biome@2.5.15)(@types/node@26.6.4)(lightningcss@1.33.0)(magicast@0.5.5)(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(optionator@0.9.4)(rollup@4.62.3)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vue@3.5.30(typescript@7.0.2))(yaml@2.9.0)':
+  '@nuxt/vite-builder@4.3.1(@biomejs/biome@2.5.15)(@types/node@26.6.4)(lightningcss@1.33.0)(magicast@0.5.5)(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(optionator@0.9.4)(rollup@4.62.3)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vue@3.5.30(typescript@7.0.2))(yaml@2.9.0)':
     dependencies:
       '@nuxt/kit': 4.3.1(magicast@0.5.5)
       '@rollup/plugin-replace': 6.0.3(rollup@4.62.3)
@@ -12136,7 +12136,7 @@ snapshots:
       magic-string: 0.30.21
       mlly: 1.8.2
       mocked-exports: 0.1.1
-      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
       pathe: 2.0.3
       pkg-types: 2.3.1
       postcss: 8.5.23
@@ -14540,10 +14540,10 @@ snapshots:
       vue: 3.5.30(typescript@7.0.2)
     optional: true
 
-  '@vercel/analytics@2.0.1(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))':
+  '@vercel/analytics@2.0.1(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))':
     optionalDependencies:
       next: 16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
       react: 19.3.0
       vue: 3.5.30(typescript@7.0.2)
       vue-router: 4.6.4(vue@3.5.30(typescript@7.0.2))
@@ -14570,10 +14570,10 @@ snapshots:
       - supports-color
     optional: true
 
-  ? '@vercel/speed-insights@2.0.0(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))'
+  ? '@vercel/speed-insights@2.0.0(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(react@19.3.0)(vue-router@4.6.4(vue@3.5.30(typescript@7.0.2)))(vue@3.5.30(typescript@7.0.2))'
   : optionalDependencies:
       next: 16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
+      nuxt: 4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0)
       react: 19.3.0
       vue: 3.5.30(typescript@7.0.2)
       vue-router: 4.6.4(vue@3.5.30(typescript@7.0.2))
@@ -15087,10 +15087,10 @@ snapshots:
       jsonpointer: 5.0.1
       leven: 3.1.0
 
-  better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)):
+  better-auth@1.6.23(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)(vue@3.5.30(typescript@7.0.2)):
     dependencies:
       '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0)
-      '@better-auth/drizzle-adapter': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))
+      '@better-auth/drizzle-adapter': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))
       '@better-auth/kysely-adapter': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)(kysely@0.28.17)
       '@better-auth/memory-adapter': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)
       '@better-auth/mongo-adapter': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.2.0))(@better-auth/utils@0.4.2)
@@ -15108,7 +15108,7 @@ snapshots:
       zod: 4.6.5
     optionalDependencies:
       drizzle-kit: 0.31.11
-      drizzle-orm: 0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)
+      drizzle-orm: 0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)
       next: 16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.64.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
@@ -15582,9 +15582,9 @@ snapshots:
     transitivePeerDependencies:
       - '@noble/hashes'
 
-  db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)):
+  db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)):
     optionalDependencies:
-      drizzle-orm: 0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)
+      drizzle-orm: 0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)
     optional: true
 
   debounce-fn@6.0.0:
@@ -15682,15 +15682,15 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17):
+  drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17):
     optionalDependencies:
-      '@neondatabase/serverless': 1.1.0
+      '@neondatabase/serverless': 1.2.0
       '@types/pg': 8.18.0
       kysely: 0.28.17
 
-  drizzle-zod@0.8.3(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(zod@4.6.5):
+  drizzle-zod@0.8.3(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(zod@4.6.5):
     dependencies:
-      drizzle-orm: 0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)
+      drizzle-orm: 0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)
       zod: 4.6.5
 
   dunder-proto@1.0.1:
@@ -17249,7 +17249,7 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  nitropack@2.13.4(@parcel/watcher@2.5.6)(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3))(srvx@0.11.22)(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0)):
+  nitropack@2.13.4(@parcel/watcher@2.5.6)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3))(srvx@0.11.22)(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0)):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.2
       '@rollup/plugin-alias': 6.0.0(rollup@4.62.3)
@@ -17270,7 +17270,7 @@ snapshots:
       cookie-es: 2.0.1
       croner: 10.0.1
       crossws: 0.3.5
-      db0: 0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))
+      db0: 0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))
       defu: 6.1.7
       destr: 2.0.5
       dot-prop: 10.2.0
@@ -17316,7 +17316,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unimport: 6.3.1(esbuild@0.28.1)(oxc-parser@0.112.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3))(rollup@4.62.3)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))
       unplugin-utils: 0.3.2
-      unstorage: 1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))
+      unstorage: 1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))
       untyped: 2.0.0
       unwasm: 0.5.3
       youch: 4.1.1
@@ -17417,16 +17417,16 @@ snapshots:
       boolbase: 1.0.0
     optional: true
 
-  nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0):
+  nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0):
     dependencies:
       '@dxup/nuxt': 0.3.2(magicast@0.5.5)
       '@nuxt/cli': 3.37.0(@nuxt/schema@4.3.1)(@parcel/watcher@2.5.6)(cac@6.7.14)(commander@15.0.0)(magicast@0.5.5)(supports-color@8.1.1)
-      '@nuxt/devtools': 3.3.1(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(vue@3.5.30(typescript@7.0.2))
+      '@nuxt/devtools': 3.3.1(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(vue@3.5.30(typescript@7.0.2))
       '@nuxt/kit': 4.3.1(magicast@0.5.5)
-      '@nuxt/nitro-server': 4.3.1(984298916a9e970fce5f2a28b8cc1add)
+      '@nuxt/nitro-server': 4.3.1(c005192076eaffd47e19f78c229da031)
       '@nuxt/schema': 4.3.1
       '@nuxt/telemetry': 2.8.0(@nuxt/kit@4.3.1(magicast@0.5.5))
-      '@nuxt/vite-builder': 4.3.1(@biomejs/biome@2.5.15)(@types/node@26.6.4)(lightningcss@1.33.0)(magicast@0.5.5)(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(optionator@0.9.4)(rollup@4.62.3)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vue@3.5.30(typescript@7.0.2))(yaml@2.9.0)
+      '@nuxt/vite-builder': 4.3.1(@biomejs/biome@2.5.15)(@types/node@26.6.4)(lightningcss@1.33.0)(magicast@0.5.5)(nuxt@4.3.1(@biomejs/biome@2.5.15)(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@parcel/watcher@2.5.6)(@types/node@26.6.4)(@vue/compiler-sfc@3.5.40)(cac@6.7.14)(commander@15.0.0)(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))(esbuild@0.27.7)(ioredis@5.11.1(supports-color@8.1.1))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rollup@4.62.3)(srvx@0.11.22)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0))(yaml@2.9.0))(optionator@0.9.4)(rollup@4.62.3)(supports-color@8.1.1)(terser@5.46.0)(tsx@4.23.15)(typescript@7.0.2)(vue@3.5.30(typescript@7.0.2))(yaml@2.9.0)
       '@unhead/vue': 2.1.16(vue@3.5.30(typescript@7.0.2))
       '@vue/shared': 3.5.40
       c12: 3.3.4(magicast@0.5.5)
@@ -19454,7 +19454,7 @@ snapshots:
       vite: 8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.11.3)(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.0)
     optional: true
 
-  unstorage@1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1)):
+  unstorage@1.17.5(db0@0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17)))(ioredis@5.11.1(supports-color@8.1.1)):
     dependencies:
       anymatch: 3.1.3
       chokidar: 5.0.0
@@ -19465,7 +19465,7 @@ snapshots:
       ofetch: 1.5.1
       ufo: 1.6.4
     optionalDependencies:
-      db0: 0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.1.0)(@types/pg@8.18.0)(kysely@0.28.17))
+      db0: 0.3.4(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@types/pg@8.18.0)(kysely@0.28.17))
       ioredis: 5.11.1(supports-color@8.1.1)
     optional: true
 
