@@ -184,17 +184,17 @@ importers:
         specifier: 1.2.0
         version: 1.2.0
       '@powersync/common':
-        specifier: 2.3.1
-        version: 2.3.1
+        specifier: 2.4.0
+        version: 2.4.0
       '@powersync/kysely-driver':
         specifier: 2.0.2
-        version: 2.0.2(@powersync/common@2.3.1)
+        version: 2.0.2(@powersync/common@2.4.0)
       '@powersync/react':
         specifier: 2.0.2
-        version: 2.0.2(@powersync/common@2.3.1)(react@19.3.1)
+        version: 2.0.2(@powersync/common@2.4.0)(react@19.3.1)
       '@powersync/web':
         specifier: 2.4.2
-        version: 2.4.2(@powersync/common@2.3.1)(@powersync/shared-internals@1.3.1(@powersync/common@2.3.1))
+        version: 2.4.2(@powersync/common@2.4.0)(@powersync/shared-internals@1.3.1(@powersync/common@2.4.0))
       '@react-email/render':
         specifier: 2.1.1
         version: 2.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -2177,9 +2177,6 @@ packages:
   '@jridgewell/source-map@0.3.11':
     resolution: {integrity: sha512-ZMp1V8ZFcPG5dIWnQLr3NSI1MiCU7UETdS/A0G8V/XWHvJv3ZsFqutJn1Y5RPmAPX6F3BiE397OqveU/9NCuIA==}
 
-  '@jridgewell/sourcemap-codec@1.5.5':
-    resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
-
   '@jridgewell/sourcemap-codec@1.6.0':
     resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
 
@@ -3061,8 +3058,8 @@ packages:
     resolution: {integrity: sha512-CyRdWDIjh3IeGDKMLU/Km6s00Ug7YGzDfhS6THIdCQLTG2PonPHq9+PRw7rvSKl3TywVUr+LRAJnKOMn8XCrrA==}
     engines: {node: '>=18.0.0'}
 
-  '@powersync/common@2.3.1':
-    resolution: {integrity: sha512-9ZUJt6TW448+WqCXV7cgwTUrHTiIWn4lWCfXHhjqpccJ7jYtJkXbmHwJXISju88oBbjp2WoMS9q7SrUQk+1g8w==}
+  '@powersync/common@2.4.0':
+    resolution: {integrity: sha512-ngVogy+B8NQeI5l+0Es8qMxnGozUie8Q6R4+0/AHA3oBAhDG5UmeYw/LquTzZJSOPnCmvGgFSqovblV+JKzxKQ==}
 
   '@powersync/kysely-driver@2.0.2':
     resolution: {integrity: sha512-/QM4Fw81aLyfVRgjnrqQLWUYcO/AqMLJgS8nKPcuLzPUSsnxTtF83jvC3ctPCz0AKY53GZETDrxTOuICFVHCHw==}
@@ -11586,7 +11583,7 @@ snapshots:
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
       '@jridgewell/trace-mapping': 0.3.31
 
   '@jridgewell/remapping@2.3.5':
@@ -11602,14 +11599,12 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
     optional: true
 
-  '@jridgewell/sourcemap-codec@1.5.5': {}
-
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   '@kwsites/file-exists@1.1.1(supports-color@8.1.1)':
     dependencies:
@@ -12788,11 +12783,11 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/common@2.3.1': {}
+  '@powersync/common@2.4.0': {}
 
-  '@powersync/kysely-driver@2.0.2(@powersync/common@2.3.1)':
+  '@powersync/kysely-driver@2.0.2(@powersync/common@2.4.0)':
     dependencies:
-      '@powersync/common': 2.3.1
+      '@powersync/common': 2.4.0
       kysely: 0.28.17
 
   '@powersync/management-client@0.1.7(@types/json-schema@7.0.15)':
@@ -12812,9 +12807,9 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/react@2.0.2(@powersync/common@2.3.1)(react@19.3.1)':
+  '@powersync/react@2.0.2(@powersync/common@2.4.0)(react@19.3.1)':
     dependencies:
-      '@powersync/common': 2.3.1
+      '@powersync/common': 2.4.0
       react: 19.3.1
 
   '@powersync/service-client@0.0.11(@types/json-schema@7.0.15)':
@@ -12856,17 +12851,17 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@powersync/shared-internals@1.3.1(@powersync/common@2.3.1)':
+  '@powersync/shared-internals@1.3.1(@powersync/common@2.4.0)':
     dependencies:
-      '@powersync/common': 2.3.1
+      '@powersync/common': 2.4.0
 
   '@powersync/sync-config-tools@0.1.4': {}
 
-  '@powersync/web@2.4.2(@powersync/common@2.3.1)(@powersync/shared-internals@1.3.1(@powersync/common@2.3.1))':
+  '@powersync/web@2.4.2(@powersync/common@2.4.0)(@powersync/shared-internals@1.3.1(@powersync/common@2.4.0))':
     dependencies:
       '@journeyapps/wa-sqlite': 2.0.6
-      '@powersync/common': 2.3.1
-      '@powersync/shared-internals': 1.3.1(@powersync/common@2.3.1)
+      '@powersync/common': 2.4.0
+      '@powersync/shared-internals': 1.3.1(@powersync/common@2.4.0)
       comlink: 4.4.2
       commander: 12.1.0
 
@@ -17403,7 +17398,7 @@ snapshots:
 
   magic-string@0.30.21:
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   magic-string@1.4.3:
     dependencies:
