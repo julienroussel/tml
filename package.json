@@ -48,7 +48,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@hookform/resolvers": "5.9.2",
+    "@hookform/resolvers": "6.0.0",
     "@journeyapps/wa-sqlite": "2.0.7",
     "@neondatabase/auth": "0.6.0-beta",
     "@neondatabase/serverless": "1.2.0",
