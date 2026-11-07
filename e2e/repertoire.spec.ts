@@ -14,10 +14,10 @@ import {
  * page to avoid PowerSync sync timing issues between page navigations.
  */
 
-const SEARCH_RE = /search tricks/i;
-const NAME_REQUIRED_RE = /name is required|nameRequired/i;
-const ACTIONS_RE = /actions/i;
-const DELETE_RE = /delete/i;
+const SEARCH_RE = /search tricks/iu;
+const NAME_REQUIRED_RE = /name is required|nameRequired/iu;
+const ACTIONS_RE = /actions/iu;
+const DELETE_RE = /delete/iu;
 
 test.describe("Repertoire — Trick CRUD", () => {
   test.beforeEach(() => {
@@ -91,7 +91,7 @@ test.describe("Repertoire — Trick CRUD", () => {
 
     // Click the trick card to open edit sheet
     // Use the card's role="button" with its aria-label to target precisely
-    await page.getByRole("button", { name: new RegExp(name) }).click();
+    await page.getByRole("button", { name: new RegExp(name, "u") }).click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 
     // Update the name
@@ -186,7 +186,7 @@ test.describe("Repertoire — form-sheet loading announcer (#295)", () => {
 
     // Open the edit sheet — it mounts in loading mode while the trick row
     // hydrates from PowerSync, then transitions to the edit form.
-    await page.getByRole("button", { name: new RegExp(name) }).click();
+    await page.getByRole("button", { name: new RegExp(name, "u") }).click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole("status")).toBeAttached();
 

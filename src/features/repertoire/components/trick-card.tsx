@@ -90,7 +90,7 @@ export function TrickCard({
     <Card
       aria-label={`${t("edit")}: ${trick.name}`}
       className={cn(
-        "cursor-pointer hover:border-ring motion-safe:transition-colors"
+        "hover:border-ring cursor-pointer motion-safe:transition-colors"
       )}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
@@ -107,7 +107,7 @@ export function TrickCard({
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 font-semibold">{trick.name}</h3>
             {trick.description ? (
-              <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
+              <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
                 {trick.description}
               </p>
             ) : null}
@@ -117,7 +117,7 @@ export function TrickCard({
             <DropdownMenuTrigger asChild>
               <button
                 aria-label={t("cardActions")}
-                className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-sm outline-none focus-visible:ring-[3px] motion-safe:transition-colors"
                 onClick={handleMenuTriggerClick}
                 onKeyDown={handleMenuTriggerKeyDown}
                 type="button"
@@ -165,7 +165,7 @@ export function TrickCard({
 
         {/* Duration */}
         {trick.duration !== null && trick.duration > 0 && (
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
             <Clock aria-hidden="true" className="size-3.5" />
             <span>
               <span className="sr-only">{t("field.duration")}: </span>
@@ -213,7 +213,7 @@ export function TrickCard({
             short visible `loadErrorShort` label accompanies the icon so
             sighted users get more than an ambiguous dash (issue #327). */}
         {linkedItemsError ? (
-          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
             <CircleAlert
               aria-label={t("loadError")}
               className="size-3.5 shrink-0"
@@ -226,7 +226,7 @@ export function TrickCard({
         ) : (
           linkedItems &&
           linkedItems.length > 0 && (
-            <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
               <Package aria-hidden="true" className="size-3.5 shrink-0" />
               <span>
                 {linkedItems
@@ -244,7 +244,7 @@ export function TrickCard({
   );
 }
 
-const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/iu;
 
 function TagBadge({ tag }: { tag: ParsedTag }): React.ReactElement {
   if (tag.color && HEX_COLOR_RE.test(tag.color)) {

@@ -49,7 +49,7 @@ interface AvailableTrickRow {
  * before lifting them to branded IDs via `asTrickId` (type-only cast).
  */
 const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 /** Stable toast id for the items list load error (replaces rather than stacks). */
 const LOAD_ITEMS_ERROR_TOAST_ID = "collect-load-items-error";
@@ -611,7 +611,7 @@ export function CollectView(): React.ReactElement {
 
     if (hasActiveFilters) {
       return (
-        <p className="py-12 text-center text-muted-foreground" role="status">
+        <p className="text-muted-foreground py-12 text-center" role="status">
           {t("noResults")}
         </p>
       );
@@ -628,7 +628,7 @@ export function CollectView(): React.ReactElement {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {t("title")}
           </h1>
           <p className="text-muted-foreground">

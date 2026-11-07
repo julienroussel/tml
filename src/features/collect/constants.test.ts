@@ -10,8 +10,8 @@ import {
   TYPE_CONFIG,
 } from "./constants";
 
-const TYPE_LABEL_RE = /^type\./;
-const CONDITION_LABEL_RE = /^condition\./;
+const TYPE_LABEL_RE = /^type\./u;
+const CONDITION_LABEL_RE = /^condition\./u;
 
 describe("TYPE_CONFIG", () => {
   it("has an entry for every ITEM_TYPE", () => {

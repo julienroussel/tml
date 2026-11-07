@@ -46,18 +46,18 @@ export function LocaleSelector({
 
   return (
     <div className="flex items-start gap-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-muted">
-        <Globe className="size-5 text-muted-foreground" />
+      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md border">
+        <Globe className="text-muted-foreground size-5" />
       </div>
       <div className="flex flex-1 flex-col gap-1.5">
-        <label className="font-medium text-sm" htmlFor="locale-select">
+        <label className="text-sm font-medium" htmlFor="locale-select">
           {t("language")}
         </label>
         <p className="text-muted-foreground text-sm">
           {t("languageDescription")}
         </p>
         <select
-          className="mt-1 w-full max-w-xs rounded-md border bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-background focus-visible:outline-ring mt-1 w-full max-w-xs rounded-md border px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           id="locale-select"
           onChange={handleChange}
           value={selected}

@@ -11,9 +11,9 @@ import {
   primaryHex,
 } from "./email-colors";
 
-const HEX_PATTERN = /^#[0-9a-f]{6}$/i;
-const ROOT_BLOCK_PATTERN = /:root\s*\{([^}]+)\}/;
-const CSS_PROP_PATTERN = /--([\w-]+)\s*:\s*([^;]+)/g;
+const HEX_PATTERN = /^#[0-9a-f]{6}$/iu;
+const ROOT_BLOCK_PATTERN = /:root\s*\{(?<body>[^}]+)\}/u;
+const CSS_PROP_PATTERN = /--(?<name>[\w-]+)\s*:\s*(?<value>[^;]+)/gu;
 
 const colors: Record<string, string> = {
   primaryHex,
@@ -44,11 +44,11 @@ function parseThemeHex(): Record<string, string> {
     resolve(import.meta.dirname, "../app/globals.css"),
     "utf-8"
   );
-  const rootBlock = css.match(ROOT_BLOCK_PATTERN)?.[1] ?? "";
+  const rootBlock = css.match(ROOT_BLOCK_PATTERN)?.groups?.body ?? "";
   const result: Record<string, string> = {};
   for (const match of rootBlock.matchAll(CSS_PROP_PATTERN)) {
-    const prop = `--${match[1]}`;
-    const value = match[2]?.trim();
+    const prop = `--${match.groups?.name}`;
+    const value = match.groups?.value?.trim();
     if (!value) {
       continue;
     }

@@ -1,7 +1,7 @@
 import { readdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-const ROUTE_FILE_RE = /^(page|layout|route)\.(tsx?|jsx?)$/;
+const ROUTE_FILE_RE = /^(?:page|layout|route)\.(?:tsx?|jsx?)$/u;
 
 interface RouteNode {
   children: RouteNode[];

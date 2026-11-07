@@ -8,11 +8,12 @@ import {
   ItemForm,
 } from "./item-form";
 
-const VALIDATION_MESSAGE_PATTERN = /collect\.validation/;
+const VALIDATION_MESSAGE_PATTERN = /collect\.validation/u;
 
 // cmdk (used by CategoryCombobox) requires these in jsdom
 beforeAll(() => {
   if (!("ResizeObserver" in globalThis)) {
+    // biome-ignore-start lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
     globalThis.ResizeObserver = class ResizeObserver {
       observe(): void {
         // noop
@@ -24,6 +25,7 @@ beforeAll(() => {
         // noop
       }
     };
+    // biome-ignore-end lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
   }
   if (!Element.prototype.scrollIntoView) {
     Element.prototype.scrollIntoView = () => undefined;
@@ -130,7 +132,7 @@ describe("hasReferenceValues", () => {
 describe("ItemForm", () => {
   it("renders without crashing", () => {
     render(<ItemForm {...defaultProps} />);
-    expect(document.getElementById("test-item-form")).toBeInTheDocument();
+    expect(document.querySelector("#test-item-form")).toBeInTheDocument();
   });
 
   it("renders the essentials section", () => {
@@ -210,7 +212,7 @@ describe("ItemForm", () => {
       await user.clear(quantityInput);
 
       // The displayed value should fall back (the field value should never become NaN)
-      const form = document.getElementById("test-item-form");
+      const form = document.querySelector("#test-item-form");
       if (!(form instanceof HTMLFormElement)) {
         throw new Error("Expected form element");
       }
@@ -235,7 +237,7 @@ describe("ItemForm", () => {
         />
       );
 
-      const form = document.getElementById("test-item-form");
+      const form = document.querySelector("#test-item-form");
       if (!(form instanceof HTMLFormElement)) {
         throw new Error("Expected form element");
       }
@@ -258,7 +260,7 @@ describe("ItemForm", () => {
         />
       );
 
-      const form = document.getElementById("test-item-form");
+      const form = document.querySelector("#test-item-form");
       if (!(form instanceof HTMLFormElement)) {
         throw new Error("Expected form element");
       }
@@ -335,7 +337,7 @@ describe("ItemForm", () => {
     it("translates a 'validation.*' message via the collect namespace", async () => {
       render(<ItemForm {...defaultProps} />);
 
-      const form = document.getElementById("test-item-form");
+      const form = document.querySelector("#test-item-form");
       if (!(form instanceof HTMLFormElement)) {
         throw new Error("Expected form element");
       }

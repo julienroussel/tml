@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-
-vi.mock("server-only", () => ({}));
-
 import type { Database } from "@/db";
 import { eventLog } from "@/db/schema/event-log";
 import type { UserId } from "@/db/types";
 import { logEventServer } from "./log-server";
+
+vi.mock("server-only", () => ({}));
 
 function fakeDb(): {
   db: Database;

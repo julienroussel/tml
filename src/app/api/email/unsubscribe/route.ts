@@ -14,7 +14,7 @@ import {
   primaryHex,
 } from "@/lib/email-colors";
 
-const TRAILING_SLASHES = /\/+$/;
+const TRAILING_SLASHES = /\/+$/u;
 
 const CSP_HEADER =
   "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'";

@@ -1,26 +1,26 @@
 version: 2
 updates:
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '03:00'
-      timezone: 'Europe/Paris'
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Paris"
     labels:
-      - 'dependencies'
+      - "dependencies"
 
-  - package-ecosystem: 'npm'
-    directory: '/'
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '04:00'
-      timezone: 'Europe/Paris'
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Paris"
     open-pull-requests-limit: 5
-    target-branch: 'main'
+    target-branch: "main"
     labels:
-      - 'dependencies'
+      - "dependencies"
     groups:
       # -- Auto-merge tier (order matters: first match wins) --
       patch-updates:
@@ -34,30 +34,30 @@ updates:
       # -- Manual review tier (only production minors reach these) --
       next:
         patterns:
-          - 'next'
-          - '@next/*'
+          - "next"
+          - "@next/*"
       react:
         patterns:
-          - '@types/react'
-          - '@types/react-dom'
-          - 'react'
-          - 'react-dom'
+          - "@types/react"
+          - "@types/react-dom"
+          - "react"
+          - "react-dom"
       tailwind:
         patterns:
-          - 'tailwindcss'
-          - '@tailwindcss/*'
-          - 'tw-animate-css'
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "tw-animate-css"
       shadcn:
         patterns:
-          - 'shadcn'
-          - 'radix-ui'
-          - '@radix-ui/*'
+          - "shadcn"
+          - "radix-ui"
+          - "@radix-ui/*"
     ignore:
-      - dependency-name: 'next'
-        update-types: ['version-update:semver-major']
-      - dependency-name: '@next/*'
-        update-types: ['version-update:semver-major']
-      - dependency-name: 'react'
-        update-types: ['version-update:semver-major']
-      - dependency-name: 'react-dom'
-        update-types: ['version-update:semver-major']
+      - dependency-name: "next"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "@next/*"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "react"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "react-dom"
+        update-types: [ "version-update:semver-major" ]

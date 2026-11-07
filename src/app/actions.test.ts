@@ -25,10 +25,8 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: mockCheckRateLimit,
 }));
 vi.mock("web-push", () => ({
-  default: {
-    setVapidDetails: vi.fn(),
-    sendNotification: vi.fn().mockResolvedValue({}),
-  },
+  setVapidDetails: vi.fn(),
+  sendNotification: vi.fn().mockResolvedValue({}),
 }));
 vi.mock("@/auth/server", () => ({
   auth: {
@@ -98,7 +96,7 @@ async function setupSubscribedUser(): Promise<{
   unsubscribeUser: typeof import("./actions")["unsubscribeUser"];
 }> {
   stubVapidEnv();
-  const webpush = (await import("web-push")).default;
+  const webpush = await import("web-push");
   const actions = await import("./actions");
   await actions.subscribeUser(validSubscription);
   mockSelectWhere.mockResolvedValue([validSubscriptionRow]);
@@ -486,7 +484,7 @@ describe("server actions", () => {
       };
       mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
 
-      const webpush = (await import("web-push")).default;
+      const webpush = await import("web-push");
       const { sendNotification } = await import("./actions");
 
       const result = await sendNotification("Hello all devices");
@@ -503,7 +501,7 @@ describe("server actions", () => {
       };
       mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
 
-      const webpush = (await import("web-push")).default;
+      const webpush = await import("web-push");
       const { sendNotification } = await import("./actions");
 
       const goneError = Object.assign(new Error("Gone"), { statusCode: 410 });
@@ -527,7 +525,7 @@ describe("server actions", () => {
       };
       mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
 
-      const webpush = (await import("web-push")).default;
+      const webpush = await import("web-push");
       const { sendNotification } = await import("./actions");
 
       const goneError = Object.assign(new Error("Gone"), { statusCode: 410 });
@@ -562,7 +560,7 @@ describe("server actions", () => {
       };
       mockSelectWhere.mockResolvedValue([validSubscriptionRow, secondSub]);
 
-      const webpush = (await import("web-push")).default;
+      const webpush = await import("web-push");
       const { sendNotification } = await import("./actions");
 
       const serverError = new Error("Internal Server Error");

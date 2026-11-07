@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TrickId } from "@/db/types";
 
 const trickId = (id: string) => id as TrickId;
-const REMOVE_LABEL_PATTERN = /trickPicker\.remove/;
+const REMOVE_LABEL_PATTERN = /trickPicker\.remove/u;
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, params?: Record<string, unknown>) => {

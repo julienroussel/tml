@@ -28,5 +28,5 @@ export function HeaderTitle(): ReactElement | null {
     return null;
   }
 
-  return <span className="font-medium text-sm">{t(segment)}</span>;
+  return <span className="text-sm font-medium">{t(segment)}</span>;
 }

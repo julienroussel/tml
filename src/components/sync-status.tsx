@@ -128,6 +128,7 @@ class SyncStatusBoundary extends Component<
   // boundary also covers useBucketHealth — if a future @powersync/web upgrade
   // makes a `ps_buckets` read throw synchronously instead of surfacing via
   // useQuery's `error` field, silent swallowing would erase the breadcrumb.
+  // biome-ignore lint/style/useThisInClassMethods: React lifecycle method, must stay an instance method
   override componentDidCatch(error: Error): void {
     console.error("[sync-status] boundary caught render error:", error);
   }

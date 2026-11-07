@@ -38,7 +38,7 @@ vi.mock("./item-card", () => ({
   ),
 }));
 
-const ITEM_CARD_PATTERN = /item-card/;
+const ITEM_CARD_PATTERN = /item-card/u;
 
 const makeItem = (id: string, name: string): ItemWithRelations => ({
   id: id as ItemId,

@@ -19,7 +19,7 @@ name: Deploy PowerSync sync config
 #   protection-rule recipe and threat-model rationale.
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
     paths:
       - "powersync/sync-config.yaml"
       - "src/db/schema/**"
@@ -29,7 +29,7 @@ on:
       - "scripts/powersync.ts"
       - ".github/workflows/deploy-sync.yml"
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - "powersync/sync-config.yaml"
       - "src/db/schema/**"

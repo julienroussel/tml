@@ -5,7 +5,7 @@ import {
   TRICK_STATUSES,
 } from "./constants";
 
-const HTTPS_URL_RE = /^https:\/\//i;
+const HTTPS_URL_RE = /^https:\/\//iu;
 
 const trickFormSchema = z.object({
   // The Basics
@@ -83,7 +83,7 @@ const tagFormSchema = z.object({
     .max(50, "validation.tagNameTooLong"),
   color: z
     .string()
-    .regex(/^#[0-9a-f]{6}$/i)
+    .regex(/^#[0-9a-f]{6}$/iu)
     .nullable()
     .optional()
     .default(null),

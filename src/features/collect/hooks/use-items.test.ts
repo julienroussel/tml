@@ -1,5 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { buildItemsQuery, useItems } from "./use-items";
 
 const { mockUseQuery } = vi.hoisted(() => ({
   mockUseQuery: vi.fn(),
@@ -9,8 +10,6 @@ vi.mock("@powersync/react", () => ({
   useQuery: mockUseQuery,
   usePowerSync: vi.fn(),
 }));
-
-import { buildItemsQuery, useItems } from "./use-items";
 
 describe("useItems hook", () => {
   it("returns empty items when data is empty", () => {

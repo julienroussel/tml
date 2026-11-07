@@ -30,7 +30,7 @@ export default function AuthError({
     >
       <Logo className="flex items-center" height={56} width={168} />
       <div role="alert">
-        <h1 className="font-semibold text-xl">{t("authError")}</h1>
+        <h1 className="text-xl font-semibold">{t("authError")}</h1>
         <p className="text-muted-foreground">{t("authErrorDesc")}</p>
       </div>
       <div className="flex gap-2">

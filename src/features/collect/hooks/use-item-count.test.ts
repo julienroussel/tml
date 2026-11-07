@@ -1,5 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useItemCount } from "./use-item-count";
 
 const { mockUseQuery } = vi.hoisted(() => ({
   mockUseQuery: vi.fn(),
@@ -9,8 +10,6 @@ vi.mock("@powersync/react", () => ({
   useQuery: mockUseQuery,
   usePowerSync: vi.fn(),
 }));
-
-import { useItemCount } from "./use-item-count";
 
 describe("useItemCount hook", () => {
   it("returns 0 when no row is returned", () => {

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -53,7 +53,7 @@ jobs:
         run: pnpm test:coverage -- --reporter=default --reporter=github-actions
 
       - name: Upload coverage
-        if: '!cancelled()'
+        if: "!cancelled()"
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report
@@ -125,7 +125,7 @@ jobs:
           DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
 
       - name: Upload PWA test report
-        if: '!cancelled()'
+        if: "!cancelled()"
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pwa-playwright-report-${{ github.sha }}

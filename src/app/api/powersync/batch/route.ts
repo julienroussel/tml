@@ -166,6 +166,7 @@ function buildOperationQuery(
 }
 
 declare global {
+  // biome-ignore lint/style/useVarsOnTop: `declare global` needs `var` to type a globalThis property; it emits no runtime code
   var __batchPool: Pool | undefined;
 }
 

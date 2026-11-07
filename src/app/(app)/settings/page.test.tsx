@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { mockNextNavigation } from "@/test/mocks";
 
-const THEME_DARK_PATTERN = /themeDark/i;
+const THEME_DARK_PATTERN = /themeDark/iu;
 
 mockNextNavigation();
 

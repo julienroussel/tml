@@ -265,7 +265,7 @@ afterEach(async () => {
   capturedTrickListTricks = [];
 });
 
-const ADD_TRICK_PATTERN = /repertoire.addTrick/i;
+const ADD_TRICK_PATTERN = /repertoire.addTrick/iu;
 
 const makeTrick = (
   id: string,

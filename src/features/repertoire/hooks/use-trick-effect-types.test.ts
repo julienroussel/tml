@@ -1,5 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useTrickEffectTypes } from "./use-trick-effect-types";
 
 const { mockUseQuery } = vi.hoisted(() => ({
   mockUseQuery: vi.fn(),
@@ -9,8 +10,6 @@ vi.mock("@powersync/react", () => ({
   useQuery: mockUseQuery,
   usePowerSync: vi.fn(),
 }));
-
-import { useTrickEffectTypes } from "./use-trick-effect-types";
 
 describe("useTrickEffectTypes", () => {
   it("returns empty effectTypes and null error when there are no rows", () => {

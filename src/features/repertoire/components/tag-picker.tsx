@@ -23,7 +23,7 @@ import type { TagId } from "@/db/types";
 import type { ParsedTag } from "@/features/repertoire/types";
 import { cn } from "@/lib/utils";
 
-const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/iu;
 
 interface TagPickerProps {
   availableTags: ParsedTag[];
@@ -137,7 +137,7 @@ function TagPicker({
             className="min-h-11 w-full justify-between"
             variant="outline"
           >
-            <span className="flex items-center gap-2 text-muted-foreground">
+            <span className="text-muted-foreground flex items-center gap-2">
               <SearchIcon className="size-4" />
               <span>{t("tagPicker.search")}</span>
             </span>
@@ -228,7 +228,7 @@ function TagPicker({
                 <span>{tag.name}</span>
                 <button
                   aria-label={t("tagPicker.remove", { name: tag.name })}
-                  className="relative flex min-h-11 min-w-11 items-center justify-center rounded-sm p-1.5 hover:bg-accent"
+                  className="hover:bg-accent relative flex min-h-11 min-w-11 items-center justify-center rounded-sm p-1.5"
                   onClick={() => handleRemove(tag)}
                   type="button"
                 >

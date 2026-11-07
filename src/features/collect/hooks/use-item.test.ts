@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ItemId } from "@/db/types";
+import { useItem } from "./use-item";
 
 const { mockUseQuery } = vi.hoisted(() => ({
   mockUseQuery: vi.fn(),
@@ -10,8 +11,6 @@ vi.mock("@powersync/react", () => ({
   useQuery: mockUseQuery,
   usePowerSync: vi.fn(),
 }));
-
-import { useItem } from "./use-item";
 
 const itemId = (id: string) => id as ItemId;
 

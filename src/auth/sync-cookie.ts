@@ -14,7 +14,7 @@ const COOKIE_DELIMITER = "|";
 
 /** UUID v4 format (case-insensitive) — defense-in-depth for cookie parsing. */
 const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 /** Builds the cookie value string for the user-synced sentinel. */
 export function buildSyncCookieValue(

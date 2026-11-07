@@ -15,14 +15,14 @@ export function TrickEmptyState({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-      <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
-        <WandSparkles className="size-8 text-muted-foreground" />
+      <div className="bg-muted flex size-16 items-center justify-center rounded-2xl">
+        <WandSparkles className="text-muted-foreground size-8" />
       </div>
       <div className="flex flex-col gap-2">
-        <h2 className="font-semibold text-2xl tracking-tight">
+        <h2 className="text-2xl font-semibold tracking-tight">
           {t("emptyTitle")}
         </h2>
-        <p className="max-w-md text-muted-foreground">
+        <p className="text-muted-foreground max-w-md">
           {t("emptyDescription")}
         </p>
       </div>

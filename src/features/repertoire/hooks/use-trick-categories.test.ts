@@ -1,5 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useTrickCategories } from "./use-trick-categories";
 
 const { mockUseQuery } = vi.hoisted(() => ({
   mockUseQuery: vi.fn(),
@@ -9,8 +10,6 @@ vi.mock("@powersync/react", () => ({
   useQuery: mockUseQuery,
   usePowerSync: vi.fn(),
 }));
-
-import { useTrickCategories } from "./use-trick-categories";
 
 describe("useTrickCategories", () => {
   it("returns empty categories and null error when there are no rows", () => {

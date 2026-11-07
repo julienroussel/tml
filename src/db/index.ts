@@ -20,6 +20,7 @@ type Database = ReturnType<typeof createDb>;
 // module-scoped variables lose state between reloads. Storing the singleton
 // on globalThis preserves the database connection across HMR cycles.
 declare global {
+  // biome-ignore lint/style/useVarsOnTop: `declare global` needs `var` to type a globalThis property; it emits no runtime code
   var db: Database | undefined;
 }
 

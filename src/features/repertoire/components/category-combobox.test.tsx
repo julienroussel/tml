@@ -6,6 +6,7 @@ import { CategoryCombobox } from "./category-combobox";
 // cmdk uses ResizeObserver and scrollIntoView internally when the popover opens
 beforeAll(() => {
   if (!("ResizeObserver" in globalThis)) {
+    // biome-ignore-start lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
     globalThis.ResizeObserver = class ResizeObserver {
       observe(): void {
         // noop
@@ -17,6 +18,7 @@ beforeAll(() => {
         // noop
       }
     };
+    // biome-ignore-end lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
   }
   // jsdom doesn't implement scrollIntoView
   if (!Element.prototype.scrollIntoView) {

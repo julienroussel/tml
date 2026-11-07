@@ -47,12 +47,12 @@ function RecentActivityCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="flex items-center gap-2 font-medium text-sm">
-          <HistoryIcon className="size-4 text-muted-foreground" />
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+          <HistoryIcon className="text-muted-foreground size-4" />
           {t("recentTitle")}
         </CardTitle>
         <Link
-          className="-mx-2 inline-flex min-h-11 items-center px-2 text-muted-foreground text-xs underline-offset-4 hover:underline"
+          className="text-muted-foreground -mx-2 inline-flex min-h-11 items-center px-2 text-xs underline-offset-4 hover:underline"
           href="/activity"
         >
           {t("viewAll")}

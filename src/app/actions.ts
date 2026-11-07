@@ -3,7 +3,7 @@
 import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { after } from "next/server";
-import webpush from "web-push";
+import { sendNotification as sendWebPush, setVapidDetails } from "web-push";
 import { isUserBanned } from "@/auth/ban-check";
 import { auth } from "@/auth/server";
 import { getDb } from "@/db";
@@ -34,7 +34,7 @@ function isWebPushError(error: unknown): error is { statusCode: number } {
   );
 }
 
-const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/u;
 
 function isValidBase64urlKey(key: string, expectedLength: number): boolean {
   return BASE64URL_PATTERN.test(key) && key.length === expectedLength;
@@ -66,11 +66,7 @@ function ensureVapidInitialized(): void {
   if (!(publicKey && privateKey)) {
     throw new Error("VAPID keys are not configured");
   }
-  webpush.setVapidDetails(
-    "mailto:hello@themagiclab.app",
-    publicKey,
-    privateKey
-  );
+  setVapidDetails("mailto:hello@themagiclab.app", publicKey, privateKey);
   vapidReady = true;
 }
 
@@ -249,7 +245,7 @@ async function deliverToSubscriptions(
 
   const results = await Promise.allSettled(
     subscriptions.map((sub) =>
-      webpush.sendNotification(
+      sendWebPush(
         {
           endpoint: sub.endpoint,
           keys: { p256dh: sub.p256dh, auth: sub.authKey },

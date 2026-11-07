@@ -9,7 +9,7 @@ import type { Locale } from "./config";
 // Unmock next-intl so we can test real message resolution
 vi.unmock("next-intl");
 
-const SWITCH_TO_FR_PATTERN = /switch to fr/i;
+const SWITCH_TO_FR_PATTERN = /switch to fr/iu;
 
 const EN_MESSAGES = { common: { save: "Save" } };
 
@@ -83,21 +83,29 @@ describe("DynamicIntlProvider", () => {
   });
 });
 
+function DefaultContextConsumer({
+  onRender,
+}: {
+  onRender: (switchLocale: (locale: Locale) => void) => void;
+}): ReactElement {
+  const { switchLocale } = useLocaleSwitch();
+  onRender(switchLocale);
+  return <p>No provider</p>;
+}
+
 describe("useLocaleSwitch default context", () => {
   it("returns a no-op switchLocale outside of DynamicIntlProvider", () => {
     let capturedSwitchLocale: ((locale: Locale) => void) | undefined;
-
-    function DefaultContextConsumer(): ReactElement {
-      const { switchLocale } = useLocaleSwitch();
-      capturedSwitchLocale = switchLocale;
-      return <p>No provider</p>;
-    }
 
     // Wrap in NextIntlClientProvider (not DynamicIntlProvider) so the React
     // tree renders, but useLocaleSwitch gets the default context value.
     render(
       <NextIntlClientProvider locale="en" messages={EN_MESSAGES}>
-        <DefaultContextConsumer />
+        <DefaultContextConsumer
+          onRender={(switchLocale) => {
+            capturedSwitchLocale = switchLocale;
+          }}
+        />
       </NextIntlClientProvider>
     );
 

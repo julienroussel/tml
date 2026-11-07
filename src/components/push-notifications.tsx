@@ -16,7 +16,9 @@ export function urlBase64ToUint8Array(
   base64String: string
 ): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const base64 = (base64String + padding)
+    .replace(/-/gu, "+")
+    .replace(/_/gu, "/");
   const rawData = globalThis.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; i += 1) {
@@ -202,7 +204,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const IOS_REGEX = /iPad|iPhone|iPod/;
+const IOS_REGEX = /iPad|iPhone|iPod/u;
 
 function isBeforeInstallPromptEvent(e: Event): e is BeforeInstallPromptEvent {
   return (
@@ -246,7 +248,7 @@ function InstallPrompt(): ReactElement | null {
   if (installPromptEvent) {
     return (
       <div className="flex flex-col items-center gap-2">
-        <p className="max-w-sm text-center text-muted-foreground text-sm">
+        <p className="text-muted-foreground max-w-sm text-center text-sm">
           {t("installPrompt")}
         </p>
         <Button
@@ -277,7 +279,7 @@ function InstallPrompt(): ReactElement | null {
 
   if (isIOS) {
     return (
-      <p className="max-w-sm text-center text-muted-foreground text-sm">
+      <p className="text-muted-foreground max-w-sm text-center text-sm">
         {t("iosInstallPrompt")}
       </p>
     );

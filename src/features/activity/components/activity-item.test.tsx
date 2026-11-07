@@ -1,5 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { asTrickId, asUserId } from "@/db/types";
+import type { ParsedEvent } from "../types";
+import { ActivityItem } from "./activity-item";
 
 // Local mock — extends the global vitest.setup.ts mock with useFormatter
 // (the global mock only stubs t/useTranslations, not useFormatter).
@@ -28,11 +31,7 @@ vi.mock("next-intl", () => {
   };
 });
 
-import { asTrickId, asUserId } from "@/db/types";
-import type { ParsedEvent } from "../types";
-import { ActivityItem } from "./activity-item";
-
-const TRICK_CREATED_KEY_RE = /activity\.events\.trick_created/;
+const TRICK_CREATED_KEY_RE = /activity\.events\.trick_created/u;
 
 function makeEvent(overrides: Partial<ParsedEvent> = {}): ParsedEvent {
   return {

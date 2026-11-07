@@ -10,9 +10,9 @@ import { hasAuthSession } from "./helpers";
  * - SettingsRestorer handles bidirectional sync on mount
  */
 
-const DARK_PATTERN = /dark/i;
-const LIGHT_PATTERN = /light/i;
-const SYSTEM_PATTERN = /system/i;
+const DARK_PATTERN = /dark/iu;
+const LIGHT_PATTERN = /light/iu;
+const SYSTEM_PATTERN = /system/iu;
 
 test.describe("Settings — Theme change", () => {
   test.beforeEach(async ({ page }) => {

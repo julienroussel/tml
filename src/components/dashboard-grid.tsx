@@ -31,7 +31,7 @@ export async function DashboardGrid(): Promise<ReactElement> {
         return (
           <section aria-labelledby={`group-${group}`} key={group}>
             <h2
-              className="mb-4 font-semibold text-muted-foreground text-sm uppercase tracking-wide"
+              className="text-muted-foreground mb-4 text-sm font-semibold tracking-wide uppercase"
               id={`group-${group}`}
             >
               {t(`nav.${navKey}`)}
@@ -49,14 +49,14 @@ export async function DashboardGrid(): Promise<ReactElement> {
                             ? undefined
                             : `${title} (${t("common.comingSoon")})`
                         }
-                        className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="focus-visible:ring-ring rounded-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                         href={`/${mod.slug}`}
                       >
-                        <Card className="h-full transition-colors focus-within:bg-muted/50 hover:bg-muted/50">
+                        <Card className="focus-within:bg-muted/50 hover:bg-muted/50 h-full transition-colors">
                           <CardHeader>
                             <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                                <Icon className="size-5 text-muted-foreground" />
+                              <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
+                                <Icon className="text-muted-foreground size-5" />
                               </div>
                               <div className="flex flex-1 flex-col gap-1">
                                 <div className="flex items-center gap-2">

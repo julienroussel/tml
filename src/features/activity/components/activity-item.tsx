@@ -54,18 +54,18 @@ function ActivityItem({
   return (
     <li
       className={cn(
-        "flex min-h-11 items-start gap-3 rounded-md p-2 hover:bg-muted/50 motion-safe:transition-colors motion-safe:duration-150",
+        "hover:bg-muted/50 flex min-h-11 items-start gap-3 rounded-md p-2 motion-safe:transition-colors motion-safe:duration-150",
         className
       )}
     >
       <span
         aria-hidden="true"
-        className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+        className="bg-muted text-muted-foreground mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full"
       >
         {Icon ? <Icon className="size-4" /> : null}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="break-words text-sm">
+        <p className="text-sm break-words">
           {/* trim() handles the case where payload.name is empty (e.g.
               trick.deleted / item.deleted — name not snapshotted). The i18n
               string "Deleted trick {name}" becomes "Deleted trick " which we
@@ -73,7 +73,7 @@ function ActivityItem({
           {t(formatted.labelKey, formatted.values).trim()}
         </p>
         <time
-          className="mt-0.5 block text-muted-foreground text-xs"
+          className="text-muted-foreground mt-0.5 block text-xs"
           dateTime={event.createdAt}
         >
           {format.relativeTime(new Date(event.createdAt), reference)}

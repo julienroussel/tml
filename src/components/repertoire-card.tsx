@@ -28,14 +28,14 @@ function RepertoireCard(): ReactElement {
   return (
     <Link
       aria-label={t("repertoireLink")}
-      className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="focus-visible:ring-ring rounded-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
       href="/repertoire"
     >
-      <Card className="border-l-4 border-l-primary transition-colors hover:bg-muted/50">
+      <Card className="border-l-primary hover:bg-muted/50 border-l-4 transition-colors">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary">
-              <WandSparkles className="size-5 text-primary-foreground" />
+            <div className="bg-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
+              <WandSparkles className="text-primary-foreground size-5" />
             </div>
             <div className="flex flex-1 flex-col gap-1">
               <CardTitle>{t("repertoireTitle")}</CardTitle>
@@ -45,7 +45,7 @@ function RepertoireCard(): ReactElement {
             </div>
             <ChevronRight
               aria-hidden="true"
-              className="size-5 shrink-0 text-muted-foreground"
+              className="text-muted-foreground size-5 shrink-0"
             />
           </div>
         </CardHeader>

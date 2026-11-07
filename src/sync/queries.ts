@@ -47,7 +47,7 @@ function isSqlParam(value: unknown): value is SqlParam {
   );
 }
 
-const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/u;
 
 function quoteId(id: string): string {
   if (!VALID_IDENTIFIER.test(id)) {

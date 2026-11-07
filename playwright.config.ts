@@ -25,7 +25,7 @@ const hasVercelBypass = !!(
 // authenticated lane runs them). Adding a new authenticated spec only
 // requires editing this constant — the two project entries below stay in sync.
 const AUTH_SPECS =
-  /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts|sync-degraded\.spec\.ts/;
+  /settings-.*\.spec\.ts|repertoire\.spec\.ts|activity\.spec\.ts|sync-degraded\.spec\.ts/u;
 
 // In CI, PLAYWRIGHT_SKIP_BUILD reuses the .next/ output from an earlier step.
 // Without it, build + start from scratch. Locally, use the Turbopack dev server.
@@ -62,7 +62,7 @@ export default defineConfig({
     // Auth setup — runs first, creates authenticated session state
     {
       name: "setup",
-      testMatch: /auth\.setup\.ts/,
+      testMatch: /auth\.setup\.ts/u,
     },
     // Unauthenticated tests — smoke, auth redirects
     {
@@ -71,7 +71,10 @@ export default defineConfig({
       // testIgnore is AUTH_SPECS plus the PWA spec (which the dedicated `pwa`
       // project below picks up). Kept inline because the PWA exclusion is
       // unrelated to the auth/non-auth split that AUTH_SPECS captures.
-      testIgnore: new RegExp(`${AUTH_SPECS.source}|pwa-offline\\.spec\\.ts`),
+      testIgnore: new RegExp(
+        `${AUTH_SPECS.source}|pwa-offline\\.spec\\.ts`,
+        "u"
+      ),
     },
     // Authenticated tests — settings, locale, theme, repertoire
     {
@@ -92,7 +95,7 @@ export default defineConfig({
           {
             name: "pwa",
             use: { ...devices["Desktop Chrome"] },
-            testMatch: /pwa-offline\.spec\.ts/,
+            testMatch: /pwa-offline\.spec\.ts/u,
           },
         ]),
   ],

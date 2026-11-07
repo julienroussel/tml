@@ -43,13 +43,13 @@ export default async function FaqPage({
 
   return (
     <section className="mx-auto max-w-3xl px-6 py-24">
-      <h1 className="mb-8 font-semibold text-3xl tracking-tight">
+      <h1 className="mb-8 text-3xl font-semibold tracking-tight">
         {t("title")}
       </h1>
       <div className="flex flex-col gap-8">
         {faqItems.map((item) => (
           <div key={item.question}>
-            <h2 className="mb-2 font-semibold text-lg">{item.question}</h2>
+            <h2 className="mb-2 text-lg font-semibold">{item.question}</h2>
             <p className="text-muted-foreground leading-relaxed">
               {item.answer}
             </p>
