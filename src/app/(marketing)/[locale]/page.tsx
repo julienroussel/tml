@@ -69,10 +69,10 @@ export default async function Home({
             width={300}
           />
         </div>
-        <p className="max-w-lg text-muted-foreground text-xl leading-relaxed">
+        <p className="text-muted-foreground max-w-lg text-xl leading-relaxed">
           {t("tagline")}
         </p>
-        <p className="max-w-md text-muted-foreground leading-relaxed">
+        <p className="text-muted-foreground max-w-md leading-relaxed">
           {t("description")}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -94,22 +94,22 @@ export default async function Home({
       {/* Trust Bar */}
       <section
         aria-label="Key benefits"
-        className="border-y bg-muted/30 px-6 py-8"
+        className="bg-muted/30 border-y px-6 py-8"
       >
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-6">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Shield className="size-4" />
             <span>{t("freeForever")}</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Code className="size-4" />
             <span>{t("openSource")}</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <WifiOff className="size-4" />
             <span>{t("worksOffline")}</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Globe className="size-4" />
             <span>{t("builtByMagician")}</span>
           </div>
@@ -120,28 +120,28 @@ export default async function Home({
       <section aria-labelledby="how-it-works" className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <h2
-            className="mb-12 text-center font-semibold text-2xl tracking-tight"
+            className="mb-12 text-center text-2xl font-semibold tracking-tight"
             id="how-it-works"
           >
             {t("howItWorks")}
           </h2>
           <div className="grid gap-8 sm:grid-cols-3">
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
+              <div className="bg-primary text-primary-foreground flex size-12 items-center justify-center rounded-full font-semibold">
                 1
               </div>
               <h3 className="font-semibold">{t("step1Title")}</h3>
               <p className="text-muted-foreground text-sm">{t("step1Desc")}</p>
             </div>
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
+              <div className="bg-primary text-primary-foreground flex size-12 items-center justify-center rounded-full font-semibold">
                 2
               </div>
               <h3 className="font-semibold">{t("step2Title")}</h3>
               <p className="text-muted-foreground text-sm">{t("step2Desc")}</p>
             </div>
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
+              <div className="bg-primary text-primary-foreground flex size-12 items-center justify-center rounded-full font-semibold">
                 3
               </div>
               <h3 className="font-semibold">{t("step3Title")}</h3>
@@ -154,11 +154,11 @@ export default async function Home({
       {/* Feature Grid */}
       <section
         aria-labelledby="features"
-        className="border-t bg-muted/30 px-6 py-24"
+        className="bg-muted/30 border-t px-6 py-24"
       >
         <div className="mx-auto max-w-5xl">
           <h2
-            className="mb-12 text-center font-semibold text-2xl tracking-tight"
+            className="mb-12 text-center text-2xl font-semibold tracking-tight"
             id="features"
           >
             {t("features")}
@@ -173,13 +173,13 @@ export default async function Home({
                       ? undefined
                       : `${tModules(`${mod.slug}.title`)} (${t("comingSoon")})`
                   }
-                  className="group flex flex-col gap-3 rounded-xl p-4 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="group hover:bg-background focus-visible:ring-ring flex flex-col gap-3 rounded-xl p-4 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                   href={`/${mod.slug}`}
                   key={mod.slug}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
-                      <Icon className="size-6 text-muted-foreground" />
+                    <div className="bg-muted flex size-12 items-center justify-center rounded-xl">
+                      <Icon className="text-muted-foreground size-6" />
                     </div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold">
@@ -204,7 +204,7 @@ export default async function Home({
       <section aria-labelledby="open-source" className="px-6 py-24">
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
           <h2
-            className="font-semibold text-2xl tracking-tight"
+            className="text-2xl font-semibold tracking-tight"
             id="open-source"
           >
             {t("openSourceTitle")}
@@ -231,11 +231,11 @@ export default async function Home({
       {/* Final CTA */}
       <section
         aria-label="Call to action"
-        className="border-t bg-muted/30 px-6 py-24"
+        className="bg-muted/30 border-t px-6 py-24"
       >
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
-          <Dumbbell className="size-10 text-muted-foreground" />
-          <h2 className="font-semibold text-2xl tracking-tight">
+          <Dumbbell className="text-muted-foreground size-10" />
+          <h2 className="text-2xl font-semibold tracking-tight">
             {t("ctaTitle")}
           </h2>
           <p className="text-muted-foreground">{t("ctaDesc")}</p>

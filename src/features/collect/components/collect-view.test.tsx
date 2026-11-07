@@ -200,7 +200,7 @@ vi.mock("./item-empty-state", () => ({
   ),
 }));
 
-const ADD_ITEM_PATTERN = /collect.addItem/i;
+const ADD_ITEM_PATTERN = /collect.addItem/iu;
 
 function makeItem(
   id: string,

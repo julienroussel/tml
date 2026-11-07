@@ -1,7 +1,7 @@
 allowBuilds:
-  '@journeyapps/wa-sqlite': true
-  '@parcel/watcher': true
-  '@swc/core': true
+  "@journeyapps/wa-sqlite": true
+  "@parcel/watcher": true
+  "@swc/core": true
   core-js: true
   esbuild: true
   # false, not true: lefthook's postinstall runs `lefthook install -f`, which
@@ -18,6 +18,6 @@ overrides:
   zod: $zod
 
 packageExtensions:
-  '@neondatabase/auth':
+  "@neondatabase/auth":
     peerDependencies:
-      lucide-react: '*'
+      lucide-react: "*"

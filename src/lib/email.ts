@@ -44,8 +44,8 @@ function getHmacSecret(): Buffer {
 const TOKEN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const HEX_RE = /^[0-9a-f]+$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const HEX_RE = /^[0-9a-f]+$/iu;
 
 function createUnsubscribeToken(userId: string): string {
   const timestamp = Math.floor(Date.now() / 1000);

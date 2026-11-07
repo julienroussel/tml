@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { ShieldAlert } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
@@ -22,6 +20,8 @@ import { SettingsRestorer } from "@/features/settings/components/settings-restor
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { PowerSyncProvider } from "@/sync/provider";
 import { SyncErrorToaster } from "@/sync/sync-error-toaster";
+
+export const dynamic = "force-dynamic";
 
 export default async function AppLayout({
   children,
@@ -46,9 +46,9 @@ export default async function AppLayout({
     if (await isUserBanned(session.user.id)) {
       return (
         <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-          <ShieldAlert className="h-16 w-16 text-destructive" />
-          <h1 className="font-semibold text-2xl">Account Suspended</h1>
-          <p className="max-w-md text-muted-foreground">
+          <ShieldAlert className="text-destructive h-16 w-16" />
+          <h1 className="text-2xl font-semibold">Account Suspended</h1>
+          <p className="text-muted-foreground max-w-md">
             Your account has been suspended. If you believe this is a mistake,
             please contact support.
           </p>
@@ -78,7 +78,7 @@ export default async function AppLayout({
   return (
     <Providers locale={typedLocale} messages={messages}>
       <a
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
+        className="focus:bg-background focus:text-foreground sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:shadow-md"
         href="#main-content"
       >
         {t("skipToContent")}

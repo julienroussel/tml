@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import AuthPage from "./page";
 
 vi.mock("next-intl/server", () => ({
   getTranslations: (namespace?: string) => {
@@ -33,8 +34,6 @@ vi.mock("@neondatabase/auth/react", () => ({
 vi.mock("@neondatabase/auth/react/ui/server", () => ({
   authViewPaths: ["sign-in", "sign-up"],
 }));
-
-import AuthPage from "./page";
 
 describe("AuthPage", () => {
   it("renders AuthView with the correct path from params", async () => {

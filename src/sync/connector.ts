@@ -280,7 +280,7 @@ function createNeonConnector(
         throw new Error("Missing JWT payload segment");
       }
       // Normalize base64url to standard base64 before decoding.
-      const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+      const base64 = encoded.replace(/-/gu, "+").replace(/_/gu, "/");
       const padded = base64.padEnd(
         base64.length + ((4 - (base64.length % 4)) % 4),
         "="

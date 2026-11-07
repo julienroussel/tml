@@ -64,7 +64,7 @@ vi.mock("@/lib/modules", async (importOriginal) => {
   };
 });
 
-const IMPROVE_RE = /improve/i;
+const IMPROVE_RE = /improve/iu;
 
 describe("DashboardGrid", () => {
   it("renders grouped sections with headings", async () => {

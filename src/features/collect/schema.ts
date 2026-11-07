@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { ITEM_CONDITIONS, ITEM_TYPES } from "./constants";
 
-const HTTPS_URL_RE = /^https:\/\//i;
-const PRICE_RE = /^\d{1,7}(\.\d{0,2})?$/;
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const HTTPS_URL_RE = /^https:\/\//iu;
+const PRICE_RE = /^\d{1,7}(?:\.\d{0,2})?$/u;
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/u;
 
 const itemFormSchema = z.object({
   // Essentials

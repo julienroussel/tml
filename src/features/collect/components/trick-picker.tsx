@@ -99,7 +99,7 @@ function TrickPicker({
             className="min-h-11 w-full justify-between"
             variant="outline"
           >
-            <span className="flex items-center gap-2 text-muted-foreground">
+            <span className="text-muted-foreground flex items-center gap-2">
               <SearchIcon className="size-4" />
               <span>{t("trickPicker.search")}</span>
             </span>
@@ -161,7 +161,7 @@ function TrickPicker({
                 <span>{trick.name}</span>
                 <button
                   aria-label={t("trickPicker.remove", { name: trick.name })}
-                  className="relative flex min-h-11 min-w-11 items-center justify-center rounded-sm p-1.5 hover:bg-accent"
+                  className="hover:bg-accent relative flex min-h-11 min-w-11 items-center justify-center rounded-sm p-1.5"
                   onClick={() => handleRemove(trick)}
                   type="button"
                 >

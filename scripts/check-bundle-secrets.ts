@@ -49,20 +49,20 @@ interface ScanResult {
 // in vendored chunks. It stays in the manual audit grep (#341 plan, Step 1a) only.
 const SECRET_PATTERNS: readonly SecretPattern[] = [
   // Neon Postgres password value prefix.
-  { name: "neon-password", re: /npg_[A-Za-z0-9]/ },
+  { name: "neon-password", re: /npg_[A-Za-z0-9]/u },
   // Any Postgres connection URI carrying inline credentials.
   {
     name: "postgres-uri-credentials",
-    re: /postgres(?:ql)?:\/\/[^"'\s]*:[^"'@\s]+@/,
+    re: /postgres(?:ql)?:\/\/[^"'\s]*:[^"'@\s]+@/u,
   },
   // PEM private key block.
-  { name: "pem-private-key", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { name: "pem-private-key", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/u },
   // Env-var NAME tripwire — flags a build-time inline misconfig, not a live value.
-  { name: "powersync-admin-token", re: /POWERSYNC_ADMIN_TOKEN/ },
+  { name: "powersync-admin-token", re: /POWERSYNC_ADMIN_TOKEN/u },
   // Env-var NAME tripwire — flags a build-time inline misconfig, not a live value.
-  { name: "database-url", re: /DATABASE_URL/ },
+  { name: "database-url", re: /DATABASE_URL/u },
   // Known-internal E2E override flag — must tree-shake out of prod (#341 Finding #17).
-  { name: "test-bucket-health-override", re: /__TEST_FORCE_BUCKET_HEALTH/ },
+  { name: "test-bucket-health-override", re: /__TEST_FORCE_BUCKET_HEALTH/u },
 ];
 
 // Value-shape patterns match an actual secret VALUE (not an env-var name or an
@@ -78,10 +78,10 @@ const VALUE_SHAPE_PATTERNS: readonly SecretPattern[] = SECRET_PATTERNS.filter(
 );
 
 // Client bundles under `.next/static`.
-const SCANNED_EXTENSIONS = /\.(?:js|css|map)$/;
+const SCANNED_EXTENSIONS = /\.(?:js|css|map)$/u;
 // Browser-served output under `.next/server/{app,pages}`: prerendered HTML, RSC
 // flight data, and `.body` response bodies (sitemap, manifest, error pages).
-const SERVER_OUTPUT_EXTENSIONS = /\.(?:html|rsc|body)$/;
+const SERVER_OUTPUT_EXTENSIONS = /\.(?:html|rsc|body)$/u;
 
 /**
  * Returns the names of every secret-marker pattern that matches `content`.

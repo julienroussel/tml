@@ -111,7 +111,7 @@ export function TrickDifficulty({
               isInteractive &&
                 "min-h-11 min-w-11 cursor-pointer items-center justify-center",
               isInteractive
-                ? "inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                ? "focus-visible:ring-ring/50 inline-flex rounded-sm focus-visible:ring-[3px] focus-visible:outline-none"
                 : "inline-flex items-center justify-center",
               isFilled ? "text-amber-500" : "text-muted-foreground/30"
             )}

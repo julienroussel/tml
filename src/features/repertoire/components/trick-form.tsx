@@ -553,7 +553,7 @@ function TrickForm({
               aria-busy={relationsLoading}
               className="grid gap-2 border-none p-0"
             >
-              <legend className="font-medium text-sm">{t("field.tags")}</legend>
+              <legend className="text-sm font-medium">{t("field.tags")}</legend>
               {relationsLoading ? (
                 <Skeleton
                   aria-label={t("tagPicker.loading")}
@@ -643,7 +643,7 @@ function LanguagesField({
 
   return (
     <div className="grid gap-2">
-      <label className="font-medium text-sm" htmlFor="languages-input">
+      <label className="text-sm font-medium" htmlFor="languages-input">
         {t("field.languages")}
       </label>
       <Input
@@ -669,7 +669,7 @@ function LanguagesField({
                 <span>{lang}</span>
                 <button
                   aria-label={t("removeLanguage", { language: lang })}
-                  className="relative flex items-center justify-center rounded-sm p-1.5 before:absolute before:inset-[-8px] before:content-[''] hover:bg-accent"
+                  className="hover:bg-accent relative flex items-center justify-center rounded-sm p-1.5 before:absolute before:inset-[-8px] before:content-['']"
                   onClick={() => removeLanguage(index)}
                   type="button"
                 >

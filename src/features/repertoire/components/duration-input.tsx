@@ -115,7 +115,7 @@ export function DurationInput({
       />
       <span
         aria-hidden="true"
-        className="font-medium text-muted-foreground text-sm"
+        className="text-muted-foreground text-sm font-medium"
       >
         :
       </span>

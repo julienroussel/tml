@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthError from "./error";
 
-const tryAgainPattern = /tryAgain/;
+const tryAgainPattern = /tryAgain/u;
 
 vi.mock("next/link", () => ({
   default: ({

@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it, type MockInstance, vi } from "vitest";
+import { dispatchSyncError } from "./events";
 
 vi.mock("./events", () => ({
   dispatchSyncError: vi.fn(),
 }));
-
-import { dispatchSyncError } from "./events";
 
 describe("createNeonConnector", () => {
   function importWithEnv(
@@ -126,8 +125,8 @@ describe("createNeonConnector", () => {
       // Use base64url encoding: replace + with -, / with _, strip padding
       const base64 = btoa(JSON.stringify({ exp, sub: "user+special/chars" }));
       const base64url = base64
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
+        .replace(/\+/gu, "-")
+        .replace(/\//gu, "_")
         .replaceAll("=", "");
       const token = `header.${base64url}.signature`;
       const mod = await importWithEnv(VALID_ENV);

@@ -18,11 +18,11 @@ type TranslateFn = (key: string) => string;
 const defaultT: TranslateFn = (key: string) => `footer.askAi.${key}`;
 
 function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function labelPattern(key: string): RegExp {
-  return new RegExp(escapeRegex(`footer.askAi.${key}`));
+  return new RegExp(escapeRegex(`footer.askAi.${key}`), "u");
 }
 
 function setTranslator(t: TranslateFn): void {
@@ -84,7 +84,8 @@ describe("MarketingAskAi", () => {
 
     for (const key of ["chatGpt", "claude", "perplexity"]) {
       const pattern = new RegExp(
-        `${escapeRegex(`footer.askAi.${key}`)}.*${escapeRegex("footer.askAi.opensInNewTab")}`
+        `${escapeRegex(`footer.askAi.${key}`)}.*${escapeRegex("footer.askAi.opensInNewTab")}`,
+        "u"
       );
       expect(screen.getByRole("link", { name: pattern })).toBeInTheDocument();
     }

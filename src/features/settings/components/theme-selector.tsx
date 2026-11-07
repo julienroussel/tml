@@ -65,11 +65,11 @@ export function ThemeSelector({
 
   return (
     <div className="flex items-start gap-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-muted">
-        <Sun className="size-5 text-muted-foreground" />
+      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md border">
+        <Sun className="text-muted-foreground size-5" />
       </div>
       <div className="flex flex-1 flex-col gap-1.5">
-        <p className="font-medium text-sm" id="theme-group-label">
+        <p className="text-sm font-medium" id="theme-group-label">
           {t("theme")}
         </p>
         <p className="text-muted-foreground text-sm">{t("themeDescription")}</p>
@@ -80,7 +80,7 @@ export function ThemeSelector({
         >
           {THEME_OPTIONS.map(({ value, icon: Icon }) => (
             <label
-              className={`inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors focus-within:outline-2 focus-within:outline-ring focus-within:outline-offset-2 ${
+              className={`focus-within:outline-ring inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors focus-within:outline-2 focus-within:outline-offset-2 ${
                 selected === value
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border text-muted-foreground hover:bg-accent"

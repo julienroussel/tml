@@ -43,7 +43,7 @@ export default async function MarketingLayout({
   return (
     <Providers locale={locale} messages={messages}>
       <a
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-md"
+        className="focus:bg-background focus:text-foreground sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:shadow-md"
         href="#main-content"
       >
         {tCommon("skipToContent")}
@@ -53,7 +53,7 @@ export default async function MarketingLayout({
           handles browser-based AT; this div-level attribute is a fallback for
           pure-HTML consumers (e.g., RSS readers, search engine preview). */}
       <div className="relative flex min-h-screen flex-col" lang={locale}>
-        <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b backdrop-blur">
           <nav
             aria-label={tCommon("mainNavigation")}
             className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6"
@@ -87,19 +87,19 @@ export default async function MarketingLayout({
               </p>
               <nav aria-label={tCommon("footerLinks")} className="flex gap-4">
                 <Link
-                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   href={`/${locale}/privacy`}
                 >
                   {tFooter("privacy")}
                 </Link>
                 <Link
-                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   href={`/${locale}/faq`}
                 >
                   {tFooter("faq")}
                 </Link>
                 <a
-                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   href="https://memdeck.org"
                   rel="noopener noreferrer"
                   target="_blank"
@@ -108,7 +108,7 @@ export default async function MarketingLayout({
                   <span className="sr-only"> {tFooter("memDeckSrOnly")}</span>
                 </a>
                 <a
-                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   href="https://github.com/julienroussel/tml"
                   rel="noopener noreferrer"
                   target="_blank"

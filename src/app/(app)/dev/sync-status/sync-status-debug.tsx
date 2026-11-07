@@ -98,7 +98,7 @@ function decodeJwtPayload(token: string): DecodedJwt {
     return { kind: "error", message: "JWT missing payload segment" };
   }
   try {
-    const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+    const base64 = segment.replace(/-/gu, "+").replace(/_/gu, "/");
     const padded = base64.padEnd(
       base64.length + ((4 - (base64.length % 4)) % 4),
       "="
@@ -152,14 +152,14 @@ function Section({
 }): ReactElement {
   const titleId = useId();
   return (
-    <section className="rounded-md border bg-card p-4 shadow-sm">
-      <h2 className="mb-2 font-medium text-sm" id={titleId}>
+    <section className="bg-card rounded-md border p-4 shadow-sm">
+      <h2 className="mb-2 text-sm font-medium" id={titleId}>
         {title}
       </h2>
       {/* biome-ignore lint/a11y/useSemanticElements: <pre> preserves whitespace for JSON formatting; role="region" + aria-labelledby is the WAI-ARIA APG pattern for an accessible scrollable region. */}
       <pre
         aria-labelledby={titleId}
-        className="overflow-x-auto rounded bg-muted p-2 text-xs focus:outline-2 focus:outline-ring focus:outline-offset-2"
+        className="bg-muted focus:outline-ring overflow-x-auto rounded p-2 text-xs focus:outline-2 focus:outline-offset-2"
         role="region"
         // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region per WAI-ARIA APG — keyboard users need focus to scroll the overflow-x-auto container.
         tabIndex={0}
@@ -254,7 +254,7 @@ export function SyncStatusDebug(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           Sync diagnostic
         </h1>
         <p className="text-muted-foreground text-sm">

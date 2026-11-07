@@ -26,8 +26,8 @@ export default async function SettingsPage(): Promise<ReactElement> {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">{t("title")}</h1>
-        <p className="mt-1 text-muted-foreground">{t("description")}</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("description")}</p>
       </div>
       <div className="space-y-6">
         <LocaleSelector currentLocale={locale} />

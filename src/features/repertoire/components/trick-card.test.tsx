@@ -37,8 +37,8 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   ),
 }));
 
-const CARD_WARP_PATTERN = /Card Warp/;
-const DURATION_PATTERN = /\d+[ms]/;
+const CARD_WARP_PATTERN = /Card Warp/u;
+const DURATION_PATTERN = /\d+[ms]/u;
 
 const makeTrick = (overrides: Partial<TrickWithTags> = {}): TrickWithTags => ({
   id: "trick-1" as TrickId,

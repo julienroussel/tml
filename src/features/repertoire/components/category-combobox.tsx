@@ -98,7 +98,7 @@ function CategoryCombobox({
         {value && (
           <button
             aria-label={t("combobox.clearSelection")}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="text-muted-foreground hover:bg-accent hover:text-foreground inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm"
             onClick={handleClear}
             type="button"
           >

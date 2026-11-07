@@ -90,7 +90,7 @@ export function ItemCard({
           <div className="min-w-0 flex-1">
             <button
               aria-label={`${t("edit")}: ${item.name}`}
-              className="block w-full cursor-pointer rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="focus-visible:ring-ring/50 block w-full cursor-pointer rounded-sm text-left outline-none focus-visible:ring-[3px]"
               onClick={handleEditClick}
               type="button"
             >
@@ -103,7 +103,7 @@ export function ItemCard({
                 {item.name}
               </span>
               {item.description ? (
-                <span className="mt-1 line-clamp-2 block font-normal text-muted-foreground text-sm">
+                <span className="text-muted-foreground mt-1 line-clamp-2 block text-sm font-normal">
                   {item.description}
                 </span>
               ) : null}
@@ -114,7 +114,7 @@ export function ItemCard({
             <DropdownMenuTrigger asChild>
               <button
                 aria-label={t("cardActions")}
-                className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-sm outline-none focus-visible:ring-[3px] motion-safe:transition-colors"
                 type="button"
               >
                 <MoreHorizontal aria-hidden="true" className="size-5" />
@@ -148,7 +148,7 @@ export function ItemCard({
 
         {/* Brand, price, quantity */}
         {(item.brand || item.purchasePrice !== null || item.quantity > 1) && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {item.brand && <span>{item.brand}</span>}
             {formattedPrice !== null && (
               <span>
@@ -169,7 +169,7 @@ export function ItemCard({
           <RelationLoadErrorIndicator label={t("tricksLoadError")} />
         ) : (
           item.tricks.length > 0 && (
-            <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
               <Link2 aria-hidden="true" className="size-3.5" />
               <span>
                 {t("linkedTricksCount", { count: item.tricks.length })}
@@ -232,7 +232,7 @@ function RelationLoadErrorIndicator({
   const t = useTranslations("collect");
 
   return (
-    <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+    <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
       <CircleAlert
         aria-label={label}
         className="size-3.5 shrink-0"
@@ -249,7 +249,7 @@ function RelationLoadErrorIndicator({
 // Tag badge with optional color
 // ---------------------------------------------------------------------------
 
-export const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+export const HEX_COLOR_RE = /^#[0-9a-f]{6}$/iu;
 
 function TagBadge({ tag }: { tag: ParsedTag }): React.ReactElement {
   if (tag.color && HEX_COLOR_RE.test(tag.color)) {

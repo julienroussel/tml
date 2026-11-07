@@ -11,10 +11,10 @@ vi.mock("resend", () => {
   return { Resend: MockResend };
 });
 
-const HEX_64_PATTERN = /^[0-9a-f]{64}$/;
+const HEX_64_PATTERN = /^[0-9a-f]{64}$/u;
 const UNSUBSCRIBE_URL_PATTERN =
-  /^<https:\/\/themagiclab\.app\/api\/email\/unsubscribe\?token=/;
-const PERSONALIZED_GREETING_PATTERN = /Hi \w+,/;
+  /^<https:\/\/themagiclab\.app\/api\/email\/unsubscribe\?token=/u;
+const PERSONALIZED_GREETING_PATTERN = /Hi \w+,/u;
 
 const TEST_USER_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 const TEST_USER_ID_2 = "b2c3d4e5-f6a7-8901-bcde-f12345678901";

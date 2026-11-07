@@ -46,7 +46,7 @@ export function buildItemsQuery(options: UseItemsOptions = {}): {
     conditions.push(
       "(name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\' OR brand LIKE ? ESCAPE '\\')"
     );
-    const escaped = search.replace(/[%_\\]/g, "\\$&");
+    const escaped = search.replace(/[%_\\]/gu, "\\$&");
     const pattern = `%${escaped}%`;
     params.push(pattern, pattern, pattern);
   }

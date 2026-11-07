@@ -91,6 +91,7 @@ function FormLabel({
   const { error, formItemId } = useFormField();
 
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: `htmlFor` is set and the text arrives as children through `props`
     <Label
       className={cn("data-[error=true]:text-destructive", className)}
       data-error={!!error}

@@ -36,13 +36,13 @@ export default function GlobalError({
           tabIndex={-1}
         >
           <div role="alert">
-            <h1 className="font-semibold text-xl">Something went wrong</h1>
+            <h1 className="text-xl font-semibold">Something went wrong</h1>
             <p className="text-muted-foreground">
               An unexpected error occurred.
             </p>
           </div>
           <button
-            className="min-h-11 rounded-md bg-primary px-4 py-2 text-primary-foreground text-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring min-h-11 rounded-md px-4 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             onClick={reset}
             type="button"
           >

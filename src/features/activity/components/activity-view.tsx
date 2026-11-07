@@ -34,7 +34,7 @@ function ActivityView(): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-2xl tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground text-sm">{t("description")}</p>
       </header>
       <ActivityFilters entity={entity} onEntityChange={setEntity} />

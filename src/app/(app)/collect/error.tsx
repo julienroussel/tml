@@ -44,7 +44,7 @@ export default function CollectError({
       tabIndex={-1}
     >
       <div role="alert">
-        <h1 className="font-semibold text-xl">{t("somethingWrong")}</h1>
+        <h1 className="text-xl font-semibold">{t("somethingWrong")}</h1>
         <p className="text-muted-foreground">{t("unexpectedError")}</p>
       </div>
       <div className="flex gap-2">

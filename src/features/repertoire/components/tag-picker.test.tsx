@@ -5,11 +5,12 @@ import type { TagId } from "@/db/types";
 import type { ParsedTag } from "../types";
 import { TagPicker } from "./tag-picker";
 
-const CREATE_TAG_PATTERN = /repertoire\.tagPicker\.create/;
+const CREATE_TAG_PATTERN = /repertoire\.tagPicker\.create/u;
 
 // cmdk uses ResizeObserver and scrollIntoView internally
 beforeAll(() => {
   if (!("ResizeObserver" in globalThis)) {
+    // biome-ignore-start lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
     globalThis.ResizeObserver = class ResizeObserver {
       observe(): void {
         // noop
@@ -21,6 +22,7 @@ beforeAll(() => {
         // noop
       }
     };
+    // biome-ignore-end lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
   }
   if (!Element.prototype.scrollIntoView) {
     Element.prototype.scrollIntoView = () => undefined;

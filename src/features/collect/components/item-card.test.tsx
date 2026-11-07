@@ -42,15 +42,15 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   ),
 }));
 
-const EDIT_BUTTON_NAME = /^collect\.edit:/;
+const EDIT_BUTTON_NAME = /^collect\.edit:/u;
 const MENU_TRIGGER_NAME = "collect.cardActions";
 const EDIT_MENU_ITEM_NAME = "collect.edit";
 const DELETE_MENU_ITEM_NAME = "collect.delete";
-const QUANTITY_LABEL_RE = /^collect\.quantityLabel/;
-const LINKED_TRICKS_RE = /^collect\.linkedTricksCount/;
-const CONDITION_RE = /^collect\.condition\./;
-const OVERFLOW_BADGE_RE = /^\+\d+$/;
-const MENTALISM_RE = /mentalism/;
+const QUANTITY_LABEL_RE = /^collect\.quantityLabel/u;
+const LINKED_TRICKS_RE = /^collect\.linkedTricksCount/u;
+const CONDITION_RE = /^collect\.condition\./u;
+const OVERFLOW_BADGE_RE = /^\+\d+$/u;
+const MENTALISM_RE = /mentalism/u;
 
 function makeItem(
   overrides: Partial<ItemWithRelations> = {}

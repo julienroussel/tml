@@ -124,8 +124,8 @@ describe("generateLlmsFullTxt", () => {
 
   it("places product-overview.md as the first source section", () => {
     const output = generateLlmsFullTxt();
-    const sources = [...output.matchAll(/^Source: docs\/(.+)$/gm)].map(
-      (m) => m[1]
+    const sources = [...output.matchAll(/^Source: docs\/(?<path>.+)$/gmu)].map(
+      (m) => m.groups?.path
     );
     expect(sources[0]).toBe("product-overview.md");
   });

@@ -1,14 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PushNotifications, urlBase64ToUint8Array } from "./push-notifications";
 
 vi.mock("@/app/actions", () => ({
   subscribeUser: vi.fn().mockResolvedValue({ success: true } as const),
   unsubscribeUser: vi.fn().mockResolvedValue({ success: true } as const),
   sendNotification: vi.fn().mockResolvedValue({ success: true } as const),
 }));
-
-import { PushNotifications, urlBase64ToUint8Array } from "./push-notifications";
 
 describe("urlBase64ToUint8Array", () => {
   it("converts a standard base64url string", () => {
@@ -616,9 +615,9 @@ describe("PushNotifications", () => {
   });
 });
 
-const PUSH_NOT_SUPPORTED = /pushNotifications\.notSupported/;
-const INSTALL_THIS_APP = /pushNotifications\.iosInstallPrompt/;
-const INSTALL_PROMPT = /pushNotifications\.installPrompt/;
+const PUSH_NOT_SUPPORTED = /pushNotifications\.notSupported/u;
+const INSTALL_THIS_APP = /pushNotifications\.iosInstallPrompt/u;
+const INSTALL_PROMPT = /pushNotifications\.installPrompt/u;
 
 describe("InstallPrompt (via PushNotifications)", () => {
   const originalUserAgent = navigator.userAgent;

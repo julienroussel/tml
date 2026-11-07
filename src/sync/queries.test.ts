@@ -9,10 +9,10 @@ import {
   validateRecord,
 } from "./queries";
 
-const MISSING_OP_DATA_PATTERN = /Missing opData/;
-const USER_ID_WHERE_PATTERN = /WHERE\s+"tricks"\."user_id"\s*=\s*\$/;
-const NON_PRIMITIVE_NESTED_PATTERN = /Non-primitive value for column "nested"/;
-const NON_PRIMITIVE_TAGS_PATTERN = /Non-primitive value for column "tags"/;
+const MISSING_OP_DATA_PATTERN = /Missing opData/u;
+const USER_ID_WHERE_PATTERN = /WHERE\s+"tricks"\."user_id"\s*=\s*\$/u;
+const NON_PRIMITIVE_NESTED_PATTERN = /Non-primitive value for column "nested"/u;
+const NON_PRIMITIVE_TAGS_PATTERN = /Non-primitive value for column "tags"/u;
 
 describe("isSqlParam", () => {
   it("returns true for null", () => {

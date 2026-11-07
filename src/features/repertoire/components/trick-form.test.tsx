@@ -4,12 +4,13 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { TagId } from "@/db/types";
 import { TrickForm } from "./trick-form";
 
-const REMOVE_LANGUAGE_PATTERN = /repertoire\.removeLanguage/;
-const VALIDATION_MESSAGE_PATTERN = /repertoire\.validation/;
+const REMOVE_LANGUAGE_PATTERN = /repertoire\.removeLanguage/u;
+const VALIDATION_MESSAGE_PATTERN = /repertoire\.validation/u;
 
 // cmdk (used by CategoryCombobox and TagPicker) requires these in jsdom
 beforeAll(() => {
   if (!("ResizeObserver" in globalThis)) {
+    // biome-ignore-start lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
     globalThis.ResizeObserver = class ResizeObserver {
       observe(): void {
         // noop
@@ -21,6 +22,7 @@ beforeAll(() => {
         // noop
       }
     };
+    // biome-ignore-end lint/style/useThisInClassMethods: stub of the ResizeObserver interface; its methods must be instance methods
   }
   if (!Element.prototype.scrollIntoView) {
     Element.prototype.scrollIntoView = () => undefined;
@@ -49,7 +51,7 @@ describe("TrickForm", () => {
 
   it("renders without crashing", () => {
     render(<TrickForm {...defaultProps} />);
-    expect(document.getElementById("test-trick-form")).toBeInTheDocument();
+    expect(document.querySelector("#test-trick-form")).toBeInTheDocument();
   });
 
   it("renders the basics section", () => {
@@ -233,7 +235,7 @@ describe("TrickForm", () => {
       await user.clear(nameInput);
       await user.type(nameInput, "Test Trick");
 
-      const form = document.getElementById("test-trick-form");
+      const form = document.querySelector("#test-trick-form");
       if (!(form instanceof HTMLFormElement)) {
         throw new Error("Expected #test-trick-form to be a <form> element");
       }
@@ -251,7 +253,7 @@ describe("TrickForm", () => {
       const onSubmit = vi.fn();
       render(<TrickForm {...defaultProps} onSubmit={onSubmit} />);
 
-      const form = document.getElementById("test-trick-form");
+      const form = document.querySelector("#test-trick-form");
       if (!(form instanceof HTMLFormElement)) {
         throw new Error("Expected #test-trick-form to be a <form> element");
       }

@@ -34,7 +34,7 @@ vi.mock("./trick-card", () => ({
   ),
 }));
 
-const TRICK_CARD_PATTERN = /trick-card/;
+const TRICK_CARD_PATTERN = /trick-card/u;
 
 const makeTrick = (id: string, name: string): TrickWithTags => ({
   id: id as TrickId,

@@ -22,7 +22,7 @@ export function ThemeToggle(): ReactElement {
   return (
     <button
       aria-label={t("toggleTheme")}
-      className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+      className="text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-ring inline-flex size-11 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
       onClick={() => {
         const next = resolvedTheme === "dark" ? "light" : "dark";
         // Ephemeral toggle — only changes the visual theme for this session.

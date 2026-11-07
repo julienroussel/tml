@@ -49,7 +49,7 @@ export function buildTricksQuery(options: UseTricksOptions = {}): {
     conditions.push(
       "(name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')"
     );
-    const escaped = search.replace(/[%_\\]/g, "\\$&");
+    const escaped = search.replace(/[%_\\]/gu, "\\$&");
     const pattern = `%${escaped}%`;
     params.push(pattern, pattern);
   }

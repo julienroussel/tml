@@ -573,7 +573,7 @@ export function RepertoireView(): React.ReactElement {
       return (
         <p
           aria-live="polite"
-          className="py-12 text-center text-muted-foreground"
+          className="text-muted-foreground py-12 text-center"
           role="status"
         >
           {t("noResults")}
@@ -592,7 +592,7 @@ export function RepertoireView(): React.ReactElement {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {t("title")}
           </h1>
           <p className="text-muted-foreground">

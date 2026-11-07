@@ -4,7 +4,7 @@ const ASSETS_CACHE = "assets-v1";
 const EXPECTED_CACHES = [STATIC_CACHE, PAGES_CACHE, ASSETS_CACHE];
 const MAX_STATIC_ENTRIES = 250;
 const MAX_ASSET_ENTRIES = 50;
-const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|avif|svg|ico)$/i;
+const IMAGE_EXT_RE = /\.(?:png|jpe?g|gif|webp|avif|svg|ico)$/iu;
 
 async function trimCache(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);

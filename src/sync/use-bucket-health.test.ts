@@ -1,6 +1,11 @@
 import type { useStatus } from "@powersync/react";
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { clearGlobalOverride, writeGlobalOverride } from "./test-override-key";
+import {
+  __resetLoggedBucketHealthErrorsForTests,
+  useBucketHealth,
+} from "./use-bucket-health";
 
 // Type the useStatus mock from the SDK so a `@powersync/react` rename or
 // retype breaks this file at compile time instead of silently passing
@@ -20,12 +25,6 @@ vi.mock("@powersync/react", () => ({
   useStatus: mockUseStatus,
   usePowerSync: vi.fn(),
 }));
-
-import { clearGlobalOverride, writeGlobalOverride } from "./test-override-key";
-import {
-  __resetLoggedBucketHealthErrorsForTests,
-  useBucketHealth,
-} from "./use-bucket-health";
 
 // Module-level error dedup keyed by `error.message` lives in use-bucket-health
 // for the page's lifetime. The hook exposes a test-only reset helper

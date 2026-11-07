@@ -24,11 +24,11 @@ import {
  * by unit tests in src/features/repertoire/hooks/use-tag-mutations.test.ts.
  */
 
-const ACTIVITY_HEADING_RE = /^activity$/i;
-const TIMELINE_LABEL_RE = /Activity timeline/i;
-const TRICK_CREATED_RE = /Created trick/i;
-const ITEM_CREATED_RE = /Added .* to your collection/i;
-const TRICKS_OPTION_RE = /tricks/i;
+const ACTIVITY_HEADING_RE = /^activity$/iu;
+const TIMELINE_LABEL_RE = /Activity timeline/iu;
+const TRICK_CREATED_RE = /Created trick/iu;
+const ITEM_CREATED_RE = /Added .* to your collection/iu;
+const TRICKS_OPTION_RE = /tricks/iu;
 
 test.describe("Activity feed", () => {
   test.beforeEach(() => {

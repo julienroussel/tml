@@ -6,7 +6,7 @@ import Home from "./page";
 mockNextImage();
 mockNextLink();
 
-const GITHUB_RE = /GitHub/;
+const GITHUB_RE = /GitHub/u;
 
 describe("Home (marketing landing page)", () => {
   const defaultParams = { params: Promise.resolve({ locale: "en" }) };
@@ -42,7 +42,7 @@ describe("Home (marketing landing page)", () => {
 
   it("renders feature section with all 8 non-admin modules", async () => {
     render(await Home(defaultParams));
-    const featureSection = document.getElementById("features");
+    const featureSection = document.querySelector("#features");
     expect(featureSection).toBeInTheDocument();
     // Each module renders as a link with an h3 heading
     const headings =
@@ -52,7 +52,7 @@ describe("Home (marketing landing page)", () => {
 
   it("does not show coming soon badge or aria-label on enabled modules", async () => {
     render(await Home(defaultParams));
-    const featureGrid = document.getElementById("features")?.parentElement;
+    const featureGrid = document.querySelector("#features")?.parentElement;
     expect(featureGrid).toBeInTheDocument();
 
     // Repertoire is the only enabled module — its link should exist
@@ -104,7 +104,7 @@ describe("Home (marketing landing page)", () => {
 
   it("renders the how it works section with steps", async () => {
     render(await Home(defaultParams));
-    const section = document.getElementById("how-it-works");
+    const section = document.querySelector("#how-it-works");
     expect(section).toBeInTheDocument();
     // Section has 3 step headings
     const headings = section?.parentElement?.querySelectorAll("h3") ?? [];
@@ -113,7 +113,7 @@ describe("Home (marketing landing page)", () => {
 
   it("renders the open source section", async () => {
     render(await Home(defaultParams));
-    const section = document.getElementById("open-source");
+    const section = document.querySelector("#open-source");
     expect(section).toBeInTheDocument();
     expect(section?.tagName).toBe("H2");
   });

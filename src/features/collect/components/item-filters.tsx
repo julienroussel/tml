@@ -86,7 +86,7 @@ export function ItemFilters({
       <div className="relative w-full sm:flex-1">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
         />
         <Input
           aria-label={t("searchPlaceholder")}

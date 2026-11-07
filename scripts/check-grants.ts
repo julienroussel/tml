@@ -9,43 +9,46 @@ import { SYNCED_TABLE_NAMES } from "../src/sync/synced-columns";
 // historical baseline ever shifts.
 const ENFORCE_FROM_INDEX = 21;
 
-const MIGRATION_FILENAME_RE = /^(\d{4})_.+\.sql$/;
+const MIGRATION_FILENAME_RE = /^(?<index>\d{4})_.+\.sql$/u;
 // Allows an optional schema prefix (`public.tricks`, `"public"."tricks"`); the
-// captured group is the bare table name. Without the prefix branch, hand-written
+// `name` group is the bare table name. Without the prefix branch, hand-written
 // schema-qualified DDL would silently bypass the check.
 const CREATE_TABLE_RE =
-  /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?[a-zA-Z_][a-zA-Z0-9_]*"?\s*\.\s*)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
+  /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?[a-zA-Z_][a-zA-Z0-9_]*"?\s*\.\s*)?"?(?<name>[a-zA-Z_][a-zA-Z0-9_]*)"?/giu;
 // Captures every `GRANT … ON [TABLE] <targets> TO <grantees>;` in one pass; the
-// `(.+?)` target group spans newlines, and the `(?:TABLE\s+)?` skip handles the
+// `targets` group spans newlines, and the `(?:TABLE\s+)?` skip handles the
 // optional `TABLE` keyword. Membership of `authenticated` in the grantee list is
 // checked downstream so multi-role lists in any order match correctly.
-const GRANT_RE = /GRANT\s+[^;]*?\sON\s+(?:TABLE\s+)?(.+?)\s+TO\s+([^;]+);/gis;
-const IDENTIFIER_RE = /"([a-zA-Z_][a-zA-Z0-9_]*)"|([a-zA-Z_][a-zA-Z0-9_]*)/g;
-const SECURITY_DEFINER_RE = /\bSECURITY\s+DEFINER\b/i;
+const GRANT_RE =
+  /GRANT\s+[^;]*?\sON\s+(?:TABLE\s+)?(?<targets>.+?)\s+TO\s+(?<grantees>[^;]+);/gisu;
+const IDENTIFIER_RE =
+  /"(?<quoted>[a-zA-Z_][a-zA-Z0-9_]*)"|(?<bare>[a-zA-Z_][a-zA-Z0-9_]*)/gu;
+const SECURITY_DEFINER_RE = /\bSECURITY\s+DEFINER\b/iu;
 // Catches `REVOKE ... EXECUTE ... FROM ...;` in any of the supported shapes
 // (`ON FUNCTION foo()`, `ON ALL FUNCTIONS IN SCHEMA public`, `ALL PRIVILEGES`).
 const REVOKE_EXECUTE_RE =
-  /REVOKE\s+[^;]*?\bEXECUTE\b[^;]*?\bFROM\s+([^;]+);/gis;
-// Captures `CREATE [OR REPLACE] FUNCTION [<schema>.]<name>`. Optional schema is
-// group 1; bare function name is group 2. Capturing the schema lets the caller
+  /REVOKE\s+[^;]*?\bEXECUTE\b[^;]*?\bFROM\s+(?<grantees>[^;]+);/gisu;
+// Captures `CREATE [OR REPLACE] FUNCTION [<schema>.]<name>`. The optional
+// schema is the `schema` group; the bare function name is the `name` group.
+// Capturing the schema lets the caller
 // scope SECURITY DEFINER attribution to schema `public` only — which is the sole
 // scope of the migrations.md §4 rule. A `CREATE FUNCTION other.foo …` is out of
 // scope (different schema, not subject to the lockdown discipline).
 const CREATE_FUNCTION_NAME_RE =
-  /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:"?([a-zA-Z_][a-zA-Z0-9_]*)"?\s*\.\s*)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
+  /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:"?(?<schema>[a-zA-Z_][a-zA-Z0-9_]*)"?\s*\.\s*)?"?(?<name>[a-zA-Z_][a-zA-Z0-9_]*)"?/giu;
 // Captures `REVOKE [EXECUTE|ALL [PRIVILEGES]] ON FUNCTION [<schema>.]<name>[(<args>)] FROM <list>;`.
-// Schema is group 1 (optional); function name is group 2; FROM grantee list is
-// group 3. The argument signature is optional — PostgreSQL accepts the bare
+// Groups: `schema` (optional), `name` (function name), `grantees` (FROM
+// list). The argument signature is optional — PostgreSQL accepts the bare
 // form `ON FUNCTION foo FROM …;` when the name is unambiguous. The `[^)]*`
 // inside the parens stays on one signature.
 const REVOKE_NAMED_FUNCTION_RE =
-  /REVOKE\s+(?:EXECUTE|ALL(?:\s+PRIVILEGES)?)\s+ON\s+FUNCTION\s+(?:"?([a-zA-Z_][a-zA-Z0-9_]*)"?\s*\.\s*)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?\s*(?:\([^)]*\))?\s+FROM\s+([^;]+);/gis;
+  /REVOKE\s+(?:EXECUTE|ALL(?:\s+PRIVILEGES)?)\s+ON\s+FUNCTION\s+(?:"?(?<schema>[a-zA-Z_][a-zA-Z0-9_]*)"?\s*\.\s*)?"?(?<name>[a-zA-Z_][a-zA-Z0-9_]*)"?\s*(?:\([^)]*\))?\s+FROM\s+(?<grantees>[^;]+);/gisu;
 // Captures `REVOKE [EXECUTE|ALL [PRIVILEGES]] ON ALL FUNCTIONS IN SCHEMA public FROM <list>;`.
 // Schema is anchored to `public` (the sole scope of the rule) so a sweep over
 // a different schema cannot credit a public-schema definer function. FROM
-// grantee list is group 1.
+// grantee list is the `grantees` group.
 const REVOKE_ALL_FUNCTIONS_RE =
-  /REVOKE\s+(?:EXECUTE|ALL(?:\s+PRIVILEGES)?)\s+ON\s+ALL\s+FUNCTIONS\s+IN\s+SCHEMA\s+"?public"?\s+FROM\s+([^;]+);/gis;
+  /REVOKE\s+(?:EXECUTE|ALL(?:\s+PRIVILEGES)?)\s+ON\s+ALL\s+FUNCTIONS\s+IN\s+SCHEMA\s+"?public"?\s+FROM\s+(?<grantees>[^;]+);/gisu;
 
 // True when `schema` is undefined (unqualified — defaults to `public` under the
 // search_path used by these migrations) or literally `public`. Used to scope
@@ -75,13 +78,13 @@ type Failure = {
 // pattern in this tree). Tightening to a full PG tokenizer is a larger lift
 // than this static check warrants.
 function stripSqlComments(sql: string): string {
-  return sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
+  return sql.replace(/\/\*[\s\S]*?\*\//gu, " ").replace(/--[^\n]*/gu, " ");
 }
 
 function parseGrantTargets(target: string): readonly string[] {
   const names: string[] = [];
   for (const match of target.matchAll(IDENTIFIER_RE)) {
-    const name = match[1] ?? match[2];
+    const name = match.groups?.quoted ?? match.groups?.bare;
     if (name) {
       names.push(name);
     }
@@ -94,7 +97,7 @@ function parseGrantTargets(target: string): readonly string[] {
 function parseGrantees(grantees: string): readonly string[] {
   return grantees
     .split(",")
-    .map((g) => g.trim().replace(/^"|"$/g, "").toLowerCase());
+    .map((g) => g.trim().replace(/^"|"$/gu, "").toLowerCase());
 }
 
 function findCreatedSyncedTables(
@@ -103,7 +106,7 @@ function findCreatedSyncedTables(
 ): ReadonlySet<string> {
   const created = new Set<string>();
   for (const match of sql.matchAll(CREATE_TABLE_RE)) {
-    const [, name] = match;
+    const name = match.groups?.name;
     if (name && syncedTables.has(name)) {
       created.add(name);
     }
@@ -114,8 +117,8 @@ function findCreatedSyncedTables(
 function findGrantedToAuthenticated(sql: string): ReadonlySet<string> {
   const granted = new Set<string>();
   for (const match of sql.matchAll(GRANT_RE)) {
-    const targets = match[1] ?? "";
-    const grantees = parseGrantees(match[2] ?? "");
+    const targets = match.groups?.targets ?? "";
+    const grantees = parseGrantees(match.groups?.grantees ?? "");
     if (!grantees.includes("authenticated")) {
       continue;
     }
@@ -140,8 +143,8 @@ function findSecurityDefinerFunctionNames(sql: string): readonly string[] {
   const names: string[] = [];
   for (let i = 0; i < matches.length; i += 1) {
     const match = matches[i];
-    const schema = match?.[1];
-    const name = match?.[2];
+    const schema = match?.groups?.schema;
+    const name = match?.groups?.name;
     const start = match?.index;
     if (!name || start === undefined || !isPublicSchema(schema)) {
       continue;
@@ -168,14 +171,14 @@ type RevokeCoverage = {
 function analyzeRevokeExecute(sql: string): RevokeCoverage {
   const broad = new Set<string>();
   for (const match of sql.matchAll(REVOKE_ALL_FUNCTIONS_RE)) {
-    for (const g of parseGrantees(match[1] ?? "")) {
+    for (const g of parseGrantees(match.groups?.grantees ?? "")) {
       broad.add(g);
     }
   }
   const named = new Map<string, Set<string>>();
   for (const match of sql.matchAll(REVOKE_NAMED_FUNCTION_RE)) {
-    const [, schema] = match;
-    const [, , name] = match;
+    const schema = match.groups?.schema;
+    const name = match.groups?.name;
     if (!(name && isPublicSchema(schema))) {
       continue;
     }
@@ -184,7 +187,7 @@ function analyzeRevokeExecute(sql: string): RevokeCoverage {
       set = new Set();
       named.set(name, set);
     }
-    for (const g of parseGrantees(match[3] ?? "")) {
+    for (const g of parseGrantees(match.groups?.grantees ?? "")) {
       set.add(g);
     }
   }
@@ -234,11 +237,11 @@ function findFunctionsWithMissingRevoke(
 
 // Non-global detector for `CREATE [OR REPLACE] FUNCTION` — used to classify a
 // statement as a function declaration without mutating regex state.
-const CREATE_FUNCTION_DETECT_RE = /\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b/i;
+const CREATE_FUNCTION_DETECT_RE = /\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b/iu;
 // Anchored detector for a dollar-quote opener at the current cursor position
 // (`$$` or `$tag$`). Hot path inside `splitTopLevelStatements`, which is why
 // it lives at module scope rather than inline.
-const DOLLAR_QUOTE_OPEN_RE = /^\$([a-zA-Z_][a-zA-Z0-9_]*)?\$/;
+const DOLLAR_QUOTE_OPEN_RE = /^\$(?<tag>[a-zA-Z_][a-zA-Z0-9_]*)?\$/u;
 
 // Splits SQL into top-level statements at `;`, respecting dollar-quoted bodies
 // (`$$ … $$`, `$tag$ … $tag$`). String literals (`'…'`) are not handled
@@ -255,7 +258,7 @@ function splitTopLevelStatements(sql: string): readonly string[] {
     if (dollarTag === null) {
       const open = DOLLAR_QUOTE_OPEN_RE.exec(sql.slice(i));
       if (open) {
-        dollarTag = open[1] ?? "";
+        dollarTag = open.groups?.tag ?? "";
         current += open[0];
         i += open[0].length;
         continue;
@@ -320,7 +323,7 @@ function hasRevokeExecuteFromPublicAndAuthenticated(sql: string): boolean {
   let foundPublic = false;
   let foundAuthenticated = false;
   for (const match of sql.matchAll(REVOKE_EXECUTE_RE)) {
-    const grantees = parseGrantees(match[1] ?? "");
+    const grantees = parseGrantees(match.groups?.grantees ?? "");
     if (grantees.includes("public")) {
       foundPublic = true;
     }
@@ -396,7 +399,7 @@ function listEnforcedMigrations(
     if (!match) {
       continue;
     }
-    const idx = Number.parseInt(match[1] ?? "", 10);
+    const idx = Number.parseInt(match.groups?.index ?? "", 10);
     if (Number.isFinite(idx) && idx >= enforceFromIndex) {
       matches.push(file);
     }

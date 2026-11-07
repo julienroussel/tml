@@ -2,6 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TrickId } from "@/db/types";
 import type { TrickRow } from "./parse-trick";
+import { useTrick } from "./use-trick";
 
 const { mockUseQuery } = vi.hoisted(() => ({
   mockUseQuery: vi.fn(),
@@ -11,8 +12,6 @@ vi.mock("@powersync/react", () => ({
   useQuery: mockUseQuery,
   usePowerSync: vi.fn(),
 }));
-
-import { useTrick } from "./use-trick";
 
 const trickId = (id: string) => id as TrickId;
 

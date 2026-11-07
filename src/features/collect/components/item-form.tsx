@@ -483,7 +483,7 @@ function ItemForm({
               }
               className="grid gap-2 border-none p-0"
             >
-              <legend className="font-medium text-sm">{t("field.tags")}</legend>
+              <legend className="text-sm font-medium">{t("field.tags")}</legend>
               {relationsLoading ? (
                 <>
                   <Skeleton
@@ -520,7 +520,7 @@ function ItemForm({
               }
               className="grid gap-2 border-none p-0"
             >
-              <legend className="font-medium text-sm">
+              <legend className="text-sm font-medium">
                 {t("field.linkedTricks")}
               </legend>
               {relationsLoading ? (

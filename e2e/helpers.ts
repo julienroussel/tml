@@ -12,9 +12,9 @@ export const AUTH_STATE_PATH = resolve(
   ".playwright/.auth/user.json"
 );
 
-export const ADD_TRICK_RE = /add trick/i;
-export const ADD_ITEM_RE = /add item/i;
-export const NAME_RE = /^name$/i;
+export const ADD_TRICK_RE = /add trick/iu;
+export const ADD_ITEM_RE = /add item/iu;
+export const NAME_RE = /^name$/iu;
 
 /**
  * Union of all `data-sync-state` values the `<SyncStatus>` pill can emit:
